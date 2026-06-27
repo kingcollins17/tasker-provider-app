@@ -6,4 +6,6 @@ export 'verify_phone_request.dart';
 export 'verify_otp_request.dart';
 
 export 'provider_profile.dart';
+export 'region.dart';
 export 'user.dart';
+

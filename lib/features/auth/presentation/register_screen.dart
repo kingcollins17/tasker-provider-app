@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
+import 'package:tasker_app/core/providers/region_provider.dart';
 import '../../../../core/ui/designs/colors.dart';
 import '../../../../core/ui/designs/text_styles.dart';
 import '../../../../core/ui/widgets/app_text_field.dart';
@@ -295,7 +296,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   }
 
   Future<String?> _getRegionId() async {
-    return null;
+    return ref.read(currentRegionProvider.future).then((res) => res?.id);
   }
 
   void _handleRegister() async {

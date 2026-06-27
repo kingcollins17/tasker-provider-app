@@ -11,7 +11,7 @@ RegisterRequest _$RegisterRequestFromJson(Map<String, dynamic> json) =>
       email: json['email'] as String?,
       phoneNumber: json['phone_number'] as String?,
       password: json['password'] as String?,
-      type: json['type'] as String? ?? 'customer',
+      type: json['type'] as String? ?? 'provider',
       firstName: json['first_name'] as String?,
       lastName: json['last_name'] as String?,
       gender: json['gender'] as String?,

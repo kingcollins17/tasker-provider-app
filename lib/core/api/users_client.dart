@@ -39,6 +39,9 @@ abstract class UsersClient {
 
   @GET("users/me")
   Future<BaseApiResponse<User>> getMe();
+
+  @GET("regions/")
+  Future<BaseApiResponse<List<Region>>> getRegions();
 }
 
 /// Provider exposing the [UsersClient] dependency.
@@ -46,3 +49,4 @@ final usersClientProvider = Provider<UsersClient>((ref) {
   final dio = ref.watch(dioProvider);
   return UsersClient(dio);
 });
+
