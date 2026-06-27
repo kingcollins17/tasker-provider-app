@@ -1,19 +1,25 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/ui/designs/colors.dart';
 import '../../../../core/ui/designs/text_styles.dart';
 import '../../../../core/ui/widgets/app_text_field.dart';
 import '../../../../core/ui/widgets/primary_button.dart';
+import '../../../../core/ui/pages/pages.dart';
+import '../../../../core/models/models.dart';
+import '../../../../core/utils/extensions/loading_context_ext.dart';
+import '../../../../core/utils/extensions/flushbar_context_ext.dart';
+import '../providers/auth_provider.dart';
 
-class RegisterScreen extends StatefulWidget {
+class RegisterScreen extends ConsumerStatefulWidget {
   const RegisterScreen({super.key});
 
   @override
-  State<RegisterScreen> createState() => _RegisterScreenState();
+  ConsumerState<RegisterScreen> createState() => _RegisterScreenState();
 }
 
-class _RegisterScreenState extends State<RegisterScreen> {
+class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
@@ -249,11 +255,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     // Create Account Button
                     PrimaryButton(
                       text: 'Create Account',
-                      onPressed: () {
-                        if (_formKey.currentState?.validate() ?? false) {
-                          // Proceed
-                        }
-                      },
+                      onPressed: _handleRegister,
                     ),
                     SizedBox(height: 32.h),
 
@@ -290,5 +292,85 @@ class _RegisterScreenState extends State<RegisterScreen> {
         ),
       ),
     );
+  }
+
+  Future<String?> _getRegionId() async {
+    return null;
+  }
+
+  void _handleRegister() async {
+    if (!(_formKey.currentState?.validate() ?? false)) return;
+
+    final names = _nameController.text.trim().split(' ');
+    final firstName = names.isNotEmpty ? names.first : '';
+    final lastName = names.length > 1 ? names.sublist(1).join(' ') : '';
+    final email = _emailController.text.trim();
+    final phone = _phoneController.text.trim();
+    final password = _passwordController.text;
+
+    final request = RegisterRequest(
+      email: email,
+      phoneNumber: '+234$phone',
+      password: password,
+      firstName: firstName,
+      lastName: lastName,
+      type: 'provider',
+
+      regionId: await _getRegionId(),
+    );
+
+    context.showLoading();
+    ref
+        .read(authProvider.notifier)
+        .signup(
+          request,
+          onSuccess: () => _onSignupSuccess(email, password),
+          onError: _onError,
+        );
+  }
+
+  void _onSignupSuccess(String email, String password) {
+    ref
+        .read(authProvider.notifier)
+        .requestEmailOtp(
+          email,
+          onSuccess: () => _onOtpRequested(email, password),
+          onError: _onError,
+        );
+  }
+
+  Future<void> _onOtpRequested(String email, String password) async {
+    context.hideLoading();
+
+    final result = await VerifyOTPPage.verify(
+      context,
+      target: email,
+      channel: 'email',
+    );
+
+    if (result != null && result.isVerified && context.mounted) {
+      _loginAfterVerification(email, password);
+    }
+  }
+
+  void _loginAfterVerification(String email, String password) {
+    context.showLoading();
+    ref
+        .read(authProvider.notifier)
+        .login(
+          email,
+          password,
+          onSuccess: () {
+            context.hideLoading();
+            context.showToast('Account verified! Welcome aboard.');
+            context.go('/');
+          },
+          onError: _onError,
+        );
+  }
+
+  void _onError(String error) {
+    context.hideLoading();
+    context.showError(error);
   }
 }

@@ -1,23 +1,27 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/ui/designs/colors.dart';
 import '../../../../core/ui/designs/text_styles.dart';
 import '../../../../core/ui/widgets/app_text_field.dart';
 import '../../../../core/ui/widgets/primary_button.dart';
+import '../../../../core/utils/extensions/loading_context_ext.dart';
+import '../../../../core/utils/extensions/flushbar_context_ext.dart';
+import '../providers/auth_provider.dart';
 
-class LoginScreen extends StatefulWidget {
+class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  ConsumerState<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  bool _rememberMe = false;
+
   bool _obscurePassword = true;
 
   @override
@@ -56,7 +60,9 @@ class _LoginScreenState extends State<LoginScreen> {
                           shape: BoxShape.circle,
                           boxShadow: [
                             BoxShadow(
-                              color: const Color(0xFF6366F1).withValues(alpha: 0.15),
+                              color: const Color(
+                                0xFF6366F1,
+                              ).withValues(alpha: 0.15),
                               blurRadius: 12.r,
                               offset: const Offset(0, 4),
                             ),
@@ -76,10 +82,12 @@ class _LoginScreenState extends State<LoginScreen> {
                     // Welcome Back Title
                     Text(
                       'Welcome Back',
-                      style: theme.textTheme.titleLarge?.copyWith(
-                        fontSize: 28.sp,
-                        fontWeight: FontWeight.bold,
-                      ) ?? AppTextStyles.h2.copyWith(fontSize: 28.sp),
+                      style:
+                          theme.textTheme.titleLarge?.copyWith(
+                            fontSize: 28.sp,
+                            fontWeight: FontWeight.bold,
+                          ) ??
+                          AppTextStyles.h2.copyWith(fontSize: 28.sp),
                       textAlign: TextAlign.center,
                     ),
                     SizedBox(height: 8.h),
@@ -88,7 +96,9 @@ class _LoginScreenState extends State<LoginScreen> {
                     Text(
                       'Log in to your account to continue.',
                       style: theme.textTheme.bodyMedium?.copyWith(
-                        color: isDark ? AppColors.textSecondary : const Color(0xFF64748B),
+                        color: isDark
+                            ? AppColors.textSecondary
+                            : const Color(0xFF64748B),
                       ),
                       textAlign: TextAlign.center,
                     ),
@@ -109,7 +119,9 @@ class _LoginScreenState extends State<LoginScreen> {
                         if (value == null || value.isEmpty) {
                           return 'Please enter your email';
                         }
-                        if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+                        if (!RegExp(
+                          r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
+                        ).hasMatch(value)) {
                           return 'Please enter a valid email address';
                         }
                         return null;
@@ -130,7 +142,9 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       suffixIcon: IconButton(
                         icon: Icon(
-                          _obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                          _obscurePassword
+                              ? Icons.visibility_outlined
+                              : Icons.visibility_off_outlined,
                           color: AppColors.textMuted,
                           size: 20.r,
                         ),
@@ -154,35 +168,8 @@ class _LoginScreenState extends State<LoginScreen> {
 
                     // Remember Me & Forgot Password
                     Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      mainAxisAlignment: MainAxisAlignment.end,
                       children: [
-                        Row(
-                          children: [
-                            SizedBox(
-                              width: 24.w,
-                              height: 24.h,
-                              child: Checkbox(
-                                value: _rememberMe,
-                                onChanged: (value) {
-                                  setState(() {
-                                    _rememberMe = value ?? false;
-                                  });
-                                },
-                                activeColor: AppColors.primary,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(4.r),
-                                ),
-                              ),
-                            ),
-                            SizedBox(width: 8.w),
-                            Text(
-                              'Remember me',
-                              style: AppTextStyles.label.copyWith(
-                                color: isDark ? AppColors.textSecondary : const Color(0xFF475569),
-                              ),
-                            ),
-                          ],
-                        ),
                         GestureDetector(
                           onTap: () {},
                           child: Text(
@@ -198,14 +185,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     SizedBox(height: 32.h),
 
                     // Sign In Button
-                    PrimaryButton(
-                      text: 'Sign In',
-                      onPressed: () {
-                        if (_formKey.currentState?.validate() ?? false) {
-                          // Proceed
-                        }
-                      },
-                    ),
+                    PrimaryButton(text: 'Sign In', onPressed: _handleLogin),
                     SizedBox(height: 32.h),
 
                     // Don't have an account text
@@ -215,7 +195,9 @@ class _LoginScreenState extends State<LoginScreen> {
                         Text(
                           "Don't have an account? ",
                           style: AppTextStyles.bodyMedium.copyWith(
-                            color: isDark ? AppColors.textSecondary : const Color(0xFF64748B),
+                            color: isDark
+                                ? AppColors.textSecondary
+                                : const Color(0xFF64748B),
                           ),
                         ),
                         GestureDetector(
@@ -239,5 +221,25 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
       ),
     );
+  }
+
+  void _handleLogin() {
+    if (_formKey.currentState?.validate() ?? false) {
+      context.showLoading();
+      ref
+          .read(authProvider.notifier)
+          .login(
+            _emailController.text.trim(),
+            _passwordController.text,
+            onSuccess: () {
+              context.hideLoading();
+              context.go('/');
+            },
+            onError: (error) {
+              context.hideLoading();
+              context.showError(error);
+            },
+          );
+    }
   }
 }

@@ -72,16 +72,16 @@ class _VerifyOTPPageState extends ConsumerState<VerifyOTPPage> {
             ),
           );
 
+      if (!mounted) return;
       context.hideLoading();
 
       if (response.isSuccessful) {
-        if (mounted) {
-          Navigator.pop(context, (isVerified: true, otp: code));
-        }
+        Navigator.pop(context, (isVerified: true, otp: code));
       } else {
         context.showError(response.detail ?? 'Failed to verify OTP. Please try again.');
       }
     } catch (e) {
+      if (!mounted) return;
       context.hideLoading();
       context.showError('An error occurred during verification. Please check your connection.');
     }

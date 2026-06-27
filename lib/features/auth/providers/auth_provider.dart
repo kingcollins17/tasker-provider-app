@@ -1,8 +1,11 @@
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'dart:ui';
 import '../../../core/api/users_client.dart';
 import '../../../core/models/models.dart';
 import '../../../core/services/local_storage_service.dart';
+import '../../../core/utils/app_exception_handler.dart';
+import '../../../core/utils/extensions/error_ext.dart';
 
 /// A Riverpod Notifier managing authentication state and actions.
 class AuthNotifier extends AsyncNotifier<User?> {
@@ -15,7 +18,8 @@ class AuthNotifier extends AsyncNotifier<User?> {
       if (response.isSuccessful && response.data != null) {
         return User.fromJson(response.data as Map<String, dynamic>);
       }
-    } catch (_) {
+    } catch (e, st) {
+      AppExceptionHandler.instance.handleError(e, st);
       // In case token is invalid/expired, delete it
       await appStorage.delete(HiveKeys.accessToken.name);
     }
@@ -23,13 +27,16 @@ class AuthNotifier extends AsyncNotifier<User?> {
   }
 
   /// Authenticates a user using credentials.
-  Future<void> login(String username, String password) async {
-    state = const AsyncValue.loading();
+  Future<void> login(
+    String username,
+    String password, {
+    VoidCallback? onSuccess,
+    void Function(String)? onError,
+  }) async {
     try {
-      final response = await ref.read(usersClientProvider).login(
-            username: username,
-            password: password,
-          );
+      final response = await ref
+          .read(usersClientProvider)
+          .login(username: username, password: password);
 
       if (response.isSuccessful) {
         final data = response.data;
@@ -39,40 +46,131 @@ class AuthNotifier extends AsyncNotifier<User?> {
         }
         if (token != null) {
           await appStorage.save(HiveKeys.accessToken.name, token);
-          // Invalidate/refresh provider to fetch the authenticated user profile
           ref.invalidateSelf();
           await future;
+          onSuccess?.call();
         } else {
-          state = AsyncValue.error('Access token missing in response payload.', StackTrace.current);
+          final errMsg = 'Access token missing in response payload.';
+          onError?.call(errMsg);
         }
       } else {
-        state = AsyncValue.error(response.detail ?? 'Authentication failed.', StackTrace.current);
+        onError?.call(response.detail ?? 'Authentication failed.');
       }
     } catch (e, st) {
-      state = AsyncValue.error(e, st);
+      AppExceptionHandler.instance.handleError(e, st);
+      onError?.call(e.toFriendlyString());
     }
   }
 
   /// Registers a new user.
-  Future<void> signup(RegisterRequest request) async {
-    state = const AsyncValue.loading();
+  Future<void> signup(
+    RegisterRequest request, {
+    VoidCallback? onSuccess,
+    void Function(String)? onError,
+  }) async {
     try {
       final response = await ref.read(usersClientProvider).register(request);
       if (response.isSuccessful) {
-        // Registration successful; keep state at null since user has to log in or verify
-        state = const AsyncValue.data(null);
+        onSuccess?.call();
       } else {
-        state = AsyncValue.error(response.detail ?? 'Registration failed.', StackTrace.current);
+        onError?.call(response.detail ?? 'Registration failed.');
       }
     } catch (e, st) {
-      state = AsyncValue.error(e, st);
+      AppExceptionHandler.instance.handleError(e, st);
+      onError?.call(e.toFriendlyString());
     }
   }
 
   /// Logs out the user by clearing credentials.
-  Future<void> logout() async {
-    await appStorage.delete(HiveKeys.accessToken.name);
-    state = const AsyncValue.data(null);
+  Future<void> logout({
+    VoidCallback? onSuccess,
+    void Function(String)? onError,
+  }) async {
+    try {
+      await appStorage.delete(HiveKeys.accessToken.name);
+      ref.invalidateSelf();
+      await future;
+      onSuccess?.call();
+    } catch (e, st) {
+      AppExceptionHandler.instance.handleError(e, st);
+      onError?.call(e.toFriendlyString());
+    }
+  }
+
+  Future<void> requestEmailOtp(
+    String email, {
+    VoidCallback? onSuccess,
+    void Function(String)? onError,
+  }) async {
+    try {
+      final response = await ref.read(usersClientProvider).requestEmailOtp(
+            RequestEmailOtpRequest(email: email),
+          );
+      if (response.isSuccessful) {
+        onSuccess?.call();
+      } else {
+        onError?.call(response.detail ?? 'Failed to request email OTP.');
+      }
+    } catch (e, st) {
+      AppExceptionHandler.instance.handleError(e, st);
+      onError?.call(e.toFriendlyString());
+    }
+  }
+
+  Future<void> requestPhoneOtp(
+    String phoneNumber, {
+    VoidCallback? onSuccess,
+    void Function(String)? onError,
+  }) async {
+    try {
+      // Mocking phone OTP request since no backend endpoint exists
+      onSuccess?.call();
+    } catch (e, st) {
+      AppExceptionHandler.instance.handleError(e, st);
+      onError?.call(e.toFriendlyString());
+    }
+  }
+
+  Future<void> verifyEmail(
+    String email,
+    String code, {
+    VoidCallback? onSuccess,
+    void Function(String)? onError,
+  }) async {
+    try {
+      final response = await ref.read(usersClientProvider).verifyEmail(
+            VerifyEmailRequest(email: email, code: code),
+          );
+      if (response.isSuccessful) {
+        onSuccess?.call();
+      } else {
+        onError?.call(response.detail ?? 'Failed to verify email.');
+      }
+    } catch (e, st) {
+      AppExceptionHandler.instance.handleError(e, st);
+      onError?.call(e.toFriendlyString());
+    }
+  }
+
+  Future<void> verifyPhoneNumber(
+    String phoneNumber,
+    String code, {
+    VoidCallback? onSuccess,
+    void Function(String)? onError,
+  }) async {
+    try {
+      final response = await ref.read(usersClientProvider).verifyPhone(
+            VerifyPhoneRequest(phoneNumber: phoneNumber, code: code),
+          );
+      if (response.isSuccessful) {
+        onSuccess?.call();
+      } else {
+        onError?.call(response.detail ?? 'Failed to verify phone number.');
+      }
+    } catch (e, st) {
+      AppExceptionHandler.instance.handleError(e, st);
+      onError?.call(e.toFriendlyString());
+    }
   }
 }
 

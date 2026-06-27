@@ -3,6 +3,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dio/dio.dart';
 import 'package:pretty_dio_logger/pretty_dio_logger.dart';
+import 'local_storage_service.dart';
 
 /// Class containing variables mapped from the .env configuration.
 class AppEnvironments {
@@ -45,8 +46,10 @@ final dioProvider = Provider<Dio>((ref) {
       baseUrl: environments.baseUrl,
       connectTimeout: const Duration(seconds: 10),
       receiveTimeout: const Duration(seconds: 10),
+      validateStatus: (_) => true,
     ),
   );
+  dio.interceptors.add(DioAuthInterceptor());
   if (kDebugMode) {
     // customization
     dio.interceptors.add(
@@ -65,3 +68,18 @@ final dioProvider = Provider<Dio>((ref) {
 
   return dio;
 });
+
+/// Interceptor that attaches the cached access token to Dio request headers.
+class DioAuthInterceptor extends QueuedInterceptor {
+  @override
+  Future<void> onRequest(
+    RequestOptions options,
+    RequestInterceptorHandler handler,
+  ) async {
+    final token = await appStorage.get<String>(HiveKeys.accessToken.name);
+    if (token != null && token.isNotEmpty) {
+      options.headers['Authorization'] = 'Bearer $token';
+    }
+    super.onRequest(options, handler);
+  }
+}
