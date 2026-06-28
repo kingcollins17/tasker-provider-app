@@ -21,7 +21,8 @@ class BaseApiResponse<T> {
 
   /// Helper getter to check if the response is successful (status code 200-299).
   bool get isSuccessful =>
-      statusCode != null && statusCode! >= 200 && statusCode! < 300;
+      hasData ||
+      (statusCode != null && statusCode! >= 200 && statusCode! < 300);
 
   /// Helper getter to check if the response is an error.
   bool get isError => !isSuccessful;

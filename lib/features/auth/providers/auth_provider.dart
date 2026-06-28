@@ -38,23 +38,15 @@ class AuthNotifier extends AsyncNotifier<User?> {
           .read(usersClientProvider)
           .login(username: username, password: password);
 
-      if (response.isSuccessful) {
-        final data = response.data;
-        String? token;
-        if (data is Map) {
-          token = data['access_token'] as String?;
-        }
-        if (token != null) {
-          await appStorage.save(HiveKeys.accessToken.name, token);
-          ref.invalidateSelf();
-          await future;
-          onSuccess?.call();
-        } else {
-          final errMsg = 'Access token missing in response payload.';
-          onError?.call(errMsg);
-        }
+      final token = response.accessToken;
+      if (token != null) {
+        await appStorage.save(HiveKeys.accessToken.name, token);
+        ref.invalidateSelf();
+        await future;
+        onSuccess?.call();
       } else {
-        onError?.call(response.detail ?? 'Authentication failed.');
+        final errMsg = 'Access token missing in response payload.';
+        throw (errMsg);
       }
     } catch (e, st) {
       AppExceptionHandler.instance.handleError(e, st);
@@ -103,9 +95,9 @@ class AuthNotifier extends AsyncNotifier<User?> {
     void Function(String)? onError,
   }) async {
     try {
-      final response = await ref.read(usersClientProvider).requestEmailOtp(
-            RequestEmailOtpRequest(email: email),
-          );
+      final response = await ref
+          .read(usersClientProvider)
+          .requestEmailOtp(RequestEmailOtpRequest(email: email));
       if (response.isSuccessful) {
         onSuccess?.call();
       } else {
@@ -138,9 +130,9 @@ class AuthNotifier extends AsyncNotifier<User?> {
     void Function(String)? onError,
   }) async {
     try {
-      final response = await ref.read(usersClientProvider).verifyEmail(
-            VerifyEmailRequest(email: email, code: code),
-          );
+      final response = await ref
+          .read(usersClientProvider)
+          .verifyEmail(VerifyEmailRequest(email: email, code: code));
       if (response.isSuccessful) {
         onSuccess?.call();
       } else {
@@ -159,7 +151,9 @@ class AuthNotifier extends AsyncNotifier<User?> {
     void Function(String)? onError,
   }) async {
     try {
-      final response = await ref.read(usersClientProvider).verifyPhone(
+      final response = await ref
+          .read(usersClientProvider)
+          .verifyPhone(
             VerifyPhoneRequest(phoneNumber: phoneNumber, code: code),
           );
       if (response.isSuccessful) {

@@ -53,7 +53,7 @@ class _UsersClient implements UsersClient {
   }
 
   @override
-  Future<BaseApiResponse<dynamic>> login({
+  Future<LoginResponse> login({
     String? grantType,
     required String username,
     required String password,
@@ -74,7 +74,7 @@ class _UsersClient implements UsersClient {
       'client_secret': clientSecret,
     };
     _data.removeWhere((k, v) => v == null);
-    final _options = _setStreamType<BaseApiResponse<dynamic>>(
+    final _options = _setStreamType<LoginResponse>(
       Options(
             method: 'POST',
             headers: _headers,
@@ -90,12 +90,9 @@ class _UsersClient implements UsersClient {
           .copyWith(baseUrl: _combineBaseUrls(_dio.options.baseUrl, baseUrl)),
     );
     final _result = await _dio.fetch<Map<String, dynamic>>(_options);
-    late BaseApiResponse<dynamic> _value;
+    late LoginResponse _value;
     try {
-      _value = BaseApiResponse<dynamic>.fromJson(
-        _result.data!,
-        (json) => json as dynamic,
-      );
+      _value = LoginResponse.fromJson(_result.data!);
     } on Object catch (e, s) {
       errorLogger?.logError(e, s, _options, response: _result);
       rethrow;

@@ -16,7 +16,7 @@ abstract class UsersClient {
 
   @POST("users/login")
   @FormUrlEncoded()
-  Future<BaseApiResponse> login({
+  Future<LoginResponse> login({
     @Field("grant_type") String? grantType,
     @Field("username") required String username,
     @Field("password") required String password,
