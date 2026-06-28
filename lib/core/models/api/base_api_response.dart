@@ -3,7 +3,10 @@ import 'package:json_annotation/json_annotation.dart';
 part 'base_api_response.g.dart';
 
 /// A generic envelope class representing api responses.
-@JsonSerializable(genericArgumentFactories: true)
+@JsonSerializable(
+  genericArgumentFactories: true,
+  fieldRename: FieldRename.snake,
+)
 class BaseApiResponse<T> {
   final String? detail;
   final int? statusCode;

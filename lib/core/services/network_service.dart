@@ -66,6 +66,20 @@ final dioProvider = Provider<Dio>((ref) {
     );
   }
 
+  // Inject HTTP status code into the JSON response so BaseApiResponse can read it
+  dio.interceptors.add(
+    InterceptorsWrapper(
+      onResponse: (response, handler) {
+        if (response.data is Map<String, dynamic>) {
+          if (!response.data.containsKey('status_code')) {
+            response.data['status_code'] = response.statusCode;
+          }
+        }
+        handler.next(response);
+      },
+    ),
+  );
+
   return dio;
 });
 

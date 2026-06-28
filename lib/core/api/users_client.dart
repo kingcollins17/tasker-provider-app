@@ -28,6 +28,9 @@ abstract class UsersClient {
   @POST("users/request-email-otp")
   Future<BaseApiResponse> requestEmailOtp(@Body() RequestEmailOtpRequest body);
 
+  @POST("users/request-phone-otp")
+  Future<BaseApiResponse> requestPhoneOtp(@Body() RequestPhoneOtpRequest body);
+
   @POST("users/verify-email")
   Future<BaseApiResponse> verifyEmail(@Body() VerifyEmailRequest body);
 
@@ -42,6 +45,20 @@ abstract class UsersClient {
 
   @GET("regions/")
   Future<BaseApiResponse<List<Region>>> getRegions();
+
+  @PUT("users/location")
+  Future<BaseApiResponse> updateLocation(@Body() UpdateLocationRequest body);
+
+  @PUT("users/region")
+  Future<BaseApiResponse> updateRegion(@Body() UpdateRegionRequest body);
+
+  @POST("users/provider/services")
+  Future<BaseApiResponse> addProviderService(@Body() AddServiceRequest body);
+
+  @DELETE("users/provider/services/{service_id}")
+  Future<BaseApiResponse> removeProviderService(
+    @Path("service_id") String serviceId,
+  );
 }
 
 /// Provider exposing the [UsersClient] dependency.
@@ -49,4 +66,3 @@ final usersClientProvider = Provider<UsersClient>((ref) {
   final dio = ref.watch(dioProvider);
   return UsersClient(dio);
 });
-

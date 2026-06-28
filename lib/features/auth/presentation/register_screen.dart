@@ -11,6 +11,7 @@ import '../../../../core/ui/pages/pages.dart';
 import '../../../../core/models/models.dart';
 import '../../../../core/utils/extensions/loading_context_ext.dart';
 import '../../../../core/utils/extensions/flushbar_context_ext.dart';
+import '../../../../app_routes.dart';
 import '../providers/auth_provider.dart';
 
 class RegisterScreen extends ConsumerStatefulWidget {
@@ -320,6 +321,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       regionId: await _getRegionId(),
     );
 
+    if (!mounted) return;
+
     context.showLoading();
     ref
         .read(authProvider.notifier)
@@ -347,6 +350,15 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       context,
       target: email,
       channel: 'email',
+      verifier: (otp, target) => ref
+          .read(authProvider.notifier)
+          .verifyEmail(
+            target,
+            otp,
+            onError: (err) {
+              context.showError(err);
+            },
+          ),
     );
 
     if (result != null && result.isVerified && context.mounted) {
@@ -364,7 +376,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           onSuccess: () {
             context.hideLoading();
             context.showToast('Account verified! Welcome aboard.');
-            context.go('/');
+            context.goNamed(AppRoutes.onboardCategoriesRoute);
           },
           onError: _onError,
         );

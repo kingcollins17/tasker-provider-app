@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:tasker_app/core/utils/debug_logger.dart';
 import 'dart:ui';
 import '../../../core/api/users_client.dart';
 import '../../../core/models/models.dart';
@@ -16,7 +17,7 @@ class AuthNotifier extends AsyncNotifier<User?> {
     try {
       final response = await ref.read(usersClientProvider).getMe();
       if (response.isSuccessful && response.data != null) {
-        return User.fromJson(response.data as Map<String, dynamic>);
+        return response.data!;
       }
     } catch (e, st) {
       AppExceptionHandler.instance.handleError(e, st);
@@ -101,7 +102,7 @@ class AuthNotifier extends AsyncNotifier<User?> {
       if (response.isSuccessful) {
         onSuccess?.call();
       } else {
-        onError?.call(response.detail ?? 'Failed to request email OTP.');
+        throw (response.detail ?? 'Failed to request email OTP.');
       }
     } catch (e, st) {
       AppExceptionHandler.instance.handleError(e, st);
@@ -115,15 +116,21 @@ class AuthNotifier extends AsyncNotifier<User?> {
     void Function(String)? onError,
   }) async {
     try {
-      // Mocking phone OTP request since no backend endpoint exists
-      onSuccess?.call();
+      final response = await ref
+          .read(usersClientProvider)
+          .requestPhoneOtp(RequestPhoneOtpRequest(phoneNumber: phoneNumber));
+      if (response.isSuccessful) {
+        onSuccess?.call();
+      } else {
+        throw (response.detail ?? 'Failed to request phone OTP.');
+      }
     } catch (e, st) {
       AppExceptionHandler.instance.handleError(e, st);
       onError?.call(e.toFriendlyString());
     }
   }
 
-  Future<void> verifyEmail(
+  Future<bool> verifyEmail(
     String email,
     String code, {
     VoidCallback? onSuccess,
@@ -135,12 +142,14 @@ class AuthNotifier extends AsyncNotifier<User?> {
           .verifyEmail(VerifyEmailRequest(email: email, code: code));
       if (response.isSuccessful) {
         onSuccess?.call();
+        return true;
       } else {
-        onError?.call(response.detail ?? 'Failed to verify email.');
+        throw (response.detail ?? 'Failed to verify email.');
       }
     } catch (e, st) {
       AppExceptionHandler.instance.handleError(e, st);
       onError?.call(e.toFriendlyString());
+      return false;
     }
   }
 
@@ -159,7 +168,7 @@ class AuthNotifier extends AsyncNotifier<User?> {
       if (response.isSuccessful) {
         onSuccess?.call();
       } else {
-        onError?.call(response.detail ?? 'Failed to verify phone number.');
+        throw (response.detail ?? 'Failed to verify phone number.');
       }
     } catch (e, st) {
       AppExceptionHandler.instance.handleError(e, st);
