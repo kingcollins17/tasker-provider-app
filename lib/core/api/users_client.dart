@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:retrofit/retrofit.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -59,6 +60,20 @@ abstract class UsersClient {
   Future<BaseApiResponse> removeProviderService(
     @Path("service_id") String serviceId,
   );
+
+  @POST("users/kyc/selfie")
+  @MultiPart()
+  Future<BaseApiResponse> submitKycSelfie({
+    @Part(name: "selfie") required File selfie,
+  });
+
+  @POST("users/kyc/document")
+  @MultiPart()
+  Future<BaseApiResponse> submitKycDocument({
+    @Part(name: "id_type") required String idType,
+    @Part(name: "id_number") required String idNumber,
+    @Part(name: "id_doc") required File idDoc,
+  });
 }
 
 /// Provider exposing the [UsersClient] dependency.

@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:ui';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../api/api.dart';
@@ -6,6 +7,7 @@ import 'region_provider.dart';
 import 'location_provider.dart';
 import '../utils/app_exception_handler.dart';
 import '../utils/extensions/error_ext.dart';
+
 class UserNotifier extends AsyncNotifier<User> {
   @override
   Future<User> build() async {
@@ -30,7 +32,9 @@ class UserNotifier extends AsyncNotifier<User> {
   }) async {
     try {
       final client = ref.read(usersClientProvider);
-      final response = await client.addProviderService(AddServiceRequest(serviceId: serviceId));
+      final response = await client.addProviderService(
+        AddServiceRequest(serviceId: serviceId),
+      );
       if (response.isSuccessful) {
         ref.invalidateSelf();
         await future;
@@ -58,6 +62,54 @@ class UserNotifier extends AsyncNotifier<User> {
         onSuccess?.call();
       } else {
         throw (response.detail ?? 'Failed to remove service');
+      }
+    } catch (e, st) {
+      AppExceptionHandler.instance.handleError(e, st);
+      onError?.call(e.toFriendlyString());
+    }
+  }
+
+  Future<void> submitSelfie(
+    File selfie, {
+    VoidCallback? onSuccess,
+    void Function(String)? onError,
+  }) async {
+    try {
+      final client = ref.read(usersClientProvider);
+      final response = await client.submitKycSelfie(selfie: selfie);
+      if (response.isSuccessful) {
+        ref.invalidateSelf();
+        await future;
+        onSuccess?.call();
+      } else {
+        throw (response.detail ?? 'Failed to submit selfie');
+      }
+    } catch (e, st) {
+      AppExceptionHandler.instance.handleError(e, st);
+      onError?.call(e.toFriendlyString());
+    }
+  }
+
+  Future<void> submitDocument({
+    required String idType,
+    required String idNumber,
+    required File idDoc,
+    VoidCallback? onSuccess,
+    void Function(String)? onError,
+  }) async {
+    try {
+      final client = ref.read(usersClientProvider);
+      final response = await client.submitKycDocument(
+        idType: idType,
+        idNumber: idNumber,
+        idDoc: idDoc,
+      );
+      if (response.isSuccessful) {
+        ref.invalidateSelf();
+        await future;
+        onSuccess?.call();
+      } else {
+        throw (response.detail ?? 'Failed to submit document');
       }
     } catch (e, st) {
       AppExceptionHandler.instance.handleError(e, st);
@@ -104,4 +156,31 @@ final locationSyncerProvider = FutureProvider<void>((ref) async {
       ),
     );
   }
+});
+
+final hasSelfieProvider = FutureProvider<bool>((ref) async {
+  final user = await ref.watch(userProvider.future);
+  return user.providerProfile?.selfieUrl != null;
+});
+
+enum KycStatus { pending, submitted, underReview, approved, rejected }
+
+final kycStatusProvider = FutureProvider<KycStatus>((ref) async {
+  final user = await ref.watch(userProvider.future);
+  final status = user.providerProfile?.status;
+  return switch (status?.toLowerCase().trim()) {
+    "pending_submission" || "pending" => KycStatus.pending,
+    "submitted" => KycStatus.submitted,
+    "pending_admin_review" ||
+    "review" ||
+    "under_review" => KycStatus.underReview,
+    "approved" || "success" || "verified" => KycStatus.approved,
+    "rejected" || "failed" => KycStatus.rejected,
+    _ => KycStatus.pending,
+  };
+});
+
+final documentRejectionReasonProvider = FutureProvider<String?>((ref) async {
+  final user = await ref.watch(userProvider.future);
+  return user.providerProfile?.rejectionReason;
 });

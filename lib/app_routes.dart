@@ -1,6 +1,7 @@
 import 'package:go_router/go_router.dart';
 import 'core/router/navigator_keys.dart';
 import 'features/home/home_routes.dart';
+import 'features/kyc/kyc_routes.dart';
 import 'features/tasks/tasks_routes.dart';
 import 'features/profile/profile_routes.dart';
 import 'features/shell/presentation/shell_screen.dart';
@@ -21,7 +22,7 @@ class AppRoutes {
 
   static final router = GoRouter(
     navigatorKey: NavigatorKeys.rootNavigatorKey,
-    initialLocation: '/welcome',
+    initialLocation: '/kyc-onboarding',
     routes: [
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) {
@@ -65,6 +66,7 @@ class AppRoutes {
           return OnboardServicesScreen(categoryId: categoryId);
         },
       ),
+      ...KycRoutes.routes,
     ],
   );
 }
