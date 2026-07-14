@@ -127,13 +127,8 @@ class _DocumentSubmissionScreenState extends State<DocumentSubmissionScreen> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        leading: IconButton(
-          icon: Icon(
-            Icons.arrow_back_ios_new_rounded,
-            color: isDark ? AppColors.textPrimary : AppColors.background,
-            size: 20.r,
-          ),
-          onPressed: () => Navigator.pop(context),
+        leading: BackButton(
+          color: isDark ? AppColors.textPrimary : AppColors.background,
         ),
         title: Text(
           'ID Document',
@@ -193,7 +188,9 @@ class _DocumentSubmissionScreenState extends State<DocumentSubmissionScreen> {
                       'Document Type',
                       style: AppTextStyles.label.copyWith(
                         fontWeight: FontWeight.w600,
-                        color: isDark ? AppColors.textSecondary : AppColors.border,
+                        color: isDark
+                            ? AppColors.textSecondary
+                            : AppColors.border,
                       ),
                     ),
                     SizedBox(height: 8.h),
@@ -202,7 +199,9 @@ class _DocumentSubmissionScreenState extends State<DocumentSubmissionScreen> {
                       decoration: InputDecoration(
                         hintText: 'Select document type',
                         hintStyle: AppTextStyles.bodyMedium.copyWith(
-                          color: isDark ? AppColors.textMuted : AppColors.textMuted,
+                          color: isDark
+                              ? AppColors.textMuted
+                              : AppColors.textMuted,
                         ),
                         prefixIcon: Icon(
                           Icons.badge_outlined,
@@ -212,7 +211,9 @@ class _DocumentSubmissionScreenState extends State<DocumentSubmissionScreen> {
                           size: 20.r,
                         ),
                         filled: true,
-                        fillColor: isDark ? AppColors.surface : theme.colorScheme.surface,
+                        fillColor: isDark
+                            ? AppColors.surface
+                            : theme.colorScheme.surface,
                         contentPadding: EdgeInsets.symmetric(
                           horizontal: 16.w,
                           vertical: 16.h,
@@ -234,18 +235,26 @@ class _DocumentSubmissionScreenState extends State<DocumentSubmissionScreen> {
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12.r),
                           borderSide: BorderSide(
-                            color: isDark ? AppColors.accent : AppColors.primary,
+                            color: isDark
+                                ? AppColors.accent
+                                : AppColors.primary,
                             width: 1.5.r,
                           ),
                         ),
                       ),
-                      dropdownColor: isDark ? AppColors.surface : theme.colorScheme.surface,
+                      dropdownColor: isDark
+                          ? AppColors.surface
+                          : theme.colorScheme.surface,
                       icon: Icon(
                         Icons.keyboard_arrow_down_rounded,
-                        color: isDark ? AppColors.textMuted : AppColors.textMuted,
+                        color: isDark
+                            ? AppColors.textMuted
+                            : AppColors.textMuted,
                       ),
                       style: AppTextStyles.bodyMedium.copyWith(
-                        color: isDark ? AppColors.textPrimary : AppColors.background,
+                        color: isDark
+                            ? AppColors.textPrimary
+                            : AppColors.background,
                       ),
                       items: _documentTypes.map((type) {
                         return DropdownMenuItem<String>(
@@ -285,17 +294,16 @@ class _DocumentSubmissionScreenState extends State<DocumentSubmissionScreen> {
               ),
             ),
 
-            // Submit button
-            Padding(
-              padding: EdgeInsets.fromLTRB(24.w, 8.h, 24.w, 10.h),
-              child: PrimaryButton(
-                text: _selectedFile != null
-                    ? 'Submit Document'
-                    : 'Select a Document',
-                onPressed: _selectedFile != null ? _handleSubmit : null,
-                icon: _selectedFile != null ? Icons.upload_file_rounded : null,
+            // Submi
+            if (_selectedFile != null)
+              Padding(
+                padding: EdgeInsets.fromLTRB(24.w, 8.h, 24.w, 10.h),
+                child: PrimaryButton(
+                  text: 'Submit Document',
+                  onPressed: _handleSubmit,
+                  icon: Icons.upload_file_rounded,
+                ),
               ),
-            ),
           ],
         ),
       ),
@@ -350,10 +358,7 @@ class _DocumentSubmissionScreenState extends State<DocumentSubmissionScreen> {
         decoration: BoxDecoration(
           color: isDark ? AppColors.surface : theme.colorScheme.surface,
           borderRadius: AppDecorations.radiusLg,
-          border: Border.all(
-            color: AppColors.border,
-            width: 1.r,
-          ),
+          border: Border.all(color: AppColors.border, width: 1.r),
           boxShadow: [
             BoxShadow(
               color: gradient[0].withValues(alpha: 0.06),
@@ -396,9 +401,7 @@ class _DocumentSubmissionScreenState extends State<DocumentSubmissionScreen> {
                   Text(
                     description,
                     style: AppTextStyles.bodySmall.copyWith(
-                      color: isDark
-                          ? AppColors.textMuted
-                          : AppColors.textMuted,
+                      color: isDark ? AppColors.textMuted : AppColors.textMuted,
                     ),
                   ),
                 ],
@@ -454,7 +457,9 @@ class _DocumentSubmissionScreenState extends State<DocumentSubmissionScreen> {
               Container(
                 padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 14.h),
                 decoration: BoxDecoration(
-                  color: isDark ? AppColors.surface : theme.scaffoldBackgroundColor,
+                  color: isDark
+                      ? AppColors.surface
+                      : theme.scaffoldBackgroundColor,
                   borderRadius: BorderRadius.vertical(
                     bottom: Radius.circular(16.r),
                   ),
@@ -670,9 +675,7 @@ class _DocumentSubmissionScreenState extends State<DocumentSubmissionScreen> {
             child: Text(
               'The name on your document must match your registered name, otherwise your submission will be rejected.',
               style: AppTextStyles.bodySmall.copyWith(
-                color: isDark
-                    ? AppColors.textSecondary
-                    : AppColors.warning,
+                color: isDark ? AppColors.textSecondary : AppColors.warning,
                 height: 1.4,
               ),
             ),

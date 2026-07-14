@@ -8,11 +8,14 @@ class UpdateLocationRequest {
   final double longitude;
   @JsonKey(name: 'address_line')
   final String? addressLine;
+  @JsonKey(name: 'region_id')
+  final String? regionId;
 
   UpdateLocationRequest({
     required this.latitude,
     required this.longitude,
     this.addressLine,
+    this.regionId,
   });
 
   factory UpdateLocationRequest.fromJson(Map<String, dynamic> json) =>

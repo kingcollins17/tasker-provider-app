@@ -1,7 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geocoding/geocoding.dart' hide Location;
 import 'package:location/location.dart';
-
+import 'package:tasker_app/core/utils/app_exception_handler.dart';
+import '../api/api.dart';
+import '../models/models.dart';
+import 'region_provider.dart';
 // ---------------------------------------------------------------------------
 // Data models
 // ---------------------------------------------------------------------------
@@ -14,7 +17,7 @@ class Coordinates {
   const Coordinates({this.latitude, this.longitude});
 
   @override
-  String toString() => 'UserCoordinates($latitude, $longitude)';
+  String toString() => 'Coordinates($latitude, $longitude)';
 }
 
 /// Represents the user's resolved address alongside raw coordinates.
@@ -145,4 +148,30 @@ final locationStreamProvider = StreamProvider<Coordinates>((ref) {
   return location.onLocationChanged.map(
     (data) => Coordinates(latitude: data.latitude, longitude: data.longitude),
   );
+});
+
+/// Syncs the user's current location and region to the backend.
+final syncUserLocationProvider = FutureProvider<void>((ref) async {
+  try {
+    final address = await ref.watch(userAddressProvider.future);
+
+    if (address.coordinates?.latitude == null ||
+        address.coordinates?.longitude == null) {
+      return;
+    }
+
+    final region = await ref.watch(currentRegionProvider.future);
+    final client = ref.read(usersClientProvider);
+
+    await client.updateLocation(
+      UpdateLocationRequest(
+        latitude: address.coordinates!.latitude!,
+        longitude: address.coordinates!.longitude!,
+        addressLine: address.formatted,
+        regionId: region?.id,
+      ),
+    );
+  } catch (e, st) {
+    AppExceptionHandler.instance.handleError(e, st);
+  }
 });

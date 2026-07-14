@@ -116,6 +116,37 @@ class UserNotifier extends AsyncNotifier<User> {
       onError?.call(e.toFriendlyString());
     }
   }
+
+  Future<void> updateProviderProfile({
+    String? firstName,
+    String? lastName,
+    String? gender,
+    String? phoneNumber,
+    VoidCallback? onSuccess,
+    void Function(String)? onError,
+  }) async {
+    try {
+      final client = ref.read(usersClientProvider);
+      final response = await client.updateProviderProfile(
+        UpdateProviderProfileRequest(
+          firstName: firstName,
+          lastName: lastName,
+          gender: gender,
+          phoneNumber: phoneNumber,
+        ),
+      );
+      if (response.isSuccessful) {
+        ref.invalidateSelf();
+        await future;
+        onSuccess?.call();
+      } else {
+        throw (response.detail ?? 'Failed to update profile');
+      }
+    } catch (e, st) {
+      AppExceptionHandler.instance.handleError(e, st);
+      onError?.call(e.toFriendlyString());
+    }
+  }
 }
 
 final userProvider = AsyncNotifierProvider<UserNotifier, User>(

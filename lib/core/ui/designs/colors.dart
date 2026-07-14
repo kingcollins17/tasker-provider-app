@@ -38,13 +38,13 @@ class AppColors {
   // --- NEUTRAL SYSTEM COLORS (Premium Dark Slate Theme) ---
 
   /// Main background color for the application
-  static const Color background = Color(0xFF0F172A);
+  static const Color background = Color(0xFF111424);
 
   /// Card, sheet, and surface container background color
-  static const Color surface = Color(0xFF1E293B);
+  static const Color surface = Color(0xFF1C2237);
 
   /// Divider and border outline color
-  static const Color border = Color(0xFF334155);
+  static const Color border = Color(0xFF2A3143);
 
   // --- TEXT COLORS ---
 

@@ -58,8 +58,8 @@ class AppTextField extends StatelessWidget {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
-    final fillColor = isDark ? AppColors.surface : Colors.white;
-    final borderColor = isDark ? AppColors.border : const Color(0xFFE2E8F0);
+    final fillColor = isDark ? AppColors.surface : Colors.grey.shade50;
+    // We remove the border color completely for the enabled state
     final focusedBorderColor = isDark ? AppColors.accent : AppColors.primary;
     final hintColor = isDark ? AppColors.textMuted : const Color(0xFF94A3B8);
 
@@ -105,23 +105,23 @@ class AppTextField extends StatelessWidget {
               vertical: 16.h,
             ),
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12.r),
-              borderSide: BorderSide(color: borderColor, width: 1.r),
+              borderRadius: BorderRadius.circular(16.r),
+              borderSide: BorderSide.none,
             ),
             enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12.r),
-              borderSide: BorderSide(color: borderColor, width: 1.r),
+              borderRadius: BorderRadius.circular(16.r),
+              borderSide: BorderSide.none,
             ),
             focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12.r),
+              borderRadius: BorderRadius.circular(16.r),
               borderSide: BorderSide(color: focusedBorderColor, width: 1.5.r),
             ),
             errorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12.r),
+              borderRadius: BorderRadius.circular(16.r),
               borderSide: BorderSide(color: AppColors.error, width: 1.r),
             ),
             focusedErrorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12.r),
+              borderRadius: BorderRadius.circular(16.r),
               borderSide: BorderSide(color: AppColors.error, width: 1.5.r),
             ),
           ),

@@ -47,6 +47,8 @@ final dioProvider = Provider<Dio>((ref) {
       connectTimeout: const Duration(seconds: 10),
       receiveTimeout: const Duration(seconds: 10),
       validateStatus: (_) => true,
+      maxRedirects: 2,
+      extra: <String, dynamic>{'maxRetries': environments.maxRetries},
     ),
   );
   dio.interceptors.add(DioAuthInterceptor());

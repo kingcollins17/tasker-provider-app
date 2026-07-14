@@ -13,3 +13,6 @@ description:
 - **onSuccess and onError Callbacks**: When creating methods in `AsyncNotifier` (or similar providers) that perform mutations (like adding or removing a service, logging in, etc.), include optional `VoidCallback? onSuccess` and `void Function(String)? onError` parameters.
 - **State Invalidation**: Upon a successful API call, call `ref.invalidateSelf();` and `await future;` before invoking the `onSuccess` callback.
 - **Error Handling**: Use `AppExceptionHandler.instance.handleError(e, st);` in the catch block and invoke the `onError` callback with `e.toFriendlyString()`.
+
+## UI Navigation Guidelines
+- **Back Navigation**: Always use the standard `BackButton` widget in the `AppBar` leading property instead of custom `IconButton` widgets with custom back arrows, to ensure consistent platform back behavior and icon styling.

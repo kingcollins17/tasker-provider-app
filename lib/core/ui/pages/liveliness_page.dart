@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:camera/camera.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_face_liveness/flutter_face_liveness.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -36,7 +37,11 @@ class _LivelinessPageState extends State<LivelinessPage> {
   void initState() {
     super.initState();
     _controller = LivenessController(
-      actions: [LivenessAction.turnLeft, LivenessAction.turnRight],
+      actions: [
+        LivenessAction.turnLeft,
+        LivenessAction.turnRight,
+        if (!kDebugMode) LivenessAction.blink,
+      ],
       config: LivenessConfig(
         enableAntiSpoof: true,
         enableVideoReplayDetection: true,

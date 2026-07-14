@@ -50,6 +50,9 @@ abstract class UsersClient {
   @PUT("users/location")
   Future<BaseApiResponse> updateLocation(@Body() UpdateLocationRequest body);
 
+  @PUT("users/update-provider-profile")
+  Future<BaseApiResponse> updateProviderProfile(@Body() UpdateProviderProfileRequest body);
+
   @PUT("users/region")
   Future<BaseApiResponse> updateRegion(@Body() UpdateRegionRequest body);
 

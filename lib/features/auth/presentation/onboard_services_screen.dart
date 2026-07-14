@@ -54,9 +54,10 @@ class _OnboardServicesScreenState extends ConsumerState<OnboardServicesScreen>
     final servicesAsync = ref.watch(
       servicesProvider((search: null, categoryId: widget.categoryId)),
     );
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: isDark ? AppColors.background : AppColors.textPrimary,
       body: SafeArea(
         child: FadeTransition(
           opacity: _fadeAnimation,
@@ -68,7 +69,7 @@ class _OnboardServicesScreenState extends ConsumerState<OnboardServicesScreen>
                 AppSpacing.hLg,
 
                 // --- Step indicator ---
-                _buildStepIndicator(step: 2),
+                _buildStepIndicator(step: 2, isDark: isDark),
                 AppSpacing.hLg,
 
                 // --- Back + Header ---
@@ -80,16 +81,16 @@ class _OnboardServicesScreenState extends ConsumerState<OnboardServicesScreen>
                         width: 40.r,
                         height: 40.r,
                         decoration: BoxDecoration(
-                          color: AppColors.surface,
+                          color: isDark ? AppColors.surface : AppColors.textPrimary,
                           shape: BoxShape.circle,
                           border: Border.all(
-                            color: AppColors.border,
+                            color: isDark ? AppColors.border : AppColors.textSecondary,
                             width: 1.r,
                           ),
                         ),
                         child: Icon(
                           Icons.arrow_back_rounded,
-                          color: AppColors.textSecondary,
+                          color: isDark ? AppColors.textSecondary : AppColors.background,
                           size: 20.r,
                         ),
                       ),
@@ -99,11 +100,17 @@ class _OnboardServicesScreenState extends ConsumerState<OnboardServicesScreen>
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Select Services', style: AppTextStyles.h3),
+                          Text('Select Services', 
+                            style: AppTextStyles.h3.copyWith(
+                              color: isDark ? AppColors.textPrimary : AppColors.background,
+                            ),
+                          ),
                           SizedBox(height: 2.h),
                           Text(
                             'Choose up to $_maxSelections services you provide.',
-                            style: AppTextStyles.bodySmall,
+                            style: AppTextStyles.bodySmall.copyWith(
+                              color: isDark ? AppColors.textMuted : AppColors.background.withValues(alpha: 0.7),
+                            ),
                           ),
                         ],
                       ),
@@ -113,7 +120,7 @@ class _OnboardServicesScreenState extends ConsumerState<OnboardServicesScreen>
                 AppSpacing.hMd,
 
                 // --- Selection counter chip ---
-                _buildSelectionCounter(),
+                _buildSelectionCounter(isDark),
                 AppSpacing.hMd,
 
                 // --- Services List ---
@@ -124,8 +131,8 @@ class _OnboardServicesScreenState extends ConsumerState<OnboardServicesScreen>
                         color: AppColors.primary,
                       ),
                     ),
-                    error: (error, _) => _buildErrorState(error),
-                    data: (services) => _buildServicesList(services),
+                    error: (error, _) => _buildErrorState(error, isDark),
+                    data: (services) => _buildServicesList(services, isDark),
                   ),
                 ),
 
@@ -147,7 +154,7 @@ class _OnboardServicesScreenState extends ConsumerState<OnboardServicesScreen>
     );
   }
 
-  Widget _buildStepIndicator({required int step}) {
+  Widget _buildStepIndicator({required int step, required bool isDark}) {
     return Row(
       children: List.generate(3, (index) {
         final isActive = index < step;
@@ -165,7 +172,9 @@ class _OnboardServicesScreenState extends ConsumerState<OnboardServicesScreen>
                       colors: [AppColors.primary, AppColors.primaryLight],
                     )
                   : null,
-              color: !isActive && !isCurrent ? AppColors.border : null,
+              color: !isActive && !isCurrent 
+                  ? (isDark ? AppColors.border : AppColors.textSecondary) 
+                  : null,
             ),
           ),
         );
@@ -173,19 +182,19 @@ class _OnboardServicesScreenState extends ConsumerState<OnboardServicesScreen>
     );
   }
 
-  Widget _buildSelectionCounter() {
+  Widget _buildSelectionCounter(bool isDark) {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 250),
       padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 8.h),
       decoration: BoxDecoration(
         color: _selectedServiceIds.isNotEmpty
             ? AppColors.primary.withValues(alpha: 0.12)
-            : AppColors.surface,
+            : (isDark ? AppColors.surface : AppColors.textPrimary),
         borderRadius: AppDecorations.radiusXl,
         border: Border.all(
           color: _selectedServiceIds.isNotEmpty
               ? AppColors.primary.withValues(alpha: 0.4)
-              : AppColors.border,
+              : (isDark ? AppColors.border : AppColors.textSecondary),
           width: 1.r,
         ),
       ),
@@ -214,18 +223,24 @@ class _OnboardServicesScreenState extends ConsumerState<OnboardServicesScreen>
     );
   }
 
-  Widget _buildErrorState(Object error) {
+  Widget _buildErrorState(Object error, bool isDark) {
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(Icons.cloud_off_rounded, color: AppColors.textMuted, size: 48.r),
           AppSpacing.hMd,
-          Text('Failed to load services', style: AppTextStyles.subtitle),
+          Text('Failed to load services', 
+            style: AppTextStyles.subtitle.copyWith(
+              color: isDark ? AppColors.textSecondary : AppColors.background,
+            ),
+          ),
           AppSpacing.hSm,
           Text(
             error.toString(),
-            style: AppTextStyles.bodySmall,
+            style: AppTextStyles.bodySmall.copyWith(
+              color: isDark ? AppColors.textMuted : AppColors.background.withValues(alpha: 0.7),
+            ),
             textAlign: TextAlign.center,
           ),
           AppSpacing.hMd,
@@ -241,7 +256,7 @@ class _OnboardServicesScreenState extends ConsumerState<OnboardServicesScreen>
     );
   }
 
-  Widget _buildServicesList(List<Service> services) {
+  Widget _buildServicesList(List<Service> services, bool isDark) {
     if (services.isEmpty) {
       return Center(
         child: Column(
@@ -251,7 +266,9 @@ class _OnboardServicesScreenState extends ConsumerState<OnboardServicesScreen>
             AppSpacing.hMd,
             Text(
               'No services found in this category.',
-              style: AppTextStyles.bodyMedium,
+              style: AppTextStyles.bodyMedium.copyWith(
+                color: isDark ? AppColors.textSecondary : AppColors.background,
+              ),
             ),
           ],
         ),
@@ -272,6 +289,7 @@ class _OnboardServicesScreenState extends ConsumerState<OnboardServicesScreen>
           service: service,
           isSelected: isSelected,
           isDisabled: isDisabled,
+          isDark: isDark,
           onTap: () => _toggleService(service),
           index: index,
         );
@@ -338,6 +356,7 @@ class _ServiceTile extends StatefulWidget {
   final Service service;
   final bool isSelected;
   final bool isDisabled;
+  final bool isDark;
   final VoidCallback onTap;
   final int index;
 
@@ -345,6 +364,7 @@ class _ServiceTile extends StatefulWidget {
     required this.service,
     required this.isSelected,
     required this.isDisabled,
+    required this.isDark,
     required this.onTap,
     required this.index,
   });
@@ -402,11 +422,13 @@ class _ServiceTileState extends State<_ServiceTile>
               color: widget.isSelected
                   ? AppColors.primary.withValues(alpha: 0.10)
                   : widget.isDisabled
-                  ? AppColors.surface.withValues(alpha: 0.5)
-                  : AppColors.surface,
+                  ? (widget.isDark ? AppColors.surface.withValues(alpha: 0.5) : AppColors.textPrimary.withValues(alpha: 0.5))
+                  : (widget.isDark ? AppColors.surface : AppColors.textPrimary),
               borderRadius: AppDecorations.radiusMd,
               border: Border.all(
-                color: widget.isSelected ? AppColors.primary : AppColors.border,
+                color: widget.isSelected 
+                    ? AppColors.primary 
+                    : (widget.isDark ? AppColors.border : AppColors.textSecondary),
                 width: widget.isSelected ? 1.5.r : 1.r,
               ),
               boxShadow: widget.isSelected
@@ -428,7 +450,7 @@ class _ServiceTileState extends State<_ServiceTile>
                   decoration: BoxDecoration(
                     color: widget.isSelected
                         ? AppColors.primary.withValues(alpha: 0.18)
-                        : AppColors.background,
+                        : (widget.isDark ? AppColors.background : AppColors.textPrimary),
                     borderRadius: AppDecorations.radiusSm,
                     border: Border.all(
                       color: widget.isSelected
@@ -456,10 +478,10 @@ class _ServiceTileState extends State<_ServiceTile>
                         widget.service.name ?? 'Unnamed Service',
                         style: AppTextStyles.buttonMedium.copyWith(
                           color: widget.isDisabled
-                              ? AppColors.textMuted
+                              ? (widget.isDark ? AppColors.textMuted : AppColors.textSecondary)
                               : widget.isSelected
-                              ? AppColors.textPrimary
-                              : AppColors.textSecondary,
+                              ? (widget.isDark ? AppColors.textPrimary : AppColors.background)
+                              : (widget.isDark ? AppColors.textSecondary : AppColors.background.withValues(alpha: 0.7)),
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -468,7 +490,9 @@ class _ServiceTileState extends State<_ServiceTile>
                         SizedBox(height: 2.h),
                         Text(
                           widget.service.category!.name!,
-                          style: AppTextStyles.bodySmall,
+                          style: AppTextStyles.bodySmall.copyWith(
+                            color: widget.isDark ? AppColors.textMuted : AppColors.background.withValues(alpha: 0.5),
+                          ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),

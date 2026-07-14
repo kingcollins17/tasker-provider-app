@@ -1,5 +1,6 @@
 import 'dart:convert';
-import 'package:hive/hive.dart';
+import 'package:flutter/foundation.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 
 enum HiveBoxes { appStorage }
 
@@ -68,6 +69,11 @@ class LocalStorageService {
   Future<void> clear() async {
     final box = await _getBox();
     await box.clear();
+  }
+
+  /// Returns a ValueListenable of the Hive box to listen to changes on specific keys.
+  ValueListenable<Box> listenable({List<dynamic>? keys}) {
+    return Hive.box(filename).listenable(keys: keys);
   }
 }
 

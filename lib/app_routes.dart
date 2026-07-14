@@ -1,8 +1,10 @@
 import 'package:go_router/go_router.dart';
 import 'core/router/navigator_keys.dart';
+import 'core/services/local_storage_service.dart';
 import 'features/home/home_routes.dart';
 import 'features/kyc/kyc_routes.dart';
 import 'features/tasks/tasks_routes.dart';
+import 'features/chats/chats_routes.dart';
 import 'features/profile/profile_routes.dart';
 import 'features/shell/presentation/shell_screen.dart';
 import 'features/auth/presentation/welcome_screen.dart';
@@ -10,6 +12,7 @@ import 'features/auth/presentation/login_screen.dart';
 import 'features/auth/presentation/register_screen.dart';
 import 'features/auth/presentation/onboard_categories_screen.dart';
 import 'features/auth/presentation/onboard_services_screen.dart';
+import 'features/notifications/notifications_routes.dart';
 
 class AppRoutes {
   AppRoutes._();
@@ -22,7 +25,10 @@ class AppRoutes {
 
   static final router = GoRouter(
     navigatorKey: NavigatorKeys.rootNavigatorKey,
-    initialLocation: '/kyc-onboarding',
+    initialLocation: '/',
+    redirect: (context, state) {
+      return _authRedirect(state);
+    },
     routes: [
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) {
@@ -34,6 +40,7 @@ class AppRoutes {
             routes: HomeRoutes.routes,
           ),
           StatefulShellBranch(routes: TasksRoutes.routes),
+          StatefulShellBranch(routes: ChatsRoutes.routes),
           StatefulShellBranch(routes: ProfileRoutes.routes),
         ],
       ),
@@ -67,6 +74,24 @@ class AppRoutes {
         },
       ),
       ...KycRoutes.routes,
+      ...NotificationsRoutes.routes,
     ],
   );
+
+  static Future<String?> _authRedirect(GoRouterState state) async {
+    final token = await appStorage.get<String>(HiveKeys.accessToken.name);
+    final isAuthenticated = token != null && token.isNotEmpty;
+
+    final isAuthRoute =
+        state.matchedLocation == '/login' ||
+        state.matchedLocation == '/register' ||
+        state.matchedLocation == '/welcome';
+
+    if (!isAuthenticated) {
+      if (!isAuthRoute) {
+        return '/login';
+      }
+    }
+    return null;
+  }
 }

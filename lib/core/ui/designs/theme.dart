@@ -118,7 +118,7 @@ class AppTheme {
         color: AppColors.surface,
         elevation: 0,
         shape: RoundedRectangleBorder(
-          side: const BorderSide(color: AppColors.border),
+          side: BorderSide.none,
           borderRadius: AppDecorations.radiusMd,
         ),
       ),

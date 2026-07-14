@@ -45,9 +45,10 @@ class _OnboardCategoriesScreenState
   @override
   Widget build(BuildContext context) {
     final categoriesAsync = ref.watch(categoriesProvider(null));
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: isDark ? AppColors.background : AppColors.textPrimary,
       body: SafeArea(
         child: FadeTransition(
           opacity: _fadeAnimation,
@@ -59,15 +60,21 @@ class _OnboardCategoriesScreenState
                 AppSpacing.hLg,
 
                 // --- Step indicator ---
-                _buildStepIndicator(step: 1),
+                _buildStepIndicator(step: 1, isDark: isDark),
                 AppSpacing.hLg,
 
                 // --- Header ---
-                Text('Choose Your Category', style: AppTextStyles.h2),
+                Text('Choose Your Category', 
+                  style: AppTextStyles.h2.copyWith(
+                    color: isDark ? AppColors.textPrimary : AppColors.background,
+                  ),
+                ),
                 AppSpacing.hSm,
                 Text(
                   'Select the category that best describes the services you offer.',
-                  style: AppTextStyles.bodyMedium,
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    color: isDark ? AppColors.textSecondary : AppColors.background.withValues(alpha: 0.7),
+                  ),
                 ),
                 AppSpacing.hLg,
 
@@ -79,8 +86,8 @@ class _OnboardCategoriesScreenState
                         color: AppColors.primary,
                       ),
                     ),
-                    error: (error, _) => _buildErrorState(error),
-                    data: (categories) => _buildCategoriesGrid(categories),
+                    error: (error, _) => _buildErrorState(error, isDark),
+                    data: (categories) => _buildCategoriesGrid(categories, isDark),
                   ),
                 ),
 
@@ -99,7 +106,7 @@ class _OnboardCategoriesScreenState
     );
   }
 
-  Widget _buildStepIndicator({required int step}) {
+  Widget _buildStepIndicator({required int step, required bool isDark}) {
     return Row(
       children: List.generate(3, (index) {
         final isActive = index < step;
@@ -117,7 +124,9 @@ class _OnboardCategoriesScreenState
                       colors: [AppColors.primary, AppColors.primaryLight],
                     )
                   : null,
-              color: !isActive && !isCurrent ? AppColors.border : null,
+              color: !isActive && !isCurrent 
+                  ? (isDark ? AppColors.border : AppColors.textSecondary) 
+                  : null,
             ),
           ),
         );
@@ -125,18 +134,24 @@ class _OnboardCategoriesScreenState
     );
   }
 
-  Widget _buildErrorState(Object error) {
+  Widget _buildErrorState(Object error, bool isDark) {
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(Icons.cloud_off_rounded, color: AppColors.textMuted, size: 48.r),
           AppSpacing.hMd,
-          Text('Failed to load categories', style: AppTextStyles.subtitle),
+          Text('Failed to load categories', 
+            style: AppTextStyles.subtitle.copyWith(
+              color: isDark ? AppColors.textSecondary : AppColors.background,
+            ),
+          ),
           AppSpacing.hSm,
           Text(
             error.toString(),
-            style: AppTextStyles.bodySmall,
+            style: AppTextStyles.bodySmall.copyWith(
+              color: isDark ? AppColors.textMuted : AppColors.background.withValues(alpha: 0.7),
+            ),
             textAlign: TextAlign.center,
           ),
           AppSpacing.hMd,
@@ -150,12 +165,14 @@ class _OnboardCategoriesScreenState
     );
   }
 
-  Widget _buildCategoriesGrid(List<Category> categories) {
+  Widget _buildCategoriesGrid(List<Category> categories, bool isDark) {
     if (categories.isEmpty) {
       return Center(
         child: Text(
           'No categories available at the moment.',
-          style: AppTextStyles.bodyMedium,
+          style: AppTextStyles.bodyMedium.copyWith(
+            color: isDark ? AppColors.textSecondary : AppColors.background,
+          ),
         ),
       );
     }
@@ -175,6 +192,7 @@ class _OnboardCategoriesScreenState
         return _CategoryCard(
           category: category,
           isSelected: isSelected,
+          isDark: isDark,
           onTap: () {
             setState(() {
               _selectedCategoryId = _selectedCategoryId == category.id
@@ -204,12 +222,14 @@ class _OnboardCategoriesScreenState
 class _CategoryCard extends StatefulWidget {
   final Category category;
   final bool isSelected;
+  final bool isDark;
   final VoidCallback onTap;
   final int index;
 
   const _CategoryCard({
     required this.category,
     required this.isSelected,
+    required this.isDark,
     required this.onTap,
     required this.index,
   });
@@ -296,10 +316,12 @@ class _CategoryCardState extends State<_CategoryCard>
             decoration: BoxDecoration(
               color: widget.isSelected
                   ? AppColors.primary.withValues(alpha: 0.12)
-                  : AppColors.surface,
+                  : (widget.isDark ? AppColors.surface : AppColors.textPrimary),
               borderRadius: AppDecorations.radiusMd,
               border: Border.all(
-                color: widget.isSelected ? AppColors.primary : AppColors.border,
+                color: widget.isSelected 
+                    ? AppColors.primary 
+                    : (widget.isDark ? AppColors.border : AppColors.textSecondary),
                 width: widget.isSelected ? 2.r : 1.r,
               ),
               boxShadow: widget.isSelected
@@ -324,7 +346,7 @@ class _CategoryCardState extends State<_CategoryCard>
                     shape: BoxShape.circle,
                     color: widget.isSelected
                         ? AppColors.primary.withValues(alpha: 0.2)
-                        : AppColors.background,
+                        : (widget.isDark ? AppColors.background : AppColors.textPrimary),
                     border: Border.all(
                       color: widget.isSelected
                           ? AppColors.primaryLight
@@ -348,8 +370,8 @@ class _CategoryCardState extends State<_CategoryCard>
                     widget.category.name ?? 'Unknown',
                     style: AppTextStyles.buttonMedium.copyWith(
                       color: widget.isSelected
-                          ? AppColors.textPrimary
-                          : AppColors.textSecondary,
+                          ? (widget.isDark ? AppColors.textPrimary : AppColors.background)
+                          : (widget.isDark ? AppColors.textSecondary : AppColors.background.withValues(alpha: 0.7)),
                     ),
                     textAlign: TextAlign.center,
                     maxLines: 2,
@@ -362,7 +384,9 @@ class _CategoryCardState extends State<_CategoryCard>
                     padding: AppSpacing.pHorsSm,
                     child: Text(
                       widget.category.description!,
-                      style: AppTextStyles.bodySmall,
+                      style: AppTextStyles.bodySmall.copyWith(
+                        color: widget.isDark ? AppColors.textMuted : AppColors.background.withValues(alpha: 0.5),
+                      ),
                       textAlign: TextAlign.center,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,

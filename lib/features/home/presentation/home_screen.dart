@@ -1,18 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:tasker_app/core/services/device_tray.dart';
 import '../../../core/ui/designs/colors.dart';
 import '../../../core/ui/designs/text_styles.dart';
 import '../../../core/ui/designs/decorations.dart';
 import '../../../core/ui/designs/spacing.dart';
 import '../../../core/providers/location_provider.dart';
 import '../../../core/providers/region_provider.dart';
+import '../../notifications/presentation/widgets/notification_icon.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(syncUserLocationProvider);
     final addressAsync = ref.watch(userAddressProvider);
     final regionAsync = ref.watch(currentRegionProvider);
     final theme = Theme.of(context);
@@ -62,28 +65,11 @@ class HomeScreen extends ConsumerWidget {
                       children: [
                         Text('Welcome back 👋', style: AppTextStyles.bodySmall),
                         SizedBox(height: 2.h),
-                        Text(
-                          'Dashboard',
-                          style: AppTextStyles.h3,
-                        ),
+                        Text('Dashboard', style: AppTextStyles.h3),
                       ],
                     ),
                   ),
-                  // Notification bell placeholder
-                  Container(
-                    width: 40.r,
-                    height: 40.r,
-                    decoration: BoxDecoration(
-                      color: AppColors.surface,
-                      shape: BoxShape.circle,
-                      border: Border.all(color: AppColors.border, width: 1.r),
-                    ),
-                    child: Icon(
-                      Icons.notifications_outlined,
-                      color: AppColors.textSecondary,
-                      size: 20.r,
-                    ),
-                  ),
+                  const NotificationIcon(),
                 ],
               ),
 
@@ -144,14 +130,8 @@ class HomeScreen extends ConsumerWidget {
                         ],
                       ),
                       SizedBox(height: 16.h),
-                      _InfoRow(
-                        label: 'Street',
-                        value: address.street ?? '—',
-                      ),
-                      _InfoRow(
-                        label: 'City',
-                        value: address.locality ?? '—',
-                      ),
+                      _InfoRow(label: 'Street', value: address.street ?? '—'),
+                      _InfoRow(label: 'City', value: address.locality ?? '—'),
                       _InfoRow(
                         label: 'State',
                         value: address.administrativeArea ?? '—',
@@ -246,8 +226,9 @@ class HomeScreen extends ConsumerWidget {
                             Container(
                               padding: EdgeInsets.all(10.r),
                               decoration: BoxDecoration(
-                                color:
-                                    AppColors.success.withValues(alpha: 0.12),
+                                color: AppColors.success.withValues(
+                                  alpha: 0.12,
+                                ),
                                 borderRadius: AppDecorations.radiusSm,
                               ),
                               child: Icon(
@@ -277,19 +258,20 @@ class HomeScreen extends ConsumerWidget {
                                         vertical: 2.h,
                                       ),
                                       decoration: BoxDecoration(
-                                        color: AppColors.success
-                                            .withValues(alpha: 0.15),
-                                        borderRadius:
-                                            BorderRadius.circular(4.r),
+                                        color: AppColors.success.withValues(
+                                          alpha: 0.15,
+                                        ),
+                                        borderRadius: BorderRadius.circular(
+                                          4.r,
+                                        ),
                                       ),
                                       child: Text(
                                         'ACTIVE',
-                                        style:
-                                            AppTextStyles.labelUppercase
-                                                .copyWith(
-                                                  color: AppColors.success,
-                                                  fontSize: 9.sp,
-                                                ),
+                                        style: AppTextStyles.labelUppercase
+                                            .copyWith(
+                                              color: AppColors.success,
+                                              fontSize: 9.sp,
+                                            ),
                                       ),
                                     ),
                                 ],
@@ -302,10 +284,7 @@ class HomeScreen extends ConsumerWidget {
                           label: 'Address',
                           value: region.addressLine ?? '—',
                         ),
-                        _InfoRow(
-                          label: 'Region ID',
-                          value: region.id ?? '—',
-                        ),
+                        _InfoRow(label: 'Region ID', value: region.id ?? '—'),
                         _InfoRow(
                           label: 'Providers',
                           value: '${region.totalProviders ?? 0}',
@@ -358,10 +337,7 @@ class HomeScreen extends ConsumerWidget {
 
   // ── Shared tile builders ──
 
-  Widget _buildLoadingTile({
-    required IconData icon,
-    required String label,
-  }) {
+  Widget _buildLoadingTile({required IconData icon, required String label}) {
     return Row(
       children: [
         SizedBox(
@@ -417,10 +393,7 @@ class HomeScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildEmptyTile({
-    required IconData icon,
-    required String message,
-  }) {
+  Widget _buildEmptyTile({required IconData icon, required String message}) {
     return Row(
       children: [
         Icon(icon, color: AppColors.warning, size: 22.r),
@@ -481,10 +454,7 @@ class _InfoRow extends StatelessWidget {
           ),
         ),
         if (showDivider)
-          Divider(
-            height: 1.h,
-            color: AppColors.border.withValues(alpha: 0.5),
-          ),
+          Divider(height: 1.h, color: AppColors.border.withValues(alpha: 0.5)),
       ],
     );
   }

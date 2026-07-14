@@ -24,11 +24,6 @@ extension FlushbarContextExt on BuildContext {
           color: isDark ? AppColors.textSecondary : const Color(0xFF334155),
         ),
       ),
-      icon: Icon(
-        Icons.chat_bubble_outline_rounded,
-        color: AppColors.primary,
-        size: 24.r,
-      ),
       backgroundColor: isDark ? AppColors.surface : Colors.white,
       borderColor: isDark ? AppColors.border : const Color(0xFFE2E8F0),
       borderWidth: 1.r,

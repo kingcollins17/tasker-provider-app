@@ -5,6 +5,7 @@ import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shimmer/shimmer.dart';
 
 import '../../../core/ui/designs/designs.dart';
 import '../../../core/ui/pages/liveliness_page.dart';
@@ -66,8 +67,9 @@ class _KycOnboardingScreenState extends ConsumerState<KycOnboardingScreen>
           quality: 80,
         );
 
-        final finalFile =
-            compressedXFile != null ? File(compressedXFile.path) : file;
+        final finalFile = compressedXFile != null
+            ? File(compressedXFile.path)
+            : file;
 
         if (mounted) {
           final userNotifier = ref.read(userProvider.notifier);
@@ -103,7 +105,9 @@ class _KycOnboardingScreenState extends ConsumerState<KycOnboardingScreen>
       } catch (e) {
         if (mounted) {
           context.hideLoading();
-          context.showError('An unexpected error occurred during selfie verification.');
+          context.showError(
+            'An unexpected error occurred during selfie verification.',
+          );
         }
       }
     }
@@ -145,13 +149,15 @@ class _KycOnboardingScreenState extends ConsumerState<KycOnboardingScreen>
           context.hideLoading();
           context.showMessage(
             'ID Document submitted successfully!',
-            title: 'Success',
+            // title: 'Success',
           );
         }
       } catch (e) {
         if (mounted) {
           context.hideLoading();
-          context.showError('An unexpected error occurred during document submission.');
+          context.showError(
+            'An unexpected error occurred during document submission.',
+          );
         }
       }
     }
@@ -215,30 +221,61 @@ class _KycOnboardingScreenState extends ConsumerState<KycOnboardingScreen>
     final kycStatus = kycStatusAsync.value ?? KycStatus.pending;
 
     final isSelfieDone = _selfieCompleted || hasSelfie;
-    final isDocumentDone =
-        _documentCompleted || kycStatus == KycStatus.approved;
+    final isDocumentApproved = kycStatus == KycStatus.approved;
+    final isDocumentSubmitted =
+        _documentCompleted ||
+        kycStatus == KycStatus.submitted ||
+        kycStatus == KycStatus.underReview;
+    final isDocumentRejected = kycStatus == KycStatus.rejected;
 
-    int completed = 0;
-    if (isSelfieDone) completed++;
-    if (isDocumentDone) completed++;
-    final progress = completed / 2;
+    final double selfieProgress = isSelfieDone ? 1.0 : 0.0;
+    double documentProgress = 0.0;
+    if (isDocumentApproved) {
+      documentProgress = 1.0;
+    } else if (kycStatus == KycStatus.underReview) {
+      documentProgress = 0.5;
+    } else if (_documentCompleted || kycStatus == KycStatus.submitted) {
+      documentProgress = 0.25;
+    }
+    final progress = (selfieProgress + documentProgress) / 2.0;
 
-    final showVerificationSubmit = isSelfieDone && isDocumentDone;
-    final isAlreadyApproved = hasSelfie && kycStatus == KycStatus.approved;
+    final isLoading = hasSelfieAsync.isLoading || kycStatusAsync.isLoading;
+
+    final hideButton = isLoading || (isSelfieDone && (
+        kycStatus == KycStatus.submitted ||
+        kycStatus == KycStatus.underReview ||
+        kycStatus == KycStatus.approved ||
+        _documentCompleted
+    ));
+
+    final String buttonText;
+    final IconData buttonIcon;
+    final VoidCallback buttonAction;
+
+    if (!isSelfieDone) {
+      buttonText = 'Capture Selfie';
+      buttonIcon = Icons.face_retouching_natural_rounded;
+      buttonAction = _handleSelfieTap;
+    } else if (kycStatus == KycStatus.rejected) {
+      buttonText = 'Reupload Document';
+      buttonIcon = Icons.refresh_rounded;
+      buttonAction = _handleDocumentTap;
+    } else if (kycStatus == KycStatus.pending && !_documentCompleted) {
+      buttonText = 'Submit ID Document';
+      buttonIcon = Icons.badge_rounded;
+      buttonAction = _handleDocumentTap;
+    } else {
+      buttonText = 'Continue';
+      buttonIcon = Icons.arrow_forward_rounded;
+      buttonAction = () => _handleContinue(hasSelfie, kycStatus);
+    }
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        leading: IconButton(
-          icon: Icon(
-            Icons.arrow_back_ios_new_rounded,
-            color: isDark ? AppColors.textPrimary : AppColors.background,
-            size: 20.r,
-          ),
-          onPressed: () => Navigator.pop(context),
-        ),
+        leading: BackButton(),
       ),
       body: SafeArea(
         child: Padding(
@@ -286,33 +323,50 @@ class _KycOnboardingScreenState extends ConsumerState<KycOnboardingScreen>
                   physics: const BouncingScrollPhysics(),
                   child: Column(
                     children: [
-                      _buildStepCard(
-                        isDark: isDark,
-                        stepNumber: 1,
-                        icon: Icons.face_retouching_natural_rounded,
-                        title: 'Selfie Verification',
-                        description:
-                            'Take a live selfie to confirm your identity. Our AI will verify you\'re a real person.',
-                        isCompleted: isSelfieDone,
-                        onTap: isSelfieDone ? null : _handleSelfieTap,
-                      ),
-                      SizedBox(height: 16.h),
-                      _buildStepCard(
-                        isDark: isDark,
-                        stepNumber: 2,
-                        icon: Icons.badge_rounded,
-                        title: 'Submit ID Document',
-                        description:
-                            'Upload a clear photo of your government-issued ID (passport, driver\'s licence, or national ID).',
-                        isCompleted: isDocumentDone,
-                        onTap: isDocumentDone ? null : _handleDocumentTap,
-                      ),
-                      if (kycStatus == KycStatus.rejected &&
-                          docRejectionReasonAsync.value != null) ...[
+                      if (isLoading) ...[
+                        _buildShimmerStepCard(isDark, theme),
                         SizedBox(height: 16.h),
-                        _buildRejectionCard(
-                          isDark,
-                          docRejectionReasonAsync.value!,
+                        _buildShimmerStepCard(isDark, theme),
+                      ] else ...[
+                        _buildStepCard(
+                          isDark: isDark,
+                          stepNumber: 1,
+                          icon: Icons.face_retouching_natural_rounded,
+                          title: 'Selfie Verification',
+                          description: isSelfieDone
+                              ? 'Your selfie has been successfully verified.'
+                              : 'Take a live selfie to confirm your identity. Our AI will verify you\'re a real person.',
+                          isCompleted: isSelfieDone,
+                          statusBadgeText: isSelfieDone ? 'COMPLETED' : null,
+                          onTap: isSelfieDone ? null : _handleSelfieTap,
+                        ),
+                        SizedBox(height: 16.h),
+                        _buildStepCard(
+                          isDark: isDark,
+                          stepNumber: 2,
+                          icon: Icons.badge_rounded,
+                          title: 'Submit ID Document',
+                          description: isDocumentApproved
+                              ? 'Your government-issued ID document has been verified and approved.'
+                              : isDocumentSubmitted
+                              ? 'Your ID document is under review. This usually takes less than 24 hours.'
+                              : isDocumentRejected
+                              ? (docRejectionReasonAsync.value ??
+                                    'Your ID document verification was rejected. Please re-submit.')
+                              : 'Upload a clear photo of your government-issued ID (passport, driver\'s licence, or national ID).',
+                          isCompleted: isDocumentApproved,
+                          isSubmitted: isDocumentSubmitted,
+                          isRejected: isDocumentRejected,
+                          statusBadgeText: isDocumentApproved
+                              ? 'COMPLETED'
+                              : isDocumentRejected
+                              ? 'REJECTED'
+                              : (kycStatus == KycStatus.underReview
+                                    ? 'UNDER REVIEW'
+                                    : (isDocumentSubmitted ? 'SUBMITTED' : null)),
+                          onTap: (isDocumentApproved || isDocumentSubmitted)
+                              ? null
+                              : _handleDocumentTap,
                         ),
                       ],
                       SizedBox(height: 32.h),
@@ -322,18 +376,15 @@ class _KycOnboardingScreenState extends ConsumerState<KycOnboardingScreen>
               ),
 
               // Continue button
-              Padding(
-                padding: EdgeInsets.only(bottom: 20.h),
-                child: PrimaryButton(
-                  text: showVerificationSubmit
-                      ? (isAlreadyApproved ? 'Done' : 'Submit Verification')
-                      : 'Continue',
-                  onPressed: () => _handleContinue(hasSelfie, kycStatus),
-                  icon: showVerificationSubmit
-                      ? Icons.check_circle_outline_rounded
-                      : Icons.arrow_forward_rounded,
+              if (!hideButton)
+                Padding(
+                  padding: EdgeInsets.only(bottom: 20.h),
+                  child: PrimaryButton(
+                    text: buttonText,
+                    onPressed: buttonAction,
+                    icon: buttonIcon,
+                  ),
                 ),
-              ),
             ],
           ),
         ),
@@ -412,11 +463,22 @@ class _KycOnboardingScreenState extends ConsumerState<KycOnboardingScreen>
     required IconData icon,
     required String title,
     required String description,
-    required bool isCompleted,
+    bool isCompleted = false,
+    bool isSubmitted = false,
+    bool isRejected = false,
+    String? statusBadgeText,
     VoidCallback? onTap,
   }) {
     final theme = Theme.of(context);
-    final isActive = !isCompleted;
+    final isActive = !isCompleted && !isSubmitted && !isRejected;
+
+    final Color stateColor = isCompleted
+        ? AppColors.success
+        : isRejected
+        ? AppColors.error
+        : isSubmitted
+        ? AppColors.warning
+        : AppColors.primary;
 
     return GestureDetector(
       onTap: onTap,
@@ -428,30 +490,28 @@ class _KycOnboardingScreenState extends ConsumerState<KycOnboardingScreen>
           color: isDark ? AppColors.surface : theme.colorScheme.surface,
           borderRadius: AppDecorations.radiusLg,
           border: Border.all(
-            color: isCompleted
-                ? AppColors.success.withValues(alpha: 0.5)
+            color: (isCompleted || isRejected || isSubmitted)
+                ? stateColor.withValues(alpha: 0.5)
                 : isActive
                 ? AppColors.primary.withValues(alpha: 0.4)
                 : AppColors.border,
-            width: isCompleted || isActive ? 1.5.r : 1.r,
+            width: (isCompleted || isRejected || isSubmitted || isActive)
+                ? 1.5.r
+                : 1.r,
           ),
-          boxShadow: isActive
-              ? [
-                  BoxShadow(
-                    color: AppColors.primary.withValues(alpha: 0.08),
-                    blurRadius: 20.r,
-                    offset: const Offset(0, 8),
-                  ),
-                ]
-              : isCompleted
-              ? [
-                  BoxShadow(
-                    color: AppColors.success.withValues(alpha: 0.06),
-                    blurRadius: 16.r,
-                    offset: const Offset(0, 4),
-                  ),
-                ]
-              : null,
+          boxShadow: [
+            BoxShadow(
+              color: stateColor.withValues(
+                alpha: (isCompleted || isRejected || isSubmitted) ? 0.06 : 0.08,
+              ),
+              blurRadius: (isCompleted || isRejected || isSubmitted)
+                  ? 16.r
+                  : 20.r,
+              offset: (isCompleted || isRejected || isSubmitted)
+                  ? const Offset(0, 4)
+                  : const Offset(0, 8),
+            ),
+          ],
         ),
         child: Row(
           children: [
@@ -461,14 +521,16 @@ class _KycOnboardingScreenState extends ConsumerState<KycOnboardingScreen>
               width: 56.r,
               height: 56.r,
               decoration: BoxDecoration(
-                color: isCompleted
-                    ? AppColors.success.withValues(alpha: 0.15)
-                    : AppColors.primary.withValues(alpha: 0.1),
+                color: stateColor.withValues(
+                  alpha: (isCompleted || isRejected || isSubmitted)
+                      ? 0.15
+                      : 0.1,
+                ),
                 borderRadius: AppDecorations.radiusMd,
               ),
               child: Icon(
                 isCompleted ? Icons.check_rounded : icon,
-                color: isCompleted ? AppColors.success : AppColors.primary,
+                color: stateColor,
                 size: 28.r,
               ),
             ),
@@ -484,13 +546,11 @@ class _KycOnboardingScreenState extends ConsumerState<KycOnboardingScreen>
                       Text(
                         'Step $stepNumber',
                         style: AppTextStyles.labelUppercase.copyWith(
-                          color: isCompleted
-                              ? AppColors.success
-                              : AppColors.primary,
+                          color: stateColor,
                           fontSize: 10.sp,
                         ),
                       ),
-                      if (isCompleted) ...[
+                      if (statusBadgeText != null) ...[
                         SizedBox(width: 8.w),
                         Container(
                           padding: EdgeInsets.symmetric(
@@ -498,13 +558,13 @@ class _KycOnboardingScreenState extends ConsumerState<KycOnboardingScreen>
                             vertical: 2.h,
                           ),
                           decoration: BoxDecoration(
-                            color: AppColors.success.withValues(alpha: 0.15),
+                            color: stateColor.withValues(alpha: 0.15),
                             borderRadius: BorderRadius.circular(4.r),
                           ),
                           child: Text(
-                            'COMPLETED',
+                            statusBadgeText,
                             style: AppTextStyles.labelUppercase.copyWith(
-                              color: AppColors.success,
+                              color: stateColor,
                               fontSize: 9.sp,
                             ),
                           ),
@@ -526,7 +586,11 @@ class _KycOnboardingScreenState extends ConsumerState<KycOnboardingScreen>
                   Text(
                     description,
                     style: AppTextStyles.bodySmall.copyWith(
-                      color: isDark ? AppColors.textMuted : AppColors.textMuted,
+                      color: isRejected
+                          ? AppColors.error
+                          : isDark
+                          ? AppColors.textMuted
+                          : AppColors.textMuted,
                       height: 1.4,
                     ),
                   ),
@@ -539,8 +603,14 @@ class _KycOnboardingScreenState extends ConsumerState<KycOnboardingScreen>
             Icon(
               isCompleted
                   ? Icons.check_circle_rounded
+                  : isRejected
+                  ? Icons.error_outline_rounded
+                  : isSubmitted
+                  ? Icons.schedule_rounded
                   : Icons.chevron_right_rounded,
-              color: isCompleted ? AppColors.success : AppColors.textMuted,
+              color: (isCompleted || isRejected || isSubmitted)
+                  ? stateColor
+                  : AppColors.textMuted,
               size: 24.r,
             ),
           ],
@@ -549,51 +619,69 @@ class _KycOnboardingScreenState extends ConsumerState<KycOnboardingScreen>
     );
   }
 
-  Widget _buildRejectionCard(bool isDark, String reason) {
-    return Container(
-      padding: EdgeInsets.all(14.r),
-      decoration: BoxDecoration(
-        color: AppColors.error.withValues(alpha: 0.08),
-        borderRadius: AppDecorations.radiusMd,
-        border: Border.all(
-          color: AppColors.error.withValues(alpha: 0.3),
-          width: 1.r,
+  Widget _buildShimmerStepCard(bool isDark, ThemeData theme) {
+    final baseColor = isDark ? AppColors.surface : Colors.grey[300]!;
+    final highlightColor = isDark ? AppColors.border : Colors.grey[100]!;
+
+    return Shimmer.fromColors(
+      baseColor: baseColor,
+      highlightColor: highlightColor,
+      child: Container(
+        padding: EdgeInsets.all(20.r),
+        decoration: BoxDecoration(
+          color: baseColor,
+          borderRadius: AppDecorations.radiusLg,
+          border: Border.all(
+            color: isDark ? AppColors.border : Colors.grey[300]!,
+            width: 1.r,
+          ),
         ),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Icon(
-            Icons.error_outline_rounded,
-            color: AppColors.error,
-            size: 20,
-          ),
-          SizedBox(width: 10.w),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Verification Rejected',
-                  style: AppTextStyles.label.copyWith(
-                    color: AppColors.error,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                SizedBox(height: 4.h),
-                Text(
-                  reason,
-                  style: AppTextStyles.bodySmall.copyWith(
-                    color: isDark
-                        ? AppColors.textSecondary
-                        : AppColors.textMuted,
-                    height: 1.4,
-                  ),
-                ),
-              ],
+        child: Row(
+          children: [
+            // Icon placeholder
+            Container(
+              width: 56.r,
+              height: 56.r,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: AppDecorations.radiusMd,
+              ),
             ),
-          ),
-        ],
+            SizedBox(width: 16.w),
+
+            // Content placeholder
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: 50.w,
+                    height: 10.h,
+                    color: Colors.white,
+                  ),
+                  SizedBox(height: 8.h),
+                  Container(
+                    width: 120.w,
+                    height: 16.h,
+                    color: Colors.white,
+                  ),
+                  SizedBox(height: 8.h),
+                  Container(
+                    width: double.infinity,
+                    height: 12.h,
+                    color: Colors.white,
+                  ),
+                  SizedBox(height: 4.h),
+                  Container(
+                    width: 180.w,
+                    height: 12.h,
+                    color: Colors.white,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

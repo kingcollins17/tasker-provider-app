@@ -181,3 +181,8 @@ class AuthNotifier extends AsyncNotifier<User?> {
 final authProvider = AsyncNotifierProvider<AuthNotifier, User?>(() {
   return AuthNotifier();
 });
+
+final isAuthenticatedProvider = FutureProvider<bool>((ref) async {
+  final token = await appStorage.get<String>(HiveKeys.accessToken.name);
+  return token != null;
+});

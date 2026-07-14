@@ -67,7 +67,7 @@ class PrimaryButton extends StatelessWidget {
         padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 16.h),
         elevation: 0,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12.r),
+          borderRadius: BorderRadius.circular(100),
         ),
       ),
       child: buttonContent,

@@ -12,6 +12,7 @@ UpdateLocationRequest _$UpdateLocationRequestFromJson(
   latitude: (json['latitude'] as num).toDouble(),
   longitude: (json['longitude'] as num).toDouble(),
   addressLine: json['address_line'] as String?,
+  regionId: json['region_id'] as String?,
 );
 
 Map<String, dynamic> _$UpdateLocationRequestToJson(
@@ -20,4 +21,5 @@ Map<String, dynamic> _$UpdateLocationRequestToJson(
   'latitude': instance.latitude,
   'longitude': instance.longitude,
   'address_line': instance.addressLine,
+  'region_id': instance.regionId,
 };

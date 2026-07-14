@@ -11,7 +11,7 @@ class AppTextStyles {
   // --- HEADINGS ---
 
   /// Hero Heading 1 (e.g., Intro/Large titles)
-  static TextStyle get h1 => GoogleFonts.dmSans(
+  static TextStyle get h1 => GoogleFonts.poppins(
     fontSize: 32.sp,
     fontWeight: FontWeight.bold,
     color: AppColors.textPrimary,
@@ -19,7 +19,7 @@ class AppTextStyles {
   );
 
   /// Heading 2 (e.g., Section Headers)
-  static TextStyle get h2 => GoogleFonts.dmSans(
+  static TextStyle get h2 => GoogleFonts.poppins(
     fontSize: 24.sp,
     fontWeight: FontWeight.bold,
     color: AppColors.textPrimary,
@@ -27,7 +27,7 @@ class AppTextStyles {
   );
 
   /// Heading 3 (e.g., Card/Sub-section Headers)
-  static TextStyle get h3 => GoogleFonts.dmSans(
+  static TextStyle get h3 => GoogleFonts.poppins(
     fontSize: 20.sp,
     fontWeight: FontWeight.w600,
     color: AppColors.textPrimary,
@@ -35,7 +35,7 @@ class AppTextStyles {
   );
 
   /// Subtitle (e.g., Section Descriptors/Feature subheaders)
-  static TextStyle get subtitle => GoogleFonts.dmSans(
+  static TextStyle get subtitle => GoogleFonts.poppins(
     fontSize: 16.sp,
     fontWeight: FontWeight.w500,
     color: AppColors.textSecondary,
@@ -45,7 +45,7 @@ class AppTextStyles {
   // --- BODY TEXT ---
 
   /// Large Body Text
-  static TextStyle get bodyLarge => GoogleFonts.dmSans(
+  static TextStyle get bodyLarge => GoogleFonts.poppins(
     fontSize: 16.sp,
     fontWeight: FontWeight.normal,
     color: AppColors.textSecondary,
@@ -53,7 +53,7 @@ class AppTextStyles {
   );
 
   /// Standard/Medium Body Text
-  static TextStyle get bodyMedium => GoogleFonts.dmSans(
+  static TextStyle get bodyMedium => GoogleFonts.poppins(
     fontSize: 14.sp,
     fontWeight: FontWeight.normal,
     color: AppColors.textSecondary,
@@ -61,7 +61,7 @@ class AppTextStyles {
   );
 
   /// Small body/details text
-  static TextStyle get bodySmall => GoogleFonts.dmSans(
+  static TextStyle get bodySmall => GoogleFonts.poppins(
     fontSize: 12.sp,
     fontWeight: FontWeight.normal,
     color: AppColors.textMuted,
@@ -71,7 +71,7 @@ class AppTextStyles {
   // --- BUTTONS & ACTIONS ---
 
   /// Large Button Text
-  static TextStyle get buttonLarge => GoogleFonts.dmSans(
+  static TextStyle get buttonLarge => GoogleFonts.poppins(
     fontSize: 16.sp,
     fontWeight: FontWeight.bold,
     color: AppColors.textPrimary,
@@ -79,7 +79,7 @@ class AppTextStyles {
   );
 
   /// Medium Button Text
-  static TextStyle get buttonMedium => GoogleFonts.dmSans(
+  static TextStyle get buttonMedium => GoogleFonts.poppins(
     fontSize: 14.sp,
     fontWeight: FontWeight.w600,
     color: AppColors.textPrimary,
@@ -89,7 +89,7 @@ class AppTextStyles {
   // --- LABELS & CAPTIONS ---
 
   /// All-caps small uppercase labels
-  static TextStyle get labelUppercase => GoogleFonts.dmSans(
+  static TextStyle get labelUppercase => GoogleFonts.poppins(
     fontSize: 11.sp,
     fontWeight: FontWeight.bold,
     color: AppColors.textMuted,
@@ -97,7 +97,7 @@ class AppTextStyles {
   );
 
   /// Standard label/caption text
-  static TextStyle get label => GoogleFonts.dmSans(
+  static TextStyle get label => GoogleFonts.poppins(
     fontSize: 12.sp,
     fontWeight: FontWeight.w500,
     color: AppColors.textMuted,

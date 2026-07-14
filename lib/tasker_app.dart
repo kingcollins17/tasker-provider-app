@@ -1,14 +1,16 @@
 import 'package:device_preview/device_preview.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'app_routes.dart';
+import 'core/providers/providers.dart';
 import 'core/ui/designs/theme.dart';
 
-class TaskerApp extends StatelessWidget {
+class TaskerApp extends ConsumerWidget {
   const TaskerApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return ScreenUtilInit(
       designSize: const Size(
         375,
@@ -17,6 +19,8 @@ class TaskerApp extends StatelessWidget {
       minTextAdapt: true,
       splitScreenMode: true,
       builder: (context, child) {
+        final themeMode = ref.watch(themeProvider);
+
         return MaterialApp.router(
           debugShowCheckedModeBanner: false,
           title: 'Tasker',
@@ -25,7 +29,7 @@ class TaskerApp extends StatelessWidget {
           builder: DevicePreview.appBuilder,
           theme: AppTheme.lightTheme,
           darkTheme: AppTheme.darkTheme,
-          themeMode: ThemeMode.system,
+          themeMode: themeMode,
         );
       },
     );
