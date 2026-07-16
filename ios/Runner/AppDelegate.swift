@@ -8,9 +8,8 @@ import flutter_local_notifications
     _ application: UIApplication,
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
   ) -> Bool {
-    FlutterLocalNotificationsPlugin.setPluginRegistrantCallback { (registry) in
-      GeneratedPluginRegistrant.register(with: registry)
-    }
+    // With UIScene lifecycle, plugin registration and notification delegate
+    // setup are handled in didInitializeImplicitFlutterEngine below.
 
     if #available(iOS 10.0, *) {
       UNUserNotificationCenter.current().delegate = self as? UNUserNotificationCenterDelegate
@@ -20,6 +19,12 @@ import flutter_local_notifications
   }
 
   func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {
+    // Required to make notification action callbacks available in the
+    // background isolate when using UIScene lifecycle.
+    FlutterLocalNotificationsPlugin.setPluginRegistrantCallback { (registry) in
+      GeneratedPluginRegistrant.register(with: registry)
+    }
+
     GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
   }
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:tasker_app/core/providers/providers.dart';
 import 'package:tasker_app/core/services/device_tray.dart';
 import '../../../core/ui/designs/colors.dart';
 import '../../../core/ui/designs/text_styles.dart';
@@ -19,6 +20,8 @@ class HomeScreen extends ConsumerWidget {
     final addressAsync = ref.watch(userAddressProvider);
     final regionAsync = ref.watch(currentRegionProvider);
     final theme = Theme.of(context);
+    ref.watch(deviceTrayNotificationProvider);
+    DeviceTray.instance.showNotification(title: 'Taska', body: 'Hey there!');
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,

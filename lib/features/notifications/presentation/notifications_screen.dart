@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:tasker_app/core/utils/extensions/flushbar_context_ext.dart';
+import 'package:tasker_app/core/utils/extensions/loading_context_ext.dart';
 import 'package:tasker_app/features/notifications/providers/notifications_provider.dart';
 
 import '../../../../core/models/api/notifications/notification_item.dart';
@@ -62,15 +64,22 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                 ),
                 const Spacer(),
                 TextButton(
-                  onPressed: () {
+                  onPressed: () async {
                     final unreadIds = items
                         .where((i) => !i.isRead && i.notificationId != null)
                         .map((i) => i.notificationId!)
                         .toList();
                     if (unreadIds.isNotEmpty) {
-                      ref
+                      context.showLoading();
+                      await ref
                           .read(notificationsProvider.notifier)
-                          .markAsRead(unreadIds);
+                          .markAsRead(
+                            unreadIds,
+                            onError: (err) {
+                              context.showError(err);
+                            },
+                          );
+                      context.hideLoading();
                     }
                   },
                   child: Text(
@@ -204,9 +213,12 @@ class _NotificationTile extends StatelessWidget {
 
   String _formatTimeAgo(DateTime date) {
     final diff = DateTime.now().difference(date);
-    if (diff.inSeconds < 60) return '${diff.inSeconds} sec ago';
-    if (diff.inMinutes < 60) return '${diff.inMinutes} mins ago';
-    if (diff.inHours < 24) return '${diff.inHours} hours ago';
+    if (diff.inSeconds < 60)
+      return '${diff.inSeconds} sec${diff.inSeconds == 1 ? '' : 's'} ago';
+    if (diff.inMinutes < 60)
+      return '${diff.inMinutes} min${diff.inMinutes == 1 ? '' : 's'} ago';
+    if (diff.inHours < 24)
+      return '${diff.inHours} hour${diff.inHours == 1 ? '' : 's'} ago';
     if (diff.inDays == 1) return '1 day ago';
     return '${diff.inDays} days ago';
   }

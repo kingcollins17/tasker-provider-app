@@ -1,5 +1,23 @@
+import 'dart:io';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+
+/// Top-level callback for notification actions triggered while the app is in
+/// the background or terminated. Must be a top-level or static function and
+/// annotated with `@pragma('vm:entry-point')` so tree-shaking does not remove
+/// it.
+@pragma('vm:entry-point')
+void _onBackgroundNotificationResponse(
+  NotificationResponse notificationResponse,
+) {
+  debugPrint(
+    'Background notification action: '
+    'id=${notificationResponse.id}, '
+    'actionId=${notificationResponse.actionId}, '
+    'payload=${notificationResponse.payload}',
+  );
+}
 
 class DeviceTray {
   static final DeviceTray _instance = DeviceTray._internal();
@@ -26,12 +44,14 @@ class DeviceTray {
     const AndroidInitializationSettings initializationSettingsAndroid =
         AndroidInitializationSettings('@mipmap/ic_launcher');
 
-    // Initialize native iOS notification
+    // Initialize native iOS notification.
+    // Defer permission requests to [requestPermissions] so the prompt appears
+    // at a more appropriate point in the user experience.
     final DarwinInitializationSettings initializationSettingsDarwin =
         DarwinInitializationSettings(
-          requestAlertPermission: true,
-          requestBadgePermission: true,
-          requestSoundPermission: true,
+          requestAlertPermission: false,
+          requestBadgePermission: false,
+          requestSoundPermission: false,
         );
 
     final InitializationSettings initializationSettings =
@@ -42,12 +62,52 @@ class DeviceTray {
 
     await _flutterLocalNotificationsPlugin.initialize(
       settings: initializationSettings,
-      onDidReceiveNotificationResponse: (NotificationResponse response) {
-        debugPrint('Notification tapped: ${response.payload}');
-      },
+      onDidReceiveNotificationResponse: _onForegroundNotificationResponse,
+      onDidReceiveBackgroundNotificationResponse:
+          _onBackgroundNotificationResponse,
     );
 
     _isInitialized = true;
+  }
+
+  /// Requests notification permissions from the user on platforms that require
+  /// an explicit grant (Android 13+ and iOS).
+  ///
+  /// Call this at a point in your UX where the user expects to be asked —
+  /// for example after tapping an "Enable Notifications" button.
+  ///
+  /// Returns `true` if permission was granted, `false` otherwise.
+  Future<bool> requestPermissions() async {
+    if (!_isInitialized) await initialize();
+
+    if (Platform.isAndroid) {
+      final android = _flutterLocalNotificationsPlugin
+          .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin
+          >();
+      final granted = await android?.requestNotificationsPermission();
+      return granted ?? false;
+    }
+
+    if (Platform.isIOS) {
+      final ios = _flutterLocalNotificationsPlugin
+          .resolvePlatformSpecificImplementation<
+            IOSFlutterLocalNotificationsPlugin
+          >();
+      final granted = await ios?.requestPermissions(
+        alert: true,
+        badge: true,
+        sound: true,
+      );
+      return granted ?? false;
+    }
+
+    return true;
+  }
+
+  /// Callback for notifications tapped while the app is in the foreground.
+  void _onForegroundNotificationResponse(NotificationResponse response) {
+    debugPrint('Notification tapped: ${response.payload}');
   }
 
   /// Shows an instant notification in the device tray.
