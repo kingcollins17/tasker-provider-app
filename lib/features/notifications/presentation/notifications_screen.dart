@@ -39,7 +39,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         leading: const BackButton(),
-        title: const Text('Notifications'),
+        title: Text('Notifications', style: AppTextStyles.h2),
         centerTitle: true,
       ),
       body: Column(

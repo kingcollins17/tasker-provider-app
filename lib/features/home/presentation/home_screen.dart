@@ -21,7 +21,6 @@ class HomeScreen extends ConsumerWidget {
     final regionAsync = ref.watch(currentRegionProvider);
     final theme = Theme.of(context);
     ref.watch(deviceTrayNotificationProvider);
-    DeviceTray.instance.showNotification(title: 'Taska', body: 'Hey there!');
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,

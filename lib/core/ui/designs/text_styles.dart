@@ -12,7 +12,7 @@ class AppTextStyles {
 
   /// Hero Heading 1 (e.g., Intro/Large titles)
   static TextStyle get h1 => GoogleFonts.poppins(
-    fontSize: 32.sp,
+    fontSize: 28.sp,
     fontWeight: FontWeight.bold,
     color: AppColors.textPrimary,
     height: 1.2,
