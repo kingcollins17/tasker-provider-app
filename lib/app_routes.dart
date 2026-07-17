@@ -40,7 +40,6 @@ class AppRoutes {
             routes: HomeRoutes.routes,
           ),
           StatefulShellBranch(routes: TasksRoutes.routes),
-          StatefulShellBranch(routes: ChatsRoutes.routes),
           StatefulShellBranch(routes: ProfileRoutes.routes),
         ],
       ),
@@ -75,6 +74,7 @@ class AppRoutes {
       ),
       ...KycRoutes.routes,
       ...NotificationsRoutes.routes,
+      ...ChatsRoutes.routes,
     ],
   );
 

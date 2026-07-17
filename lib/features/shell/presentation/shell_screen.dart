@@ -20,41 +20,46 @@ class ShellScreen extends StatelessWidget {
       extendBody: true,
       body: navigationShell,
       bottomNavigationBar: Container(
-        padding: EdgeInsets.only(
-          left: 0,
-          right: 0,
-          top: 16,
-          bottom: MediaQuery.of(context).padding.bottom,
+        decoration: BoxDecoration(
+          color: Theme.of(context).scaffoldBackgroundColor,
+          border: Border(
+            top: BorderSide(
+              color: Theme.of(context).dividerColor.withValues(alpha: 0.1),
+              width: 1,
+            ),
+          ),
         ),
-        decoration: const BoxDecoration(color: Colors.transparent),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            _NavBarItem(
-              icon: HugeIcons.strokeRoundedHome01,
-              label: 'Home',
-              isSelected: navigationShell.currentIndex == 0,
-              onTap: () => _onTap(0),
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.only(top: 8, bottom: 4),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _NavBarItem(
+                  selectedIcon: HugeIcons
+                      .strokeRoundedHome01, // Using stroke for both to ensure compatibility, relying on color for selection
+                  unselectedIcon: HugeIcons.strokeRoundedHome01,
+                  label: 'Home',
+                  isSelected: navigationShell.currentIndex == 0,
+                  onTap: () => _onTap(0),
+                ),
+                _NavBarItem(
+                  selectedIcon: HugeIcons.strokeRoundedTask01,
+                  unselectedIcon: HugeIcons.strokeRoundedTask01,
+                  label: 'Tasks',
+                  isSelected: navigationShell.currentIndex == 1,
+                  onTap: () => _onTap(1),
+                ),
+                _NavBarItem(
+                  selectedIcon: HugeIcons.strokeRoundedUser,
+                  unselectedIcon: HugeIcons.strokeRoundedUser,
+                  label: 'Account',
+                  isSelected: navigationShell.currentIndex == 2,
+                  onTap: () => _onTap(2),
+                ),
+              ],
             ),
-            _NavBarItem(
-              icon: HugeIcons.strokeRoundedTask01,
-              label: 'Tasks',
-              isSelected: navigationShell.currentIndex == 1,
-              onTap: () => _onTap(1),
-            ),
-            _NavBarItem(
-              icon: HugeIcons.strokeRoundedMessage01,
-              label: 'Chats',
-              isSelected: navigationShell.currentIndex == 2,
-              onTap: () => _onTap(2),
-            ),
-            _NavBarItem(
-              icon: HugeIcons.strokeRoundedUser,
-              label: 'Profile',
-              isSelected: navigationShell.currentIndex == 3,
-              onTap: () => _onTap(3),
-            ),
-          ],
+          ),
         ),
       ),
     );
@@ -63,57 +68,48 @@ class ShellScreen extends StatelessWidget {
 
 class _NavBarItem extends StatelessWidget {
   const _NavBarItem({
-    required this.icon,
+    required this.selectedIcon,
+    required this.unselectedIcon,
     required this.label,
     required this.isSelected,
     required this.onTap,
   });
 
-  final icon;
+  final dynamic selectedIcon;
+  final dynamic unselectedIcon;
   final String label;
   final bool isSelected;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final selectedColor = colorScheme.primary;
-    final unselectedColor = colorScheme.onSurfaceVariant;
-    final color = isSelected ? selectedColor : unselectedColor;
+    final theme = Theme.of(context);
+    final color = isSelected
+        ? theme.textTheme.bodyLarge?.color ?? Colors.black
+        : theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.6) ??
+              Colors.grey;
 
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 300),
-              curve: Curves.easeOutCubic,
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: isSelected
-                    ? selectedColor.withValues(alpha: 0.15)
-                    : Theme.of(
-                        context,
-                      ).colorScheme.onSurface.withValues(alpha: 0.04),
-                shape: BoxShape.circle,
-              ),
-              child: AnimatedScale(
-                scale: isSelected ? 1.1 : 1.0,
-                duration: const Duration(milliseconds: 300),
-                curve: Curves.easeOutBack,
-                child: HugeIcon(icon: icon, color: color, size: 24),
-              ),
+            HugeIcon(
+              icon: isSelected ? selectedIcon : unselectedIcon,
+              color: color,
+              size: 26,
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: 4),
             Text(
               label,
-              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+              style: TextStyle(
+                fontSize: 11,
                 color: color,
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                letterSpacing: 0.2,
               ),
             ),
           ],
