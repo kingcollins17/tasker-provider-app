@@ -6,7 +6,7 @@ import '../../../core/models/api/notifications/notification_preference.dart';
 import '../../../core/ui/designs/designs.dart';
 import '../../../core/utils/extensions/loading_context_ext.dart';
 import '../../../core/utils/extensions/flushbar_context_ext.dart';
-import '../../notifications/providers/notifications_provider.dart';
+import '../../../core/providers/notifications_provider.dart';
 
 enum AppNotificationType {
   taskAccepted(

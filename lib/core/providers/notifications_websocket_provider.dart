@@ -4,6 +4,7 @@ import '../services/network_service.dart';
 import '../services/local_storage_service.dart';
 import '../services/web_socket_connection_handler.dart';
 import '../services/device_tray.dart';
+import 'notifications_provider.dart';
 
 /// StreamProvider that maintains a WebSocket connection for notifications.
 final notificationsWebSocketProvider = StreamProvider<NotificationItem>((
@@ -38,19 +39,20 @@ final notificationsWebSocketProvider = StreamProvider<NotificationItem>((
 
 /// Provider that listens to the notifications websocket and shows device tray notifications.
 final deviceTrayNotificationProvider = Provider<void>((ref) {
-  ref.listen<AsyncValue<NotificationItem>>(
-    notificationsWebSocketProvider,
-    (previous, next) {
-      if (next.hasValue && next.value != null) {
-        final item = next.value!;
-        if (item.body != null && item.body!.isNotEmpty) {
-          DeviceTray.instance.showNotification(
-            title: item.title ?? 'New Notification',
-            body: item.body!,
-            id: item.notificationId.hashCode,
-          );
-        }
+  ref.listen<AsyncValue<NotificationItem>>(notificationsWebSocketProvider, (
+    previous,
+    next,
+  ) {
+    if (next.hasValue && next.value != null) {
+      final item = next.value!;
+      if (item.body != null && item.body!.isNotEmpty) {
+        DeviceTray.instance.showNotification(
+          title: item.title ?? 'Taska',
+          body: item.body!,
+          id: item.notificationId.hashCode,
+        );
+        ref.invalidate(notificationsProvider);
       }
-    },
-  );
+    }
+  });
 });

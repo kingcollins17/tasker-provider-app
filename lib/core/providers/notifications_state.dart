@@ -1,5 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
-import '../../../core/models/api/api.dart';
+import '../models/api/api.dart';
 
 part 'notifications_state.freezed.dart';
 

@@ -5,7 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:hugeicons/hugeicons.dart';
 import 'package:badges/badges.dart' as badges;
 import '../../../../core/ui/designs/colors.dart';
-import '../../providers/notifications_provider.dart';
+import '../../../../core/providers/notifications_provider.dart';
 import '../../notifications_routes.dart';
 
 class NotificationIcon extends ConsumerWidget {

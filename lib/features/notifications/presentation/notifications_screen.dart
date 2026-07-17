@@ -3,11 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:tasker_app/core/utils/extensions/flushbar_context_ext.dart';
 import 'package:tasker_app/core/utils/extensions/loading_context_ext.dart';
-import 'package:tasker_app/features/notifications/providers/notifications_provider.dart';
+import 'package:tasker_app/core/providers/notifications_provider.dart';
 
 import '../../../../core/models/api/notifications/notification_item.dart';
 import '../../../../core/ui/designs/designs.dart';
-// import '../../providers/notifications_provider.dart';
+
 
 enum NotificationFilter { all, unread }
 

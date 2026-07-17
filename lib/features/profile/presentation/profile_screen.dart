@@ -215,6 +215,36 @@ class ProfileScreen extends ConsumerWidget {
           AppSpacing.hSm,
         ],
 
+        // Email Verification — only if not yet verified
+        if (user != null &&
+            (!(user.emailVerified ?? false) &&
+                user.email != null &&
+                user.email!.isNotEmpty)) ...[
+          OptionTile(
+            icon: Icons.email_outlined,
+            iconColor: AppColors.warning,
+            title: 'Verify Email Address',
+            subtitle: 'Required for account security',
+            trailing: Container(
+              padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
+              decoration: BoxDecoration(
+                color: AppColors.warning.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(6.r),
+              ),
+              child: Text(
+                'Action Needed',
+                style: AppTextStyles.label.copyWith(
+                  color: AppColors.warning,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 11.sp,
+                ),
+              ),
+            ),
+            onTap: () => _handleEmailVerification(context, ref, user),
+          ),
+          AppSpacing.hSm,
+        ],
+
         // Dark Mode Toggle
         Consumer(
           builder: (context, ref, child) {
@@ -482,6 +512,62 @@ class ProfileScreen extends ConsumerWidget {
 
             if (result != null && result.isVerified && context.mounted) {
               context.showInfo('Phone number verified successfully!');
+              ref.invalidate(userProvider);
+            }
+          },
+          onError: (err) {
+            if (!context.mounted) return;
+            context.hideLoading();
+            context.showError(err);
+          },
+        );
+  }
+
+  Future<void> _handleEmailVerification(
+    BuildContext context,
+    WidgetRef ref,
+    User user,
+  ) async {
+    String? email = user.email;
+
+    if (email == null || email.isEmpty) {
+      return;
+    }
+
+    if (!context.mounted) return;
+    context.showLoading();
+
+    ref
+        .read(authProvider.notifier)
+        .requestEmailOtp(
+          email,
+          onSuccess: () async {
+            if (!context.mounted) return;
+            context.hideLoading();
+
+            final result = await VerifyOTPPage.verify(
+              context,
+              target: email,
+              channel: 'email',
+              verifier: (otp, target) {
+                final completer = Completer<bool>();
+                ref
+                    .read(authProvider.notifier)
+                    .verifyEmail(
+                      target,
+                      otp,
+                      onSuccess: () => completer.complete(true),
+                      onError: (err) {
+                        if (context.mounted) context.showError(err);
+                        completer.complete(false);
+                      },
+                    );
+                return completer.future;
+              },
+            );
+
+            if (result != null && result.isVerified && context.mounted) {
+              context.showInfo('Email address verified successfully!');
               ref.invalidate(userProvider);
             }
           },

@@ -1,9 +1,9 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../core/api/api.dart';
-import '../../../core/models/api/api.dart';
-import '../../../core/utils/app_exception_handler.dart';
-import '../../../core/utils/extensions/error_ext.dart';
+import '../api/api.dart';
+import '../models/api/api.dart';
+import '../utils/app_exception_handler.dart';
+import '../utils/extensions/error_ext.dart';
 import 'notifications_state.dart';
 
 export 'notifications_state.dart';
