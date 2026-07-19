@@ -2,7 +2,9 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:shimmer/shimmer.dart';
 import 'package:tasker_app/core/providers/providers.dart';
+import 'package:tasker_app/core/utils/extensions/num_ext.dart';
 import '../../../core/ui/designs/colors.dart';
 import '../../../core/ui/designs/text_styles.dart';
 import '../../../core/ui/designs/decorations.dart';
@@ -543,11 +545,21 @@ class _SectionHeader extends StatelessWidget {
 // NEARBY JOBS SECTION (horizontal scroll)
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _NearbyJobsSection extends StatelessWidget {
+class _NearbyJobsSection extends ConsumerWidget {
   const _NearbyJobsSection();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final nearbyJobsAsync = ref.watch(nearbyJobsProvider);
+
+    // If there is no data, do not show the section
+    if (nearbyJobsAsync.hasValue && nearbyJobsAsync.value?.isEmpty == true) {
+      return SizedBox.shrink();
+    }
+    final allTasks = nearbyJobsAsync.value ?? [];
+    final hasMoreThan5 = allTasks.length > 5;
+    final displayTasks = allTasks.take(5).toList();
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -555,49 +567,97 @@ class _NearbyJobsSection extends StatelessWidget {
           padding: EdgeInsets.only(right: AppSpacing.md),
           child: _SectionHeader(
             title: "Nearby Jobs",
-            actionText: "See All",
-            onAction: () {},
+            actionText: hasMoreThan5 ? "See All" : null,
+            onAction: hasMoreThan5 ? () {} : null,
           ),
         ),
         SizedBox(
           height: 190.h,
-          child: ListView(
-            scrollDirection: Axis.horizontal,
-            physics: const BouncingScrollPhysics(),
-            children: [
-              _JobCard(
-                title: "Fix Leaking Sink",
-                category: "Plumbing",
-                distance: "2.3 km",
-                price: "₦35,000",
-                timePosted: "5 min ago",
-                categoryIcon: Icons.plumbing_rounded,
-                accentColor: const Color(0xFF3B82F6),
+          child: nearbyJobsAsync.when(
+            data: (_) {
+              if (displayTasks.isEmpty) {
+                return Center(
+                  child: Text(
+                    "No nearby jobs available.",
+                    style: AppTextStyles.bodyMedium.copyWith(
+                      color: AppColors.textMuted,
+                    ),
+                  ),
+                );
+              }
+              return ListView.builder(
+                scrollDirection: Axis.horizontal,
+                physics: const BouncingScrollPhysics(),
+                itemCount: displayTasks.length + 1,
+                itemBuilder: (context, index) {
+                  if (index == displayTasks.length) {
+                    return SizedBox(width: AppSpacing.md);
+                  }
+                  final task = displayTasks[index];
+                  return _JobCard(
+                    title: task.title ?? 'No Title',
+                    category: task.category?.name ?? 'General',
+                    distance: task.distanceKm != null
+                        ? '${task.distanceKm!.toStringAsFixed(1)} km'
+                        : 'N/A',
+                    price: '${task.budgetMax?.toNaira(2)}',
+                    timePosted: _formatTimeAgo(task.createdAt),
+                    categoryIcon: _getCategoryIcon(task.category?.name),
+                    accentColor: _getCategoryColor(task.category?.name),
+                  );
+                },
+              );
+            },
+            loading: () {
+              return ListView.builder(
+                scrollDirection: Axis.horizontal,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: 3,
+                itemBuilder: (context, index) {
+                  return const _JobCardShimmer();
+                },
+              );
+            },
+            error: (err, st) => Center(
+              child: Text(
+                "Error loading jobs",
+                style: AppTextStyles.bodyMedium.copyWith(
+                  color: AppColors.error,
+                ),
               ),
-              _JobCard(
-                title: "House Cleaning",
-                category: "Cleaning",
-                distance: "5 km",
-                price: "₦20,000",
-                timePosted: "15 min ago",
-                categoryIcon: Icons.cleaning_services_rounded,
-                accentColor: const Color(0xFF10B981),
-              ),
-              _JobCard(
-                title: "Generator Repair",
-                category: "Electrical",
-                distance: "1.8 km",
-                price: "₦45,000",
-                timePosted: "8 min ago",
-                categoryIcon: Icons.bolt_rounded,
-                accentColor: const Color(0xFFF59E0B),
-              ),
-              SizedBox(width: AppSpacing.md),
-            ],
+            ),
           ),
         ),
       ],
     );
+  }
+
+  String _formatTimeAgo(DateTime? date) {
+    if (date == null) return '';
+    final diff = DateTime.now().difference(date);
+    if (diff.inMinutes < 60) return '${diff.inMinutes} min ago';
+    if (diff.inHours < 24) return '${diff.inHours} hrs ago';
+    return '${diff.inDays} days ago';
+  }
+
+  IconData _getCategoryIcon(String? categoryName) {
+    if (categoryName == null) return Icons.work_outline_rounded;
+    final lower = categoryName.toLowerCase();
+    if (lower.contains('plumb')) return Icons.plumbing_rounded;
+    if (lower.contains('clean')) return Icons.cleaning_services_rounded;
+    if (lower.contains('elect') || lower.contains('generator'))
+      return Icons.bolt_rounded;
+    return Icons.work_outline_rounded;
+  }
+
+  Color _getCategoryColor(String? categoryName) {
+    if (categoryName == null) return const Color(0xFF6366F1);
+    final lower = categoryName.toLowerCase();
+    if (lower.contains('plumb')) return const Color(0xFF3B82F6);
+    if (lower.contains('clean')) return const Color(0xFF10B981);
+    if (lower.contains('elect') || lower.contains('generator'))
+      return const Color(0xFFF59E0B);
+    return const Color(0xFF6366F1);
   }
 }
 
@@ -644,28 +704,36 @@ class _JobCard extends StatelessWidget {
         children: [
           // Top: Category badge + price
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Container(
-                padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
-                decoration: BoxDecoration(
-                  color: accentColor.withValues(alpha: 0.12),
-                  borderRadius: AppDecorations.radiusSm,
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(categoryIcon, color: accentColor, size: 14.r),
-                    SizedBox(width: 4.w),
-                    Text(
-                      category,
-                      style: AppTextStyles.label.copyWith(
-                        color: accentColor,
-                        fontSize: 11.sp,
-                        fontWeight: FontWeight.w600,
+              Flexible(
+                child: Container(
+                  padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 4.h),
+                  margin: EdgeInsets.only(right: 8.w),
+                  decoration: BoxDecoration(
+                    color: accentColor.withValues(alpha: 0.12),
+                    borderRadius: AppDecorations.radiusSm,
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(categoryIcon, color: accentColor, size: 12.r),
+                      SizedBox(width: 4.w),
+                      Flexible(
+                        child: Text(
+                          category,
+                          style: AppTextStyles.label.copyWith(
+                            color: accentColor,
+                            fontSize: 10.sp,
+                            fontWeight: FontWeight.w600,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
               Text(
@@ -734,6 +802,95 @@ class _JobCard extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _JobCardShimmer extends StatelessWidget {
+  const _JobCardShimmer();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 240.w,
+      margin: EdgeInsets.only(right: 12.w),
+      padding: EdgeInsets.all(16.r),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: AppDecorations.radiusMd,
+        border: Border.all(color: AppColors.border, width: 1.r),
+      ),
+      child: Shimmer.fromColors(
+        baseColor: AppColors.border,
+        highlightColor: AppColors.surface,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Container(
+                  width: 60.w,
+                  height: 24.h,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: AppDecorations.radiusSm,
+                  ),
+                ),
+                Container(
+                  width: 50.w,
+                  height: 20.h,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: AppDecorations.radiusSm,
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: 12.h),
+            Container(
+              width: 180.w,
+              height: 20.h,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: AppDecorations.radiusSm,
+              ),
+            ),
+            SizedBox(height: 8.h),
+            Row(
+              children: [
+                Container(
+                  width: 40.w,
+                  height: 16.h,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: AppDecorations.radiusSm,
+                  ),
+                ),
+                SizedBox(width: 12.w),
+                Container(
+                  width: 60.w,
+                  height: 16.h,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: AppDecorations.radiusSm,
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: 12.h),
+            Container(
+              width: double.infinity,
+              height: 40.h,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: AppDecorations.radiusSm,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
