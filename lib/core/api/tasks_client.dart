@@ -30,6 +30,15 @@ abstract class TasksClient {
     @Query("expires_at") String? expiresAt,
     @Query("customer_id") String? customerId,
   });
+
+  @GET("tasks/{taskId}")
+  Future<BaseApiResponse<Task>> getTask(@Path("taskId") String taskId);
+
+  @POST("tasks/{taskId}/bids")
+  Future<BaseApiResponse<TaskBid>> submitBid(
+    @Path("taskId") String taskId,
+    @Body() CreateBidRequest request,
+  );
 }
 
 /// Provider exposing the [TasksClient] dependency.

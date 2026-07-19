@@ -1,5 +1,8 @@
 import 'dart:async';
+import 'dart:ui';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../utils/app_exception_handler.dart';
+import '../utils/extensions/error_ext.dart';
 import '../models/models.dart';
 import '../api/tasks_client.dart';
 import 'location_provider.dart';
@@ -7,6 +10,8 @@ import 'location_provider.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 part 'tasks_provider.freezed.dart';
+
+const _radiusKm = 500.0;
 
 @freezed
 abstract class TasksFilter with _$TasksFilter {
@@ -52,9 +57,7 @@ class TasksFilterNotifier extends Notifier<TasksFilter> {
   }
 
   void updateLocation({double? radiusKm}) {
-    state = state.copyWith(
-      radiusKm: radiusKm ?? state.radiusKm,
-    );
+    state = state.copyWith(radiusKm: radiusKm ?? state.radiusKm);
   }
 
   void updateSort({String? sortBy, bool? sortDesc}) {
@@ -127,7 +130,7 @@ class TasksNotifier extends AsyncNotifier<List<TaskLite>> {
       search: filter?.search,
       latitude: coords?.latitude,
       longitude: coords?.longitude,
-      radiusKm: filter?.radiusKm,
+      radiusKm: filter?.radiusKm ?? _radiusKm,
       sortBy: filter?.sortBy ?? "created_at",
       sortDesc: filter?.sortDesc ?? true,
       regionId: filter?.regionId,
@@ -185,6 +188,7 @@ final openTasksProvider = FutureProvider<List<TaskLite>>((ref) async {
     status: 'open',
     latitude: coords?.latitude,
     longitude: coords?.longitude,
+    radiusKm: _radiusKm,
   );
   if (response.data == null) {
     throw Exception(response.detail ?? 'Failed to load open tasks');
@@ -203,6 +207,7 @@ final biddingTasksProvider = FutureProvider<List<TaskLite>>((ref) async {
     status: 'bidding',
     latitude: coords?.latitude,
     longitude: coords?.longitude,
+    radiusKm: _radiusKm,
   );
   if (response.data == null) {
     throw Exception(response.detail ?? 'Failed to load bidding tasks');
@@ -210,7 +215,10 @@ final biddingTasksProvider = FutureProvider<List<TaskLite>>((ref) async {
   return response.data!.items ?? [];
 });
 
-final customerTasksProvider = FutureProvider.family<List<TaskLite>, String>((ref, customerId) async {
+final customerTasksProvider = FutureProvider.family<List<TaskLite>, String>((
+  ref,
+  customerId,
+) async {
   final client = ref.watch(tasksClientProvider);
   Coordinates? coords;
   try {
@@ -240,4 +248,17 @@ final nearbyJobsProvider = FutureProvider<List<TaskLite>>((ref) async {
   });
   return combined;
 });
+
+final taskDetailProvider = FutureProvider.family<Task, String>((
+  ref,
+  taskId,
+) async {
+  final client = ref.watch(tasksClientProvider);
+  final response = await client.getTask(taskId);
+  if (response.data == null) {
+    throw Exception(response.detail ?? 'Failed to load task details');
+  }
+  return response.data!;
+});
+
 

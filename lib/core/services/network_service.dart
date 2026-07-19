@@ -73,9 +73,7 @@ final dioProvider = Provider<Dio>((ref) {
     InterceptorsWrapper(
       onResponse: (response, handler) {
         if (response.data is Map<String, dynamic>) {
-          if (!response.data.containsKey('status_code')) {
-            response.data['status_code'] = response.statusCode;
-          }
+          response.data['status_code'] = response.statusCode;
         }
         handler.next(response);
       },

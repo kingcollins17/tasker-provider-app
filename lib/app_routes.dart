@@ -72,6 +72,7 @@ class AppRoutes {
           return OnboardServicesScreen(categoryId: categoryId);
         },
       ),
+      ...TasksRoutes.detailRoutes,
       ...KycRoutes.routes,
       ...NotificationsRoutes.routes,
       ...ChatsRoutes.routes,

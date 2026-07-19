@@ -2,6 +2,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:go_router/go_router.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:tasker_app/core/providers/providers.dart';
 import 'package:tasker_app/core/utils/extensions/num_ext.dart';
@@ -10,6 +11,7 @@ import '../../../core/ui/designs/text_styles.dart';
 import '../../../core/ui/designs/decorations.dart';
 import '../../../core/ui/designs/spacing.dart';
 import '../../notifications/presentation/widgets/notification_icon.dart';
+import '../../tasks/tasks_routes.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -601,6 +603,14 @@ class _NearbyJobsSection extends ConsumerWidget {
                         ? '${task.distanceKm!.toStringAsFixed(1)} km'
                         : 'N/A',
                     price: '${task.budgetMax?.toNaira(2)}',
+                    onTap: () {
+                      if (task.id != null) {
+                        context.pushNamed(
+                          TasksRoutes.taskDetailRoute,
+                          pathParameters: {'taskId': task.id!},
+                        );
+                      }
+                    },
                     timePosted: _formatTimeAgo(task.createdAt),
                     categoryIcon: _getCategoryIcon(task.category?.name),
                     accentColor: _getCategoryColor(task.category?.name),
@@ -669,6 +679,7 @@ class _JobCard extends StatelessWidget {
   final String timePosted;
   final IconData categoryIcon;
   final Color accentColor;
+  final VoidCallback? onTap;
 
   const _JobCard({
     required this.title,
@@ -678,130 +689,134 @@ class _JobCard extends StatelessWidget {
     required this.timePosted,
     required this.categoryIcon,
     required this.accentColor,
+    this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 240.w,
-      margin: EdgeInsets.only(right: 12.w),
-      padding: EdgeInsets.all(16.r),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: AppDecorations.radiusMd,
-        border: Border.all(color: AppColors.border, width: 1.r),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.15),
-            blurRadius: 10.r,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          // Top: Category badge + price
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Flexible(
-                child: Container(
-                  padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 4.h),
-                  margin: EdgeInsets.only(right: 8.w),
-                  decoration: BoxDecoration(
-                    color: accentColor.withValues(alpha: 0.12),
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 240.w,
+        margin: EdgeInsets.only(right: 12.w),
+        padding: EdgeInsets.all(16.r),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: AppDecorations.radiusMd,
+          border: Border.all(color: AppColors.border, width: 1.r),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.15),
+              blurRadius: 10.r,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            // Top: Category badge + price
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Flexible(
+                  child: Container(
+                    padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 4.h),
+                    margin: EdgeInsets.only(right: 8.w),
+                    decoration: BoxDecoration(
+                      color: accentColor.withValues(alpha: 0.12),
+                      borderRadius: AppDecorations.radiusSm,
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(categoryIcon, color: accentColor, size: 12.r),
+                        SizedBox(width: 4.w),
+                        Flexible(
+                          child: Text(
+                            category,
+                            style: AppTextStyles.label.copyWith(
+                              color: accentColor,
+                              fontSize: 10.sp,
+                              fontWeight: FontWeight.w600,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                Text(
+                  price,
+                  style: AppTextStyles.h3.copyWith(
+                    color: AppColors.textPrimary,
+                    fontSize: 16.sp,
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: 12.h),
+            // Title
+            Text(
+              title,
+              style: AppTextStyles.bodyLarge.copyWith(
+                color: AppColors.textPrimary,
+                fontWeight: FontWeight.w600,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            SizedBox(height: 8.h),
+            // Distance + time
+            Row(
+              children: [
+                Icon(
+                  Icons.location_on_outlined,
+                  color: AppColors.textMuted,
+                  size: 14.r,
+                ),
+                SizedBox(width: 4.w),
+                Text(distance, style: AppTextStyles.bodySmall),
+                SizedBox(width: 12.w),
+                Icon(
+                  Icons.access_time_rounded,
+                  color: AppColors.textMuted,
+                  size: 14.r,
+                ),
+                SizedBox(width: 4.w),
+                Text(timePosted, style: AppTextStyles.bodySmall),
+              ],
+            ),
+            SizedBox(height: 12.h),
+            // Accept button
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: onTap,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: accentColor,
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  padding: EdgeInsets.symmetric(vertical: 10.h),
+                  shape: RoundedRectangleBorder(
                     borderRadius: AppDecorations.radiusSm,
                   ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(categoryIcon, color: accentColor, size: 12.r),
-                      SizedBox(width: 4.w),
-                      Flexible(
-                        child: Text(
-                          category,
-                          style: AppTextStyles.label.copyWith(
-                            color: accentColor,
-                            fontSize: 10.sp,
-                            fontWeight: FontWeight.w600,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
+                ),
+                child: Text(
+                  "View & Bid",
+                  style: AppTextStyles.buttonMedium.copyWith(
+                    color: Colors.white,
+                    fontSize: 13.sp,
                   ),
                 ),
               ),
-              Text(
-                price,
-                style: AppTextStyles.h3.copyWith(
-                  color: AppColors.textPrimary,
-                  fontSize: 16.sp,
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: 12.h),
-          // Title
-          Text(
-            title,
-            style: AppTextStyles.bodyLarge.copyWith(
-              color: AppColors.textPrimary,
-              fontWeight: FontWeight.w600,
             ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-          SizedBox(height: 8.h),
-          // Distance + time
-          Row(
-            children: [
-              Icon(
-                Icons.location_on_outlined,
-                color: AppColors.textMuted,
-                size: 14.r,
-              ),
-              SizedBox(width: 4.w),
-              Text(distance, style: AppTextStyles.bodySmall),
-              SizedBox(width: 12.w),
-              Icon(
-                Icons.access_time_rounded,
-                color: AppColors.textMuted,
-                size: 14.r,
-              ),
-              SizedBox(width: 4.w),
-              Text(timePosted, style: AppTextStyles.bodySmall),
-            ],
-          ),
-          SizedBox(height: 12.h),
-          // Accept button
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: () {},
-              style: ElevatedButton.styleFrom(
-                backgroundColor: accentColor,
-                foregroundColor: Colors.white,
-                elevation: 0,
-                padding: EdgeInsets.symmetric(vertical: 10.h),
-                shape: RoundedRectangleBorder(
-                  borderRadius: AppDecorations.radiusSm,
-                ),
-              ),
-              child: Text(
-                "View & Bid",
-                style: AppTextStyles.buttonMedium.copyWith(
-                  color: Colors.white,
-                  fontSize: 13.sp,
-                ),
-              ),
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
