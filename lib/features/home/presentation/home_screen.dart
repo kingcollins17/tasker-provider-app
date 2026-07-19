@@ -51,7 +51,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     super.dispose();
   }
 
-  Animation<double> _staggered(int index, {int total = 8}) {
+  Animation<double> _staggered(int index, {int total = 6}) {
     final start = (index / total).clamp(0.0, 1.0);
     final end = ((index + 2) / total).clamp(0.0, 1.0);
     return CurvedAnimation(
@@ -109,39 +109,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 
             SliverToBoxAdapter(child: AppSpacing.hLg),
 
-            // ─── QUICK ACTIONS ───
-            SliverPadding(
-              padding: AppSpacing.pHorsMd,
-              sliver: SliverToBoxAdapter(
-                child: _SlideUp(
-                  animation: _staggered(2),
-                  child: const _QuickActionsRow(),
-                ),
-              ),
-            ),
-
-            SliverToBoxAdapter(child: AppSpacing.hLg),
-
             // ─── NEARBY JOBS ───
             SliverPadding(
               padding: EdgeInsets.only(left: AppSpacing.md),
               sliver: SliverToBoxAdapter(
                 child: _SlideUp(
-                  animation: _staggered(3),
+                  animation: _staggered(2),
                   child: const _NearbyJobsSection(),
-                ),
-              ),
-            ),
-
-            SliverToBoxAdapter(child: AppSpacing.hLg),
-
-            // ─── TODAY'S SCHEDULE ───
-            SliverPadding(
-              padding: AppSpacing.pHorsMd,
-              sliver: SliverToBoxAdapter(
-                child: _SlideUp(
-                  animation: _staggered(4),
-                  child: const _ScheduleSection(),
                 ),
               ),
             ),
@@ -153,7 +127,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
               padding: AppSpacing.pHorsMd,
               sliver: SliverToBoxAdapter(
                 child: _SlideUp(
-                  animation: _staggered(5),
+                  animation: _staggered(3),
                   child: const _PerformanceSnapshotCard(),
                 ),
               ),
@@ -166,7 +140,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
               padding: AppSpacing.pHorsMd,
               sliver: SliverToBoxAdapter(
                 child: _SlideUp(
-                  animation: _staggered(6),
+                  animation: _staggered(4),
                   child: const _PendingOffersSection(),
                 ),
               ),
@@ -179,7 +153,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
               padding: AppSpacing.pHorsMd,
               sliver: SliverToBoxAdapter(
                 child: _SlideUp(
-                  animation: _staggered(7),
+                  animation: _staggered(5),
                   child: const _RecentMessagesSection(),
                 ),
               ),
@@ -358,8 +332,52 @@ class _HomeAppBar extends StatelessWidget {
               ],
             ),
           ),
+          _TopIconAction(
+            icon: Icons.headset_mic_rounded,
+            color: const Color(0xFFEC4899),
+            onTap: () {},
+          ),
           const NotificationIcon(),
         ],
+      ),
+    );
+  }
+}
+
+class _TopIconAction extends StatelessWidget {
+  final IconData icon;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _TopIconAction({
+    required this.icon,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        width: 44.r,
+        height: 44.r,
+        margin: EdgeInsets.only(right: 8.w),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 10.r,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Center(
+          child: Icon(icon, color: color, size: 24.r),
+        ),
       ),
     );
   }
@@ -381,7 +399,7 @@ class _EarningsCard extends StatelessWidget {
       builder: (context, child) {
         final angle = gradientController.value * 2 * math.pi;
         return Container(
-          padding: EdgeInsets.all(20.r),
+          padding: EdgeInsets.all(16.r),
           decoration: BoxDecoration(
             borderRadius: AppDecorations.radiusLg,
             gradient: LinearGradient(
@@ -463,12 +481,12 @@ class _EarningsCard extends StatelessWidget {
               ),
             ],
           ),
-          SizedBox(height: 20.h),
+          SizedBox(height: 12.h),
           Text(
             "₦18,500",
             style: AppTextStyles.h1.copyWith(
               color: Colors.white,
-              fontSize: 36.sp,
+              fontSize: 32.sp,
               letterSpacing: -0.5,
             ),
           ),
@@ -477,129 +495,6 @@ class _EarningsCard extends StatelessWidget {
             "3 completed tasks today",
             style: AppTextStyles.bodyMedium.copyWith(
               color: Colors.white.withValues(alpha: 0.7),
-            ),
-          ),
-          SizedBox(height: 16.h),
-          // Glassmorphic divider area
-          Container(
-            padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 10.h),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.1),
-              borderRadius: AppDecorations.radiusSm,
-              border: Border.all(
-                color: Colors.white.withValues(alpha: 0.15),
-                width: 1.r,
-              ),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Row(
-                  children: [
-                    Icon(
-                      Icons.account_balance_wallet_outlined,
-                      color: Colors.white.withValues(alpha: 0.8),
-                      size: 16.r,
-                    ),
-                    AppSpacing.wSm,
-                    Text(
-                      "View Wallet",
-                      style: AppTextStyles.buttonMedium.copyWith(
-                        color: Colors.white,
-                        fontSize: 13.sp,
-                      ),
-                    ),
-                  ],
-                ),
-                Icon(
-                  Icons.arrow_forward_ios_rounded,
-                  color: Colors.white.withValues(alpha: 0.7),
-                  size: 14.r,
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// QUICK ACTIONS
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _QuickActionsRow extends StatelessWidget {
-  const _QuickActionsRow();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        _QuickAction(
-          icon: Icons.calendar_month_rounded,
-          label: "Schedule",
-          color: Color(0xFF3B82F6),
-        ),
-        _QuickAction(
-          icon: Icons.account_balance_wallet_rounded,
-          label: "Wallet",
-          color: Color(0xFF10B981),
-        ),
-        _QuickAction(
-          icon: Icons.star_rounded,
-          label: "Reviews",
-          color: Color(0xFFF59E0B),
-        ),
-        _QuickAction(
-          icon: Icons.headset_mic_rounded,
-          label: "Support",
-          color: Color(0xFFEC4899),
-        ),
-      ],
-    );
-  }
-}
-
-class _QuickAction extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final Color color;
-
-  const _QuickAction({
-    required this.icon,
-    required this.label,
-    required this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () {},
-      child: Column(
-        children: [
-          Container(
-            width: 60.r,
-            height: 60.r,
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.1),
-              borderRadius: AppDecorations.radiusMd,
-              border: Border.all(
-                color: color.withValues(alpha: 0.2),
-                width: 1.r,
-              ),
-            ),
-            child: Center(
-              child: Icon(icon, color: color, size: 26.r),
-            ),
-          ),
-          SizedBox(height: 8.h),
-          Text(
-            label,
-            style: AppTextStyles.label.copyWith(
-              color: AppColors.textSecondary,
-              fontSize: 11.sp,
             ),
           ),
         ],
@@ -837,138 +732,6 @@ class _JobCard extends StatelessWidget {
                 ),
               ),
             ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// SCHEDULE SECTION
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _ScheduleSection extends StatelessWidget {
-  const _ScheduleSection();
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _SectionHeader(
-          title: "Today's Schedule",
-          actionText: "View All",
-          onAction: () {},
-        ),
-        _ScheduleItem(
-          time: "9:00 AM",
-          title: "House Cleaning",
-          subtitle: "Mrs. Adewale • Nsukka",
-          status: "Accepted",
-          statusColor: AppColors.success,
-          icon: Icons.cleaning_services_rounded,
-        ),
-        SizedBox(height: 8.h),
-        _ScheduleItem(
-          time: "2:00 PM",
-          title: "Generator Repair",
-          subtitle: "Mr. Ibrahim • University Road",
-          status: "Upcoming",
-          statusColor: AppColors.warning,
-          icon: Icons.bolt_rounded,
-        ),
-      ],
-    );
-  }
-}
-
-class _ScheduleItem extends StatelessWidget {
-  final String time;
-  final String title;
-  final String subtitle;
-  final String status;
-  final Color statusColor;
-  final IconData icon;
-
-  const _ScheduleItem({
-    required this.time,
-    required this.title,
-    required this.subtitle,
-    required this.status,
-    required this.statusColor,
-    required this.icon,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: EdgeInsets.all(14.r),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: AppDecorations.radiusMd,
-        border: Border.all(color: AppColors.border, width: 1.r),
-      ),
-      child: Row(
-        children: [
-          // Vertical accent bar
-          Container(
-            width: 4.r,
-            height: 44.h,
-            decoration: BoxDecoration(
-              color: statusColor,
-              borderRadius: BorderRadius.circular(2.r),
-            ),
-          ),
-          SizedBox(width: 12.w),
-          // Icon
-          Container(
-            padding: EdgeInsets.all(10.r),
-            decoration: BoxDecoration(
-              color: statusColor.withValues(alpha: 0.1),
-              borderRadius: AppDecorations.radiusSm,
-            ),
-            child: Icon(icon, color: statusColor, size: 20.r),
-          ),
-          SizedBox(width: 12.w),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: AppTextStyles.bodyLarge.copyWith(
-                    color: AppColors.textPrimary,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 14.sp,
-                  ),
-                ),
-                SizedBox(height: 2.h),
-                Text(subtitle, style: AppTextStyles.bodySmall),
-              ],
-            ),
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Container(
-                padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
-                decoration: BoxDecoration(
-                  color: statusColor.withValues(alpha: 0.12),
-                  borderRadius: AppDecorations.radiusSm,
-                ),
-                child: Text(
-                  status,
-                  style: AppTextStyles.label.copyWith(
-                    color: statusColor,
-                    fontSize: 11.sp,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-              SizedBox(height: 4.h),
-              Text(time, style: AppTextStyles.label.copyWith(fontSize: 11.sp)),
-            ],
           ),
         ],
       ),
