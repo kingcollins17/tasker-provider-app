@@ -28,15 +28,24 @@ class TaskDetailScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final taskAsync = ref.watch(taskDetailProvider(taskId));
+    final myBidAsync = ref.watch(myBidProvider(taskId));
 
     return Scaffold(
       backgroundColor: AppColors.background,
       extendBody: true,
       bottomNavigationBar: taskAsync.hasValue && taskAsync.value != null
-          ? _SendABidFAB(taskId: taskId, task: taskAsync.value!)
+          ? _SendABidFAB(
+              taskId: taskId,
+              task: taskAsync.value!,
+              myBid: myBidAsync.value,
+            )
           : null,
       body: taskAsync.when(
-        data: (task) => _TaskDetailBody(task: task, distance: distance),
+        data: (task) => _TaskDetailBody(
+          task: task,
+          distance: distance,
+          myBid: myBidAsync.value,
+        ),
         loading: () => const _TaskDetailShimmer(),
         error: (err, st) => SafeArea(
           child: Column(
@@ -63,37 +72,77 @@ class TaskDetailScreen extends ConsumerWidget {
 class _SendABidFAB extends ConsumerWidget {
   final String taskId;
   final Task task;
+  final TaskBid? myBid;
 
-  const _SendABidFAB({required this.taskId, required this.task});
+  const _SendABidFAB({required this.taskId, required this.task, this.myBid});
+
+  bool get _isUpdate =>
+      myBid != null &&
+      myBid!.status != 'rejected' &&
+      myBid!.status != 'cancelled';
+
+  Duration? _parseDuration(String? duration) {
+    if (duration == null) return null;
+    final parts = duration.split(' ');
+    if (parts.isNotEmpty) {
+      final hours = int.tryParse(parts[0]);
+      if (hours != null) return Duration(hours: hours);
+    }
+    return null;
+  }
 
   Future<void> _onSendBid(BuildContext context, WidgetRef ref) async {
     final request = await BidBottomSheet.show(
       context,
-      initialBudget: task.budgetMax ?? task.budgetMin,
+      initialBudget: _isUpdate
+          ? myBid!.price
+          : (task.budgetMax ?? task.budgetMin),
+      initialMessage: _isUpdate ? myBid!.message : null,
+      initialDurationEstimate: _isUpdate
+          ? _parseDuration(myBid!.estimatedDuration)
+          : null,
+      title: _isUpdate ? 'Update Your Bid' : null,
+      submitButtonText: _isUpdate ? 'Update Bid' : null,
     );
     debugLog(request);
 
     if (request != null && context.mounted) {
       context.showLoading();
-      await ref
-          .read(submitBidProvider.notifier)
-          .submitBid(
-            taskId,
-            request,
-            onSuccess: () {
-              if (context.mounted) {
-                context.hideLoading();
-                context.showMessage('Bid submitted');
-              }
-              ref.invalidate(taskDetailProvider(taskId));
-            },
-            onError: (error) {
-              if (context.mounted) {
-                context.hideLoading();
-                context.showError(error);
-              }
-            },
+
+      void onSuccess() {
+        if (context.mounted) {
+          context.hideLoading();
+          context.showMessage(
+            _isUpdate
+                ? 'Your bid has been successfully updated! 🎉'
+                : 'Your bid has been successfully submitted! 🎉',
           );
+        }
+        ref.invalidate(taskDetailProvider(taskId));
+        ref.invalidate(myBidProvider(taskId));
+      }
+
+      void onError(String error) {
+        if (context.mounted) {
+          context.hideLoading();
+          context.showError(error);
+        }
+      }
+
+      if (_isUpdate && myBid?.id != null) {
+        await ref
+            .read(bidManagementProvider.notifier)
+            .updateBid(
+              myBid!.id!,
+              request,
+              onSuccess: onSuccess,
+              onError: onError,
+            );
+      } else {
+        await ref
+            .read(bidManagementProvider.notifier)
+            .submitBid(taskId, request, onSuccess: onSuccess, onError: onError);
+      }
     }
   }
 
@@ -138,14 +187,14 @@ class _SendABidFAB extends ConsumerWidget {
                     borderRadius: BorderRadius.circular(8.r),
                   ),
                   child: Icon(
-                    Icons.gavel_rounded,
+                    _isUpdate ? Icons.edit_rounded : Icons.gavel_rounded,
                     color: Colors.white,
                     size: 18.r,
                   ),
                 ),
                 SizedBox(width: 12.w),
                 Text(
-                  'Send a Bid',
+                  _isUpdate ? 'Update Bid' : 'Send a Bid',
                   style: AppTextStyles.buttonLarge.copyWith(
                     color: Colors.white,
                     fontWeight: FontWeight.w700,
@@ -170,8 +219,9 @@ class _SendABidFAB extends ConsumerWidget {
 class _TaskDetailBody extends StatelessWidget {
   final Task task;
   final String? distance;
+  final TaskBid? myBid;
 
-  const _TaskDetailBody({required this.task, this.distance});
+  const _TaskDetailBody({required this.task, this.distance, this.myBid});
 
   @override
   Widget build(BuildContext context) {
@@ -179,7 +229,9 @@ class _TaskDetailBody extends StatelessWidget {
       physics: const BouncingScrollPhysics(),
       slivers: [
         // ─── HERO HEADER ───
-        SliverToBoxAdapter(child: _TaskHeroHeader(task: task)),
+        SliverToBoxAdapter(
+          child: _TaskHeroHeader(task: task, myBid: myBid),
+        ),
 
         SliverPadding(
           padding: AppSpacing.pHorsMd,
@@ -272,13 +324,14 @@ class _DetailAppBar extends StatelessWidget {
 // HERO HEADER (gradient banner with status badge + title)
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _TaskHeroHeader extends StatelessWidget {
+class _TaskHeroHeader extends ConsumerWidget {
   final Task task;
+  final TaskBid? myBid;
 
-  const _TaskHeroHeader({required this.task});
+  const _TaskHeroHeader({required this.task, this.myBid});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final statusInfo = _StatusHelper.resolve(task.status);
 
     return Container(
@@ -336,7 +389,38 @@ class _TaskHeroHeader extends StatelessWidget {
                                   );
                                   break;
                                 case TaskOptionAction.cancelBid:
-                                  context.showMessage('Cancel bid clicked');
+                                  if (myBid != null && myBid!.id != null) {
+                                    context.showLoading();
+                                    await ref
+                                        .read(bidManagementProvider.notifier)
+                                        .withdrawBid(
+                                          myBid!.id!,
+                                          onSuccess: () {
+                                            if (context.mounted) {
+                                              context.hideLoading();
+                                              context.showMessage(
+                                                'Your bid has been successfully withdrawn',
+                                              );
+                                            }
+                                            ref.invalidate(
+                                              taskDetailProvider(task.id!),
+                                            );
+                                            ref.invalidate(
+                                              myBidProvider(task.id!),
+                                            );
+                                          },
+                                          onError: (error) {
+                                            if (context.mounted) {
+                                              context.hideLoading();
+                                              context.showError(error);
+                                            }
+                                          },
+                                        );
+                                  } else {
+                                    context.showError(
+                                      'No active bid to cancel.',
+                                    );
+                                  }
                                   break;
                                 case TaskOptionAction.report:
                                   context.showMessage('Report task clicked');

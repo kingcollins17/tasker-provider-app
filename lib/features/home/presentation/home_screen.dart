@@ -290,7 +290,7 @@ class _HomeAppBar extends StatelessWidget {
                 ),
                 child: Center(
                   child: Text(
-                    firstName[0].toUpperCase(),
+                    firstName.isNotEmpty ? firstName[0].toUpperCase() : '?',
                     style: AppTextStyles.h2.copyWith(
                       color: Colors.white,
                       fontSize: 20.sp,
@@ -609,7 +609,11 @@ class _NearbyJobsSection extends ConsumerWidget {
                           TasksRoutes.taskDetailRoute,
                           pathParameters: {'taskId': task.id!},
                           queryParameters: task.distanceKm != null
-                              ? {'distance': task.distanceKm!.toStringAsFixed(1)}
+                              ? {
+                                  'distance': task.distanceKm!.toStringAsFixed(
+                                    1,
+                                  ),
+                                }
                               : const {},
                         );
                       }

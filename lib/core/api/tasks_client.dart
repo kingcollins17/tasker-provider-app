@@ -39,6 +39,22 @@ abstract class TasksClient {
     @Path("taskId") String taskId,
     @Body() CreateBidRequest request,
   );
+
+  @GET("tasks/{taskId}/my-bid")
+  Future<BaseApiResponse<TaskBid>> getMyBidForTask(
+    @Path("taskId") String taskId,
+  );
+
+  @PUT("bids/{bidId}")
+  Future<BaseApiResponse<TaskBid>> updateBid(
+    @Path("bidId") String bidId,
+    @Body() CreateBidRequest request,
+  );
+
+  @POST("bids/{bidId}/withdraw")
+  Future<BaseApiResponse<TaskBid>> withdrawBid(
+    @Path("bidId") String bidId,
+  );
 }
 
 /// Provider exposing the [TasksClient] dependency.
