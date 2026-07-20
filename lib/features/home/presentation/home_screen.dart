@@ -73,7 +73,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     final user = ref.watch(userProvider);
     final address = ref.watch(userAddressProvider);
 
-    final firstName = user.value?.providerProfile?.firstName ?? 'there';
+    final firstName = user.value?.providerProfile?.firstName ?? '';
     final locationText = _buildLocationText(address.value);
 
     return Scaffold(
@@ -608,6 +608,9 @@ class _NearbyJobsSection extends ConsumerWidget {
                         context.pushNamed(
                           TasksRoutes.taskDetailRoute,
                           pathParameters: {'taskId': task.id!},
+                          queryParameters: task.distanceKm != null
+                              ? {'distance': task.distanceKm!.toStringAsFixed(1)}
+                              : const {},
                         );
                       }
                     },
@@ -723,7 +726,10 @@ class _JobCard extends StatelessWidget {
               children: [
                 Flexible(
                   child: Container(
-                    padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 4.h),
+                    padding: EdgeInsets.symmetric(
+                      horizontal: 6.w,
+                      vertical: 4.h,
+                    ),
                     margin: EdgeInsets.only(right: 8.w),
                     decoration: BoxDecoration(
                       color: accentColor.withValues(alpha: 0.12),

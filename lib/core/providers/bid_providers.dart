@@ -17,7 +17,6 @@ class SubmitBidNotifier extends AsyncNotifier<void> {
     VoidCallback? onSuccess,
     void Function(String)? onError,
   }) async {
-    state = const AsyncValue.loading();
     try {
       final client = ref.read(tasksClientProvider);
       final response = await client.submitBid(taskId, request);
@@ -26,12 +25,10 @@ class SubmitBidNotifier extends AsyncNotifier<void> {
         throw Exception(response.detail ?? 'Failed to submit bid');
       }
 
-      state = const AsyncValue.data(null);
-      ref.invalidate(taskDetailProvider(taskId));
       onSuccess?.call();
     } catch (e, st) {
       AppExceptionHandler.instance.handleError(e, st);
-      state = AsyncValue.error(e, st);
+
       onError?.call(e.toFriendlyString());
     }
   }

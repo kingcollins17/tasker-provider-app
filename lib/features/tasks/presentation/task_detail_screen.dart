@@ -10,12 +10,20 @@ import 'package:tasker_app/core/ui/designs/decorations.dart';
 import 'package:tasker_app/core/ui/designs/spacing.dart';
 import 'package:tasker_app/core/ui/designs/text_styles.dart';
 import 'package:tasker_app/core/ui/widgets/app_error_widget.dart';
+import 'package:tasker_app/core/utils/extensions/flushbar_context_ext.dart';
 import 'package:tasker_app/core/utils/extensions/num_ext.dart';
+import 'package:tasker_app/core/providers/bid_providers.dart';
+import 'package:tasker_app/core/utils/extensions/loading_context_ext.dart';
+import 'package:tasker_app/features/tasks/presentation/widgets/bid_bottom_sheet.dart';
+import 'package:tasker_app/features/tasks/presentation/widgets/task_details_option_sheet.dart';
+
+import '../../../core/utils/debug_logger.dart';
 
 class TaskDetailScreen extends ConsumerWidget {
   final String taskId;
+  final String? distance;
 
-  const TaskDetailScreen({super.key, required this.taskId});
+  const TaskDetailScreen({super.key, required this.taskId, this.distance});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -23,8 +31,12 @@ class TaskDetailScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: AppColors.background,
+      extendBody: true,
+      bottomNavigationBar: taskAsync.hasValue && taskAsync.value != null
+          ? _SendABidFAB(taskId: taskId, task: taskAsync.value!)
+          : null,
       body: taskAsync.when(
-        data: (task) => _TaskDetailBody(task: task),
+        data: (task) => _TaskDetailBody(task: task, distance: distance),
         loading: () => const _TaskDetailShimmer(),
         error: (err, st) => SafeArea(
           child: Column(
@@ -48,10 +60,118 @@ class TaskDetailScreen extends ConsumerWidget {
 // MAIN BODY (data loaded)
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _TaskDetailBody extends StatelessWidget {
+class _SendABidFAB extends ConsumerWidget {
+  final String taskId;
   final Task task;
 
-  const _TaskDetailBody({required this.task});
+  const _SendABidFAB({required this.taskId, required this.task});
+
+  Future<void> _onSendBid(BuildContext context, WidgetRef ref) async {
+    final request = await BidBottomSheet.show(
+      context,
+      initialBudget: task.budgetMax ?? task.budgetMin,
+    );
+    debugLog(request);
+
+    if (request != null && context.mounted) {
+      context.showLoading();
+      await ref
+          .read(submitBidProvider.notifier)
+          .submitBid(
+            taskId,
+            request,
+            onSuccess: () {
+              if (context.mounted) {
+                context.hideLoading();
+                context.showMessage('Bid submitted');
+              }
+              ref.invalidate(taskDetailProvider(taskId));
+            },
+            onError: (error) {
+              if (context.mounted) {
+                context.hideLoading();
+                context.showError(error);
+              }
+            },
+          );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.fromLTRB(20.w, 12.h, 20.w, 12.h),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            AppColors.background.withValues(alpha: 0.0),
+            AppColors.background.withValues(alpha: 0.85),
+            AppColors.background,
+          ],
+          stops: const [0.0, 0.35, 0.65],
+        ),
+      ),
+      child: SafeArea(
+        top: false,
+        child: GestureDetector(
+          onTap: () => _onSendBid(context, ref),
+          child: Container(
+            padding: EdgeInsets.symmetric(vertical: 16.h),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [AppColors.primary, AppColors.primaryDark],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(16.r),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  padding: EdgeInsets.all(6.r),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(8.r),
+                  ),
+                  child: Icon(
+                    Icons.gavel_rounded,
+                    color: Colors.white,
+                    size: 18.r,
+                  ),
+                ),
+                SizedBox(width: 12.w),
+                Text(
+                  'Send a Bid',
+                  style: AppTextStyles.buttonLarge.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.3,
+                  ),
+                ),
+                SizedBox(width: 8.w),
+                Icon(
+                  Icons.arrow_forward_rounded,
+                  color: Colors.white.withValues(alpha: 0.8),
+                  size: 18.r,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _TaskDetailBody extends StatelessWidget {
+  final Task task;
+  final String? distance;
+
+  const _TaskDetailBody({required this.task, this.distance});
 
   @override
   Widget build(BuildContext context) {
@@ -59,9 +179,7 @@ class _TaskDetailBody extends StatelessWidget {
       physics: const BouncingScrollPhysics(),
       slivers: [
         // ─── HERO HEADER ───
-        SliverToBoxAdapter(
-          child: _TaskHeroHeader(task: task),
-        ),
+        SliverToBoxAdapter(child: _TaskHeroHeader(task: task)),
 
         SliverPadding(
           padding: AppSpacing.pHorsMd,
@@ -81,11 +199,6 @@ class _TaskDetailBody extends StatelessWidget {
 
                 AppSpacing.hLg,
 
-                // ─── BUDGET & PRICING ───
-                _BudgetCard(task: task),
-
-                AppSpacing.hLg,
-
                 // ─── SCHEDULE & TIMING ───
                 _ScheduleSection(task: task),
 
@@ -93,7 +206,10 @@ class _TaskDetailBody extends StatelessWidget {
 
                 // ─── LOCATIONS ───
                 if (task.locations != null && task.locations!.isNotEmpty) ...[
-                  _LocationsSection(locations: task.locations!),
+                  _LocationsSection(
+                    locations: task.locations!,
+                    distance: distance,
+                  ),
                   AppSpacing.hLg,
                 ],
 
@@ -199,7 +315,35 @@ class _TaskHeroHeader extends StatelessWidget {
                         SizedBox(width: 4.w),
                         _CircleIconButton(
                           icon: Icons.more_vert_rounded,
-                          onTap: () {},
+                          onTap: () async {
+                            final action = await TaskDetailsOptionSheet.show(
+                              context,
+                              task: task,
+                            );
+
+                            if (action != null && context.mounted) {
+                              switch (action) {
+                                case TaskOptionAction.bid:
+                                  await BidBottomSheet.show(
+                                    context,
+                                    initialBudget:
+                                        task.budgetMax ?? task.budgetMin,
+                                  );
+                                  break;
+                                case TaskOptionAction.chat:
+                                  context.showMessage(
+                                    'Chat with customer clicked',
+                                  );
+                                  break;
+                                case TaskOptionAction.cancelBid:
+                                  context.showMessage('Cancel bid clicked');
+                                  break;
+                                case TaskOptionAction.report:
+                                  context.showMessage('Report task clicked');
+                                  break;
+                              }
+                            }
+                          },
                         ),
                       ],
                     ),
@@ -249,6 +393,8 @@ class _TaskHeroHeader extends StatelessWidget {
                           ),
                         ],
                       ),
+                    SizedBox(height: 16.h),
+                    _BudgetCard(task: task),
                   ],
                 ),
               ),
@@ -391,10 +537,12 @@ class _BudgetCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final hasRange =
-        task.budgetMin != null && task.budgetMax != null;
+        task.budgetMin != null &&
+        task.budgetMax != null &&
+        task.budgetMin != task.budgetMax;
     final budgetText = hasRange
         ? '${task.budgetMin!.toNaira()} – ${task.budgetMax!.toNaira()}'
-        : task.budgetMax?.toNaira() ?? task.budgetMin?.toNaira() ?? 'N/A';
+        : (task.budgetMax ?? task.budgetMin)?.toNaira() ?? 'N/A';
 
     return Container(
       padding: EdgeInsets.all(16.r),
@@ -469,9 +617,9 @@ class _BudgetCard extends StatelessWidget {
     return model
         .replaceAll('_', ' ')
         .split(' ')
-        .map((w) => w.isNotEmpty
-            ? '${w[0].toUpperCase()}${w.substring(1)}'
-            : '')
+        .map(
+          (w) => w.isNotEmpty ? '${w[0].toUpperCase()}${w.substring(1)}' : '',
+        )
         .join(' ');
   }
 }
@@ -487,8 +635,7 @@ class _ScheduleSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final hasSchedule =
-        task.scheduledStartAt != null || task.expiresAt != null;
+    final hasSchedule = task.scheduledStartAt != null || task.expiresAt != null;
 
     if (!hasSchedule && task.createdAt == null) {
       return const SizedBox.shrink();
@@ -521,7 +668,7 @@ class _ScheduleSection extends StatelessWidget {
               if (task.expiresAt != null)
                 _InfoRow(
                   icon: Icons.timer_off_rounded,
-                  label: 'Expires',
+                  label: 'Accepting Offers Until',
                   value: _formatDate(task.expiresAt!),
                   color: const Color(0xFFF59E0B),
                 ),
@@ -552,20 +699,23 @@ class _ScheduleSection extends StatelessWidget {
 
 class _LocationsSection extends StatelessWidget {
   final List<TaskLocation> locations;
+  final String? distance;
 
-  const _LocationsSection({required this.locations});
+  const _LocationsSection({required this.locations, this.distance});
 
   @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _SectionTitle(title: 'Locations'),
+        _SectionTitle(title: 'Location'),
         SizedBox(height: 8.h),
-        ...locations.map((loc) => Padding(
-              padding: EdgeInsets.only(bottom: 8.h),
-              child: _LocationCard(location: loc),
-            )),
+        ...locations.map(
+          (loc) => Padding(
+            padding: EdgeInsets.only(bottom: 8.h),
+            child: _LocationCard(location: loc, distance: distance),
+          ),
+        ),
       ],
     );
   }
@@ -573,18 +723,19 @@ class _LocationsSection extends StatelessWidget {
 
 class _LocationCard extends StatelessWidget {
   final TaskLocation location;
+  final String? distance;
 
-  const _LocationCard({required this.location});
+  const _LocationCard({required this.location, this.distance});
 
   @override
   Widget build(BuildContext context) {
     final addressParts = <String>[];
-    if (location.address != null) addressParts.add(location.address!);
     if (location.city != null) addressParts.add(location.city!);
     if (location.state != null) addressParts.add(location.state!);
 
-    final addressText =
-        addressParts.isNotEmpty ? addressParts.join(', ') : 'No address';
+    final addressText = addressParts.isNotEmpty
+        ? addressParts.join(', ')
+        : 'No location specified';
 
     return Container(
       padding: EdgeInsets.all(14.r),
@@ -612,16 +763,6 @@ class _LocationCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                if (location.locationType != null)
-                  Text(
-                    _formatLocationType(location.locationType!),
-                    style: AppTextStyles.label.copyWith(
-                      color: const Color(0xFF3B82F6),
-                      fontWeight: FontWeight.w600,
-                      fontSize: 11.sp,
-                    ),
-                  ),
-                SizedBox(height: 2.h),
                 Text(
                   addressText,
                   style: AppTextStyles.bodyMedium.copyWith(
@@ -631,10 +772,10 @@ class _LocationCard extends StatelessWidget {
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
-                if (location.distanceKm != null) ...[
+                if (distance != null) ...[
                   SizedBox(height: 4.h),
                   Text(
-                    '${location.distanceKm!.toStringAsFixed(1)} km away',
+                    '$distance km away',
                     style: AppTextStyles.bodySmall.copyWith(
                       color: AppColors.textMuted,
                     ),
@@ -651,16 +792,6 @@ class _LocationCard extends StatelessWidget {
         ],
       ),
     );
-  }
-
-  String _formatLocationType(String type) {
-    return type
-        .replaceAll('_', ' ')
-        .split(' ')
-        .map((w) => w.isNotEmpty
-            ? '${w[0].toUpperCase()}${w.substring(1)}'
-            : '')
-        .join(' ');
   }
 }
 
@@ -696,10 +827,12 @@ class _AttachmentsSection extends StatelessWidget {
         // Non-image attachments list
         ...attachments
             .where((a) => !(a.mimeType?.startsWith('image/') ?? false))
-            .map((a) => Padding(
-                  padding: EdgeInsets.only(bottom: 8.h),
-                  child: _FileAttachmentItem(attachment: a),
-                )),
+            .map(
+              (a) => Padding(
+                padding: EdgeInsets.only(bottom: 8.h),
+                child: _FileAttachmentItem(attachment: a),
+              ),
+            ),
       ],
     );
   }
@@ -730,10 +863,7 @@ class _AttachmentsSection extends StatelessWidget {
                   width: 200.w,
                   decoration: BoxDecoration(
                     color: AppColors.surface,
-                    border: Border.all(
-                      color: AppColors.border,
-                      width: 1.r,
-                    ),
+                    border: Border.all(color: AppColors.border, width: 1.r),
                     borderRadius: AppDecorations.radiusMd,
                   ),
                   child: img.url != null
@@ -819,11 +949,7 @@ class _FileAttachmentItem extends StatelessWidget {
               ],
             ),
           ),
-          Icon(
-            Icons.download_rounded,
-            color: AppColors.textMuted,
-            size: 20.r,
-          ),
+          Icon(Icons.download_rounded, color: AppColors.textMuted, size: 20.r),
         ],
       ),
     );
@@ -891,8 +1017,9 @@ class _AssignmentCard extends StatelessWidget {
                 _InfoRow(
                   icon: Icons.event_available_rounded,
                   label: 'Assigned',
-                  value: DateFormat('MMM d, yyyy • h:mm a')
-                      .format(assignment.assignedAt!),
+                  value: DateFormat(
+                    'MMM d, yyyy • h:mm a',
+                  ).format(assignment.assignedAt!),
                   color: const Color(0xFF3B82F6),
                 ),
               ],
@@ -901,8 +1028,9 @@ class _AssignmentCard extends StatelessWidget {
                 _InfoRow(
                   icon: Icons.check_circle_rounded,
                   label: 'Completed',
-                  value: DateFormat('MMM d, yyyy • h:mm a')
-                      .format(assignment.completedAt!),
+                  value: DateFormat(
+                    'MMM d, yyyy • h:mm a',
+                  ).format(assignment.completedAt!),
                   color: const Color(0xFF10B981),
                 ),
               ],
@@ -931,10 +1059,7 @@ class _SectionTitle extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(
-          title,
-          style: AppTextStyles.h3.copyWith(fontSize: 16.sp),
-        ),
+        Text(title, style: AppTextStyles.h3.copyWith(fontSize: 16.sp)),
         if (trailing != null) trailing!,
       ],
     );
@@ -961,10 +1086,7 @@ class _StatusBadge extends StatelessWidget {
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.15),
         borderRadius: AppDecorations.radiusXl,
-        border: Border.all(
-          color: color.withValues(alpha: 0.3),
-          width: 1.r,
-        ),
+        border: Border.all(color: color.withValues(alpha: 0.3), width: 1.r),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -1049,11 +1171,7 @@ class _InfoRow extends StatelessWidget {
 class _InfoDivider extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return Divider(
-      color: AppColors.border,
-      height: 1.h,
-      thickness: 1.r,
-    );
+    return Divider(color: AppColors.border, height: 1.h, thickness: 1.r);
   }
 }
 
@@ -1110,10 +1228,7 @@ class _ActionChip extends StatelessWidget {
         decoration: BoxDecoration(
           color: color.withValues(alpha: 0.12),
           borderRadius: AppDecorations.radiusXl,
-          border: Border.all(
-            color: color.withValues(alpha: 0.25),
-            width: 1.r,
-          ),
+          border: Border.all(color: color.withValues(alpha: 0.25), width: 1.r),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -1238,13 +1353,13 @@ class _StatusHelper {
     switch (status?.toLowerCase()) {
       case 'open':
         return const _StatusInfo(
-          label: 'Open',
+          label: 'Accepting Offers',
           color: Color(0xFF10B981),
           icon: Icons.radio_button_checked_rounded,
         );
       case 'bidding':
         return const _StatusInfo(
-          label: 'Bidding',
+          label: 'Accepting Offers',
           color: Color(0xFF3B82F6),
           icon: Icons.gavel_rounded,
         );

@@ -21,7 +21,8 @@ class TasksRoutes {
       name: taskDetailRoute,
       builder: (context, state) {
         final taskId = state.pathParameters['taskId']!;
-        return TaskDetailScreen(taskId: taskId);
+        final distance = state.uri.queryParameters['distance'];
+        return TaskDetailScreen(taskId: taskId, distance: distance);
       },
     ),
   ];

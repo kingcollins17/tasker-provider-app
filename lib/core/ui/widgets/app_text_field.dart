@@ -38,6 +38,12 @@ class AppTextField extends StatelessWidget {
   /// Optional prefix text to show before the input (e.g. +234).
   final String? prefixText;
 
+  /// Optional minimum number of lines.
+  final int? minLines;
+
+  /// Optional maximum number of lines.
+  final int? maxLines;
+
   const AppTextField({
     super.key,
     this.controller,
@@ -51,6 +57,8 @@ class AppTextField extends StatelessWidget {
     this.onChanged,
     this.maxLength,
     this.prefixText,
+    this.minLines,
+    this.maxLines = 1,
   });
 
   @override
@@ -84,6 +92,8 @@ class AppTextField extends StatelessWidget {
           validator: validator,
           onChanged: onChanged,
           maxLength: maxLength,
+          minLines: minLines,
+          maxLines: maxLines,
           style: AppTextStyles.bodyMedium.copyWith(
             color: isDark ? AppColors.textPrimary : const Color(0xFF0F172A),
           ),
