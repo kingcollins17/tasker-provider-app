@@ -191,8 +191,8 @@ Map<String, dynamic> _$TaskAttachmentToJson(TaskAttachment instance) =>
 
 CreateBidRequest _$CreateBidRequestFromJson(Map<String, dynamic> json) =>
     CreateBidRequest(
-      price: (json['price'] as num).toDouble(),
-      message: json['message'] as String,
+      price: (json['price'] as num?)?.toDouble(),
+      message: json['message'] as String?,
       estimatedDuration: json['estimated_duration'] as String?,
     );
 

@@ -183,8 +183,8 @@ class TaskAttachment {
 
 @JsonSerializable(fieldRename: FieldRename.snake)
 class CreateBidRequest {
-  final double price;
-  final String message;
+  final double? price;
+  final String? message;
   final String? estimatedDuration;
 
   CreateBidRequest({
@@ -198,3 +198,5 @@ class CreateBidRequest {
 
   Map<String, dynamic> toJson() => _$CreateBidRequestToJson(this);
 }
+
+typedef UpdateBidRequest = CreateBidRequest;

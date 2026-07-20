@@ -10,12 +10,18 @@ class BidBottomSheet extends StatefulWidget {
   final double? initialBudget;
   final String? initialMessage;
   final Duration? initialDurationEstimate;
+  final String? title;
+  final String? subtitle;
+  final String? submitButtonText;
 
   const BidBottomSheet({
     super.key,
     this.initialBudget,
     this.initialMessage,
     this.initialDurationEstimate,
+    this.title,
+    this.subtitle,
+    this.submitButtonText,
   });
 
   static Future<CreateBidRequest?> show(
@@ -23,6 +29,9 @@ class BidBottomSheet extends StatefulWidget {
     double? initialBudget,
     String? initialMessage,
     Duration? initialDurationEstimate,
+    String? title,
+    String? subtitle,
+    String? submitButtonText,
   }) {
     return showModalBottomSheet<CreateBidRequest>(
       context: context,
@@ -36,6 +45,9 @@ class BidBottomSheet extends StatefulWidget {
           initialBudget: initialBudget,
           initialMessage: initialMessage,
           initialDurationEstimate: initialDurationEstimate,
+          title: title,
+          subtitle: subtitle,
+          submitButtonText: submitButtonText,
         ),
       ),
     );
@@ -182,7 +194,7 @@ class _BidBottomSheetState extends State<BidBottomSheet> {
           ),
           SizedBox(height: 16.h),
           Text(
-            'Submit Your Bid',
+            widget.title ?? 'Submit Your Bid',
             style: AppTextStyles.h3.copyWith(
               color: isDark
                   ? AppColors.textPrimary
@@ -193,7 +205,7 @@ class _BidBottomSheetState extends State<BidBottomSheet> {
           ),
           SizedBox(height: 6.h),
           Text(
-            'Set your price and estimated time to complete this task',
+            widget.subtitle ?? 'Set your price and estimated time to complete this task',
             style: AppTextStyles.bodyMedium.copyWith(
               color: isDark
                   ? AppColors.textMuted
@@ -422,7 +434,7 @@ class _BidBottomSheetState extends State<BidBottomSheet> {
                   Icon(Icons.send_rounded, color: Colors.white, size: 20.r),
                   SizedBox(width: 10.w),
                   Text(
-                    'Submit Bid',
+                    widget.submitButtonText ?? 'Send Bid',
                     style: AppTextStyles.buttonLarge.copyWith(
                       color: Colors.white,
                       fontWeight: FontWeight.w700,
