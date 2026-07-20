@@ -35,7 +35,8 @@ class TaskDetailScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: AppColors.background,
       extendBody: true,
-      bottomNavigationBar: taskAsync.hasValue && taskAsync.value != null
+      bottomNavigationBar:
+          taskAsync.hasValue && taskAsync.value != null && !myBidAsync.isLoading
           ? _SendABidFAB(
               taskId: taskId,
               task: taskAsync.value!,
@@ -172,7 +173,7 @@ class _SendABidFAB extends ConsumerWidget {
 
       return Container(
         width: double.infinity,
-        padding: EdgeInsets.fromLTRB(20.w, 16.h, 20.w, 24.h),
+        padding: EdgeInsets.fromLTRB(20.w, 12.h, 20.w, 4.h),
         decoration: BoxDecoration(
           color: Theme.of(context).brightness == Brightness.dark
               ? AppColors.surface
@@ -257,7 +258,7 @@ class _SendABidFAB extends ConsumerWidget {
                 ),
                 SizedBox(width: 12.w),
                 Text(
-                  _isUpdate ? 'Update Bid' : 'Send a Bid',
+                  _isUpdate ? 'Update your Bid' : 'Send a Bid',
                   style: AppTextStyles.buttonLarge.copyWith(
                     color: Colors.white,
                     fontWeight: FontWeight.w700,
