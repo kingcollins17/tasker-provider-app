@@ -1,4 +1,7 @@
 import 'package:json_annotation/json_annotation.dart';
+import '../users/customer_lite.dart';
+import 'task_lite.dart';
+
 
 part 'task.g.dart';
 
@@ -25,6 +28,7 @@ class Task {
 
   final TaskAssignment? assignment;
   final List<TaskAttachment>? attachments;
+  final CustomerLite? customer;
 
   Task({
     this.id,
@@ -48,6 +52,7 @@ class Task {
 
     this.assignment,
     this.attachments,
+    this.customer,
   });
 
   factory Task.fromJson(Map<String, dynamic> json) => _$TaskFromJson(json);
@@ -102,6 +107,7 @@ class TaskBid {
   final String? status;
   final DateTime? createdAt;
   final DateTime? updatedAt;
+  final TaskLite? task;
 
   TaskBid({
     this.id,
@@ -113,6 +119,7 @@ class TaskBid {
     this.status,
     this.createdAt,
     this.updatedAt,
+    this.task,
   });
 
   factory TaskBid.fromJson(Map<String, dynamic> json) =>
@@ -200,3 +207,4 @@ class CreateBidRequest {
 }
 
 typedef UpdateBidRequest = CreateBidRequest;
+

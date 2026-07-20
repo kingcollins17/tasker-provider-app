@@ -11,6 +11,8 @@ import '../../../core/ui/designs/text_styles.dart';
 import '../../../core/ui/designs/decorations.dart';
 import '../../../core/ui/designs/spacing.dart';
 import '../../notifications/presentation/widgets/notification_icon.dart';
+// import 'widgets/stats_widgets.dart';
+import 'package:tasker_app/core/ui/widgets/current_location.dart';
 import '../../tasks/tasks_routes.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
@@ -74,7 +76,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     final address = ref.watch(userAddressProvider);
 
     final firstName = user.value?.providerProfile?.firstName ?? '';
-    final locationText = _buildLocationText(address.value);
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -90,7 +91,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                   animation: _staggered(0),
                   child: _HomeAppBar(
                     firstName: firstName,
-                    locationText: locationText,
                     pulseController: _pulseController,
                     isOnline: isOnline,
                   ),
@@ -180,19 +180,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
     );
   }
-
-  String _buildLocationText(dynamic addressValue) {
-    if (addressValue == null) return 'Fetching location…';
-    final a = addressValue;
-    final parts = <String>[];
-    if (a.locality != null && a.locality!.isNotEmpty) {
-      parts.add(a.locality!);
-    }
-    if (a.administrativeArea != null && a.administrativeArea!.isNotEmpty) {
-      parts.add(a.administrativeArea!);
-    }
-    return parts.isNotEmpty ? parts.join(', ') : 'Fetching location…';
-  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -224,13 +211,11 @@ class _SlideUp extends StatelessWidget {
 
 class _HomeAppBar extends StatelessWidget {
   final String firstName;
-  final String locationText;
   final AnimationController pulseController;
   final bool isOnline;
 
   const _HomeAppBar({
     required this.firstName,
-    required this.locationText,
     required this.pulseController,
     required this.isOnline,
   });
@@ -333,6 +318,8 @@ class _HomeAppBar extends StatelessWidget {
                   firstName,
                   style: AppTextStyles.h3.copyWith(fontSize: 20.sp),
                 ),
+                SizedBox(height: 4.h),
+                const CurrentLocation(),
               ],
             ),
           ),

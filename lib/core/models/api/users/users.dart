@@ -14,4 +14,4 @@ export 'update_provider_profile_request.dart';
 export 'provider_profile.dart';
 export 'region.dart';
 export 'user.dart';
-
+export 'customer_lite.dart';

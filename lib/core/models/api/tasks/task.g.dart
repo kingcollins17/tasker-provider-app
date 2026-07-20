@@ -41,6 +41,9 @@ Task _$TaskFromJson(Map<String, dynamic> json) => Task(
   attachments: (json['attachments'] as List<dynamic>?)
       ?.map((e) => TaskAttachment.fromJson(e as Map<String, dynamic>))
       .toList(),
+  customer: json['customer'] == null
+      ? null
+      : CustomerLite.fromJson(json['customer'] as Map<String, dynamic>),
 );
 
 Map<String, dynamic> _$TaskToJson(Task instance) => <String, dynamic>{
@@ -64,6 +67,7 @@ Map<String, dynamic> _$TaskToJson(Task instance) => <String, dynamic>{
   'locations': instance.locations,
   'assignment': instance.assignment,
   'attachments': instance.attachments,
+  'customer': instance.customer,
 };
 
 TaskLocation _$TaskLocationFromJson(Map<String, dynamic> json) => TaskLocation(
@@ -115,6 +119,9 @@ TaskBid _$TaskBidFromJson(Map<String, dynamic> json) => TaskBid(
   updatedAt: json['updated_at'] == null
       ? null
       : DateTime.parse(json['updated_at'] as String),
+  task: json['task'] == null
+      ? null
+      : TaskLite.fromJson(json['task'] as Map<String, dynamic>),
 );
 
 Map<String, dynamic> _$TaskBidToJson(TaskBid instance) => <String, dynamic>{
@@ -127,6 +134,7 @@ Map<String, dynamic> _$TaskBidToJson(TaskBid instance) => <String, dynamic>{
   'status': instance.status,
   'created_at': instance.createdAt?.toIso8601String(),
   'updated_at': instance.updatedAt?.toIso8601String(),
+  'task': instance.task,
 };
 
 TaskAssignment _$TaskAssignmentFromJson(Map<String, dynamic> json) =>

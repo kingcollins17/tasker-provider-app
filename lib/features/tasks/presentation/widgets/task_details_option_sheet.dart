@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:tasker_app/core/models/api/tasks/task.dart';
+import 'package:tasker_app/core/providers/bid_providers.dart';
 import 'package:tasker_app/core/ui/designs/colors.dart';
 import 'package:tasker_app/core/ui/designs/text_styles.dart';
+import 'package:tasker_app/core/ui/widgets/confirmation_dialog.dart';
 
 enum TaskOptionAction { bid, chat, cancelBid, report }
 
-class TaskDetailsOptionSheet extends StatelessWidget {
+class TaskDetailsOptionSheet extends ConsumerWidget {
   final Task task;
 
   const TaskDetailsOptionSheet({super.key, required this.task});
@@ -23,9 +26,31 @@ class TaskDetailsOptionSheet extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+
+    final myBidAsync = ref.watch(myBidProvider(task.id ?? ''));
+    final myBid = myBidAsync.value;
+
+    final canBid = switch (task.status?.toLowerCase()) {
+      'open' || 'bidding' => true,
+      _ => false,
+    };
+
+    final isBidPending = switch (myBid?.status?.toLowerCase()) {
+      'pending' => true,
+      _ => false,
+    };
+
+    final showBidButton =
+        canBid &&
+        switch (myBid?.status?.toLowerCase()) {
+          'cancelled' || 'rejected' || 'withdrawn' => false,
+          _ => true,
+        };
+
+    final showCancelButton = isBidPending;
 
     return Container(
       decoration: BoxDecoration(
@@ -52,25 +77,41 @@ class TaskDetailsOptionSheet extends StatelessWidget {
             ),
           ),
           SizedBox(height: 24.h),
-          _OptionTile(
-            icon: Icons.gavel_rounded,
-            title: 'Send a Bid',
-            onTap: () => Navigator.of(context).pop(TaskOptionAction.bid),
-            isDark: isDark,
-          ),
+          if (showBidButton)
+            _OptionTile(
+              icon: Icons.gavel_rounded,
+              title: isBidPending ? 'Update Bid' : 'Send a Bid',
+              onTap: () => Navigator.of(context).pop(TaskOptionAction.bid),
+              isDark: isDark,
+            ),
           _OptionTile(
             icon: Icons.chat_bubble_outline_rounded,
             title: 'Chat with Customer',
             onTap: () => Navigator.of(context).pop(TaskOptionAction.chat),
             isDark: isDark,
           ),
-          _OptionTile(
-            icon: Icons.cancel_outlined,
-            title: 'Cancel Bid',
-            onTap: () => Navigator.of(context).pop(TaskOptionAction.cancelBid),
-            isDark: isDark,
-            isDestructive: true,
-          ),
+          if (showCancelButton)
+            _OptionTile(
+              icon: Icons.cancel_outlined,
+              title: 'Cancel Bid',
+              onTap: () async {
+                final confirm = await ConfirmationDialog.show(
+                  context,
+                  title: 'Cancel Bid',
+                  message:
+                      'Are you sure you want to cancel your bid? This action cannot be undone.',
+                  confirmText: 'Cancel Bid',
+                  cancelText: 'Keep Bid',
+                  isDestructive: true,
+                  icon: Icons.warning_amber_rounded,
+                );
+                if (confirm && context.mounted) {
+                  Navigator.of(context).pop(TaskOptionAction.cancelBid);
+                }
+              },
+              isDark: isDark,
+              isDestructive: true,
+            ),
           _OptionTile(
             icon: Icons.report_problem_outlined,
             title: 'Report Task',

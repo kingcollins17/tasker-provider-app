@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:go_router/go_router.dart';
+import 'package:hugeicons/hugeicons.dart';
 import 'package:intl/intl.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:tasker_app/core/models/models.dart';
@@ -148,6 +150,67 @@ class _SendABidFAB extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final canBid = switch (task.status?.toLowerCase()) {
+      'open' || 'bidding' => true,
+      _ => false,
+    };
+
+    final bidStatus = myBid?.status?.toLowerCase();
+
+    final isBidFinalized = switch (bidStatus) {
+      'rejected' || 'cancelled' || 'withdrawn' => true,
+      _ => false,
+    };
+
+    if (isBidFinalized) {
+      final message = switch (bidStatus) {
+        'rejected' => 'Your bid was not accepted. Keep trying on other tasks!',
+        'cancelled' => 'You cancelled your bid for this task.',
+        'withdrawn' => 'You withdrew your bid for this task.',
+        _ => 'Your bid is no longer active.',
+      };
+
+      return Container(
+        width: double.infinity,
+        padding: EdgeInsets.fromLTRB(20.w, 16.h, 20.w, 24.h),
+        decoration: BoxDecoration(
+          color: Theme.of(context).brightness == Brightness.dark
+              ? AppColors.surface
+              : Colors.white,
+          border: Border(
+            top: BorderSide(color: AppColors.border, width: 1.r),
+          ),
+        ),
+        child: SafeArea(
+          top: false,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.info_outline_rounded,
+                color: AppColors.textMuted,
+                size: 20.r,
+              ),
+              SizedBox(width: 8.w),
+              Flexible(
+                child: Text(
+                  message,
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    color: AppColors.textMuted,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (!canBid) {
+      return const SizedBox.shrink();
+    }
+
     return Container(
       width: double.infinity,
       padding: EdgeInsets.fromLTRB(20.w, 12.h, 20.w, 12.h),
@@ -501,66 +564,127 @@ class _PosterInfoRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final customerName =
+        task.customer?.fullname?.split(' ').first ?? 'Customer';
+    final rating = task.customer?.averageRatings?.toStringAsFixed(1) ?? 'New';
+
     return Container(
-      padding: EdgeInsets.all(14.r),
+      padding: EdgeInsets.all(16.r),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: AppDecorations.radiusMd,
+        borderRadius: BorderRadius.circular(20.r),
         border: Border.all(color: AppColors.border, width: 1.r),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 10.r,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Row(
         children: [
           // Customer avatar
           Container(
-            width: 44.r,
-            height: 44.r,
+            width: 48.r,
+            height: 48.r,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               gradient: const LinearGradient(
-                colors: [Color(0xFFEC4899), Color(0xFFF472B6)],
+                colors: [
+                  Color(0xFF8B5CF6),
+                  Color(0xFFC084FC),
+                ], // Elegant purple gradient
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF8B5CF6).withValues(alpha: 0.25),
+                  blurRadius: 8.r,
+                  offset: const Offset(0, 4),
+                ),
+              ],
             ),
             child: Center(
-              child: Icon(
-                Icons.person_rounded,
+              child: HugeIcon(
+                icon: HugeIcons.strokeRoundedUser,
                 color: Colors.white,
-                size: 22.r,
+                size: 24.r,
               ),
             ),
           ),
-          SizedBox(width: 12.w),
+          SizedBox(width: 14.w),
 
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Customer',
-                  style: AppTextStyles.bodyLarge.copyWith(
-                    fontWeight: FontWeight.w600,
+                  customerName,
+                  style: AppTextStyles.h3.copyWith(
                     color: AppColors.textPrimary,
-                    fontSize: 14.sp,
+                    fontSize: 16.sp,
                   ),
                 ),
-                SizedBox(height: 2.h),
-                Text(
-                  'Task Poster',
-                  style: AppTextStyles.bodySmall.copyWith(
-                    color: AppColors.textMuted,
-                  ),
+                SizedBox(height: 4.h),
+                Row(
+                  children: [
+                    HugeIcon(
+                      icon: HugeIcons.strokeRoundedStar,
+                      color: const Color(0xFFF59E0B),
+                      size: 14.r,
+                    ),
+                    SizedBox(width: 4.w),
+                    Text(
+                      rating,
+                      style: AppTextStyles.bodySmall.copyWith(
+                        color: AppColors.textSecondary,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
           ),
 
           // Message button
-          _ActionChip(
-            label: 'Message',
-            icon: Icons.chat_bubble_outline_rounded,
-            color: AppColors.primaryLight,
-            onTap: () {},
+          Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () {},
+              borderRadius: BorderRadius.circular(12.r),
+              child: Container(
+                padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 10.h),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12.r),
+                  border: Border.all(
+                    color: AppColors.primary.withValues(alpha: 0.2),
+                    width: 1.r,
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    HugeIcon(
+                      icon: HugeIcons.strokeRoundedMessage01,
+                      color: AppColors.primary,
+                      size: 18.r,
+                    ),
+                    SizedBox(width: 6.w),
+                    Text(
+                      'Message',
+                      style: AppTextStyles.bodySmall.copyWith(
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ),
         ],
       ),
@@ -684,27 +808,9 @@ class _BudgetCard extends StatelessWidget {
               ],
             ),
           ),
-
-          // Pricing model badge
-          if (task.pricingModel != null)
-            _StatusBadge(
-              label: _formatPricingModel(task.pricingModel!),
-              color: const Color(0xFF10B981),
-              icon: Icons.sell_rounded,
-            ),
         ],
       ),
     );
-  }
-
-  String _formatPricingModel(String model) {
-    return model
-        .replaceAll('_', ' ')
-        .split(' ')
-        .map(
-          (w) => w.isNotEmpty ? '${w[0].toUpperCase()}${w.substring(1)}' : '',
-        )
-        .join(' ');
   }
 }
 
