@@ -2,7 +2,6 @@ import 'package:json_annotation/json_annotation.dart';
 import '../users/customer_lite.dart';
 import 'task_lite.dart';
 
-
 part 'task.g.dart';
 
 @JsonSerializable(fieldRename: FieldRename.snake)
@@ -14,9 +13,15 @@ class Task {
   final String? description;
   final String? categoryId;
   final String? serviceId;
-  final double? budgetMin;
-  final double? budgetMax;
-  final String? pricingModel;
+  final double? basePrice;
+  final double? distanceFee;
+  final double? timeFee;
+  final double? urgencyFee;
+  final double? complexityFee;
+  final double? surgeMultiplier;
+  final double? customerTotalPrice;
+  final double? platformFee;
+  final double? providerPayout;
   final String? status;
   final DateTime? createdAt;
   final DateTime? expiresAt;
@@ -38,9 +43,15 @@ class Task {
     this.description,
     this.categoryId,
     this.serviceId,
-    this.budgetMin,
-    this.budgetMax,
-    this.pricingModel,
+    this.basePrice,
+    this.distanceFee,
+    this.timeFee,
+    this.urgencyFee,
+    this.complexityFee,
+    this.surgeMultiplier,
+    this.customerTotalPrice,
+    this.platformFee,
+    this.providerPayout,
     this.status,
     this.createdAt,
     this.expiresAt,
@@ -49,7 +60,6 @@ class Task {
     this.completionPin,
     this.updatedAt,
     this.locations,
-
     this.assignment,
     this.attachments,
     this.customer,
@@ -207,4 +217,3 @@ class CreateBidRequest {
 }
 
 typedef UpdateBidRequest = CreateBidRequest;
-

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:go_router/go_router.dart';
 import 'package:hugeicons/hugeicons.dart';
 import 'package:intl/intl.dart';
 import 'package:shimmer/shimmer.dart';
@@ -97,9 +96,7 @@ class _SendABidFAB extends ConsumerWidget {
   Future<void> _onSendBid(BuildContext context, WidgetRef ref) async {
     final request = await BidBottomSheet.show(
       context,
-      initialBudget: _isUpdate
-          ? myBid!.price
-          : (task.budgetMax ?? task.budgetMin),
+      initialBudget: _isUpdate ? myBid!.price : task.providerPayout,
       initialMessage: _isUpdate ? myBid!.message : null,
       initialDurationEstimate: _isUpdate
           ? _parseDuration(myBid!.estimatedDuration)
@@ -443,8 +440,7 @@ class _TaskHeroHeader extends ConsumerWidget {
                                 case TaskOptionAction.bid:
                                   await BidBottomSheet.show(
                                     context,
-                                    initialBudget:
-                                        task.budgetMax ?? task.budgetMin,
+                                    initialBudget: task.providerPayout,
                                   );
                                   break;
                                 case TaskOptionAction.chat:
@@ -745,13 +741,7 @@ class _BudgetCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final hasRange =
-        task.budgetMin != null &&
-        task.budgetMax != null &&
-        task.budgetMin != task.budgetMax;
-    final budgetText = hasRange
-        ? '${task.budgetMin!.toNaira()} – ${task.budgetMax!.toNaira()}'
-        : (task.budgetMax ?? task.budgetMin)?.toNaira() ?? 'N/A';
+    final budgetText = task.providerPayout?.toNaira() ?? 'N/A';
 
     return Container(
       padding: EdgeInsets.all(16.r),
@@ -1045,7 +1035,7 @@ class _AttachmentsSection extends StatelessWidget {
             scrollDirection: Axis.horizontal,
             physics: const BouncingScrollPhysics(),
             itemCount: images.length,
-            separatorBuilder: (_, __) => SizedBox(width: 8.w),
+            separatorBuilder: (context, index) => SizedBox(width: 8.w),
             itemBuilder: (context, index) {
               final img = images[index];
               return ClipRRect(
@@ -1061,7 +1051,7 @@ class _AttachmentsSection extends StatelessWidget {
                       ? Image.network(
                           img.url!,
                           fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => Center(
+                          errorBuilder: (context, error, stackTrace) => Center(
                             child: Icon(
                               Icons.broken_image_rounded,
                               color: AppColors.textMuted,
@@ -1251,7 +1241,7 @@ class _SectionTitle extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(title, style: AppTextStyles.h3.copyWith(fontSize: 16.sp)),
-        if (trailing != null) trailing!,
+        trailing ?? const SizedBox.shrink(),
       ],
     );
   }
@@ -1389,52 +1379,6 @@ class _CircleIconButton extends StatelessWidget {
         ),
         child: Center(
           child: Icon(icon, color: AppColors.textSecondary, size: 20.r),
-        ),
-      ),
-    );
-  }
-}
-
-// ─── Action Chip ───
-
-class _ActionChip extends StatelessWidget {
-  final String label;
-  final IconData icon;
-  final Color color;
-  final VoidCallback onTap;
-
-  const _ActionChip({
-    required this.label,
-    required this.icon,
-    required this.color,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.12),
-          borderRadius: AppDecorations.radiusXl,
-          border: Border.all(color: color.withValues(alpha: 0.25), width: 1.r),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, color: color, size: 16.r),
-            SizedBox(width: 6.w),
-            Text(
-              label,
-              style: AppTextStyles.label.copyWith(
-                color: color,
-                fontWeight: FontWeight.w600,
-                fontSize: 12.sp,
-              ),
-            ),
-          ],
         ),
       ),
     );

@@ -70,6 +70,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     ref.watch(userAddressProvider);
     ref.watch(currentRegionProvider);
     ref.watch(deviceTrayNotificationProvider);
+    ref.watch(offerPingListenerProvider);
     ref.watch(pingLocationProvider);
     final user = ref.watch(userProvider);
     final address = ref.watch(userAddressProvider);

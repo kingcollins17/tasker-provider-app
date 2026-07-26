@@ -7,6 +7,7 @@ import '../services/local_storage_service.dart';
 import '../services/web_socket_connection_handler.dart';
 import '../services/device_tray.dart';
 import 'notifications_provider.dart';
+import 'package:tasker_app/features/tasks/presentation/widgets/offer_ping_bottom_sheet.dart';
 
 /// AsyncNotifierProvider that maintains a WebSocket connection and exposes a broadcast stream.
 class NotificationsWebSocketNotifier extends AsyncNotifier<Stream<dynamic>> {
@@ -225,3 +226,35 @@ NotificationEventType? _parseRaw(dynamic raw) {
   // Unrecognized payload structure
   return null;
 }
+
+/// Provider that listens for [NotificationEventType.offerPing] events and
+/// shows the [OfferPingBottomSheet] when one arrives with a valid `task_id`.
+final offerPingListenerProvider = Provider<void>((ref) {
+  ref.listen<AsyncValue<NotificationEvent>>(notificationEventsStream, (
+    previous,
+    next,
+  ) {
+    if (!next.hasValue || next.value == null) return;
+
+    final event = next.value!;
+    if (event.type != NotificationEventType.offerPing) return;
+
+    final raw = event.data;
+    if (raw is! Map<String, dynamic>) return;
+
+    // Extract task_id from the payload — check root, then nested 'data'
+    final taskId =
+        raw['task_id'] as String? ??
+        (raw['data'] is Map<String, dynamic>
+            ? (raw['data'] as Map<String, dynamic>)['task_id'] as String?
+            : null);
+
+    if (taskId == null || taskId.isEmpty) {
+      debugLog('offerPingListenerProvider: no task_id found in payload');
+      return;
+    }
+
+    debugLog('offerPingListenerProvider: showing offer ping for task $taskId');
+    OfferPingBottomSheet.show(taskId);
+  });
+});

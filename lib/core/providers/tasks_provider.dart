@@ -261,4 +261,36 @@ final taskDetailProvider = FutureProvider.family<Task, String>((
   return response.data!;
 });
 
+/// Handles responding to dispatch pings (accept / decline).
+class DispatchPingNotifier extends Notifier<AsyncValue<void>> {
+  @override
+  AsyncValue<void> build() => const AsyncData(null);
 
+  /// Sends the provider's response (`accepted` or `declined`) for the given
+  /// [taskId] dispatch ping.
+  Future<void> respond(
+    String taskId, {
+    required String status,
+    VoidCallback? onSuccess,
+    void Function(String)? onError,
+  }) async {
+    try {
+      final client = ref.read(tasksClientProvider);
+      await client.respondToDispatchPing(
+        taskId,
+        DispatchRespondRequest(status: status),
+      );
+
+      onSuccess?.call();
+    } catch (e, st) {
+      AppExceptionHandler.instance.handleError(e, st);
+
+      onError?.call(e.toFriendlyString());
+    }
+  }
+}
+
+final dispatchPingProvider =
+    NotifierProvider.autoDispose<DispatchPingNotifier, AsyncValue<void>>(
+      DispatchPingNotifier.new,
+    );

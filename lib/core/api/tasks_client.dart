@@ -55,6 +55,12 @@ abstract class TasksClient {
   Future<BaseApiResponse<TaskBid>> withdrawBid(
     @Path("bidId") String bidId,
   );
+
+  @POST("tasks/{taskId}/dispatch/respond")
+  Future<BaseApiResponse<dynamic>> respondToDispatchPing(
+    @Path("taskId") String taskId,
+    @Body() DispatchRespondRequest request,
+  );
 }
 
 /// Provider exposing the [TasksClient] dependency.
