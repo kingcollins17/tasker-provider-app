@@ -1,5 +1,7 @@
 import 'package:json_annotation/json_annotation.dart';
 import 'provider_profile.dart';
+import 'user_location.dart';
+import 'payment_account.dart';
 
 part 'user.g.dart';
 
@@ -24,6 +26,10 @@ class User {
   final String? regionId;
   @JsonKey(name: 'provider_profile')
   final ProviderProfile? providerProfile;
+  final List<dynamic>? devices;
+  final UserLocation? location;
+  @JsonKey(name: 'payment_account')
+  final PaymentAccount? paymentAccount;
 
   User({
     this.id,
@@ -37,6 +43,9 @@ class User {
     this.updatedAt,
     this.regionId,
     this.providerProfile,
+    this.devices,
+    this.location,
+    this.paymentAccount,
   });
 
   factory User.fromJson(Map<String, dynamic> json) => _$UserFromJson(json);

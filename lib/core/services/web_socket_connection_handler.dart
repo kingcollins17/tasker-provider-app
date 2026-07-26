@@ -243,10 +243,7 @@ class WebSocketConnectionHandler {
     final base = Uri.parse(url);
     if (queryParameters != null && queryParameters!.isNotEmpty) {
       return base.replace(
-        queryParameters: {
-          ...base.queryParameters,
-          ...queryParameters!,
-        },
+        queryParameters: {...base.queryParameters, ...queryParameters!},
       );
     }
     return base;
@@ -270,6 +267,8 @@ class WebSocketConnectionHandler {
     try {
       final decoded = jsonDecode(raw);
       _messageController.add(decoded);
+      debugLog('WebSocketConnectionHandler: Received message from websocket');
+      debugLog(decoded);
     } catch (e) {
       debugLog('WebSocketConnectionHandler: JSON decode failed for: $raw — $e');
     }

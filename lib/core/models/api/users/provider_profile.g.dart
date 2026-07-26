@@ -22,6 +22,9 @@ ProviderProfile _$ProviderProfileFromJson(Map<String, dynamic> json) =>
       rejectionReason: json['rejection_reason'] as String?,
       verifiedAt: json['verified_at'] as String?,
       addressLine: json['address_line'] as String?,
+      isOnline: json['is_online'] as bool?,
+      dutyStatus: json['duty_status'] as String?,
+      lastHeartbeatAt: json['last_heartbeat_at'] as String?,
       services: json['services'] as List<dynamic>?,
     );
 
@@ -41,5 +44,8 @@ Map<String, dynamic> _$ProviderProfileToJson(ProviderProfile instance) =>
       'rejection_reason': instance.rejectionReason,
       'verified_at': instance.verifiedAt,
       'address_line': instance.addressLine,
+      'is_online': instance.isOnline,
+      'duty_status': instance.dutyStatus,
+      'last_heartbeat_at': instance.lastHeartbeatAt,
       'services': instance.services,
     };

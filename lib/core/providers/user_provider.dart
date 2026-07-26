@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'dart:ui';
+import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../api/api.dart';
 import '../models/models.dart';
@@ -147,13 +148,67 @@ class UserNotifier extends AsyncNotifier<User> {
       onError?.call(e.toFriendlyString());
     }
   }
+
+  Future<void> updatePayoutAccount({
+    String? bankCode,
+    String? bankName,
+    String? accountName,
+    String? accountNumber,
+    VoidCallback? onSuccess,
+    void Function(String)? onError,
+  }) async {
+    try {
+      final client = ref.read(payoutsClientProvider);
+      final response = await client.createOrUpdatePaymentAccount(
+        CreatePaymentAccountRequest(
+          bankCode: bankCode,
+          bankName: bankName,
+          accountName: accountName,
+          accountNumber: accountNumber,
+        ),
+      );
+      if (response.isSuccessful) {
+        ref.invalidateSelf();
+        await future;
+        onSuccess?.call();
+      } else {
+        throw (response.detail ?? 'Failed to update payout account');
+      }
+    } catch (e, st) {
+      AppExceptionHandler.instance.handleError(e, st);
+      onError?.call(e.toFriendlyString());
+    }
+  }
+
+  Future<void> updateOnlineStatus({
+    required bool isOnline,
+    VoidCallback? onSuccess,
+    void Function(String)? onError,
+  }) async {
+    try {
+      final client = ref.read(usersClientProvider);
+      final response = await client.updateOnlineStatus(
+        UpdateOnlineStatusRequest(isOnline: isOnline),
+      );
+      if (response.isSuccessful) {
+        ref.invalidateSelf();
+        await future;
+        onSuccess?.call();
+      } else {
+        throw (response.detail ?? 'Failed to update online status');
+      }
+    } catch (e, st) {
+      AppExceptionHandler.instance.handleError(e, st);
+      onError?.call(e.toFriendlyString());
+    }
+  }
 }
 
 final userProvider = AsyncNotifierProvider<UserNotifier, User>(
   () => UserNotifier(),
 );
 
-final regionSyncerProvider = FutureProvider<void>((ref) async {
+final syncRegionProvider = FutureProvider<void>((ref) async {
   final user = await ref.watch(userProvider.future);
   final currentRegion = await ref.watch(currentRegionProvider.future);
 
@@ -172,23 +227,49 @@ final regionSyncerProvider = FutureProvider<void>((ref) async {
   }
 });
 
-final locationSyncerProvider = FutureProvider<void>((ref) async {
-  await ref.watch(userProvider.future);
-  final address = await ref.watch(userAddressProvider.future);
-
-  if (address.coordinates?.latitude != null &&
-      address.coordinates?.longitude != null) {
-    final client = ref.read(usersClientProvider);
-    await client.updateLocation(
-      UpdateLocationRequest(
-        latitude: address.coordinates!.latitude!,
-        longitude: address.coordinates!.longitude!,
-        addressLine: address.formatted.isNotEmpty ? address.formatted : null,
-      ),
-    );
-  }
+// Is user online
+final isOnlineProvider = FutureProvider<bool>((ref) {
+  final isOnline = ref.watch(
+    userProvider.selectAsync((user) => user.providerProfile?.isOnline ?? false),
+  );
+  return isOnline;
 });
 
+final pingLocationProvider = Provider<void>((ref) {
+  final isOnline = ref.watch(isOnlineProvider).value ?? false;
+
+  if (isOnline) {
+    void ping() async {
+      try {
+        final address = await ref.read(userAddressProvider.future);
+        if (address.coordinates?.latitude != null &&
+            address.coordinates?.longitude != null) {
+          final client = ref.read(usersClientProvider);
+          await client.pingLocation(
+            PingLocationRequest(
+              latitude: address.coordinates!.latitude!,
+              longitude: address.coordinates!.longitude!,
+            ),
+          );
+        }
+      } catch (e, st) {
+        AppExceptionHandler.instance.handleError(e, st);
+      }
+    }
+
+    // Ping immediately when going online
+    ping();
+
+    final timer = Timer.periodic(const Duration(minutes: 2), (_) {
+      ping();
+    });
+
+    ref.onDispose(() {
+      timer.cancel();
+    });
+  }
+});
+// KYC Providers
 final hasSelfieProvider = FutureProvider<bool>((ref) async {
   final user = await ref.watch(userProvider.future);
   return user.providerProfile?.selfieUrl != null;

@@ -2,12 +2,15 @@ import 'package:go_router/go_router.dart';
 import 'package:tasker_app/core/router/navigator_keys.dart';
 import 'presentation/profile_screen.dart';
 import 'presentation/profile_update_screen.dart';
-import 'presentation/notification_preferences_screen.dart';
+import 'presentation/update_payout_account_screen.dart';
+import 'presentation/view_payout_account_screen.dart';
 
 class ProfileRoutes {
   static const String profileRoute = 'profile';
   static const String updateProfileRoute = 'update-profile';
-  static const String notificationPreferencesRoute = 'notification-preferences';
+  static const String viewPayoutAccountRoute = 'view-payout-account';
+
+  static const String updatePayoutAccountRoute = 'update-payout-account';
 
   static final routes = [
     GoRoute(
@@ -38,11 +41,19 @@ class ProfileRoutes {
             );
           },
         ),
+
         GoRoute(
           parentNavigatorKey: NavigatorKeys.rootNavigatorKey,
-          path: 'notification-preferences',
-          name: notificationPreferencesRoute,
-          builder: (context, state) => const NotificationPreferencesScreen(),
+          path: 'view-payout-account',
+          name: viewPayoutAccountRoute,
+          builder: (context, state) => const ViewPayoutAccountScreen(),
+        ),
+
+        GoRoute(
+          parentNavigatorKey: NavigatorKeys.rootNavigatorKey,
+          path: 'update-payout-account',
+          name: updatePayoutAccountRoute,
+          builder: (context, state) => const UpdatePayoutAccountScreen(),
         ),
       ],
     ),

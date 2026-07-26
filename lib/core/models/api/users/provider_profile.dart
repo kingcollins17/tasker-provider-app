@@ -29,6 +29,12 @@ class ProviderProfile {
   final String? verifiedAt;
   @JsonKey(name: 'address_line')
   final String? addressLine;
+  @JsonKey(name: 'is_online')
+  final bool? isOnline;
+  @JsonKey(name: 'duty_status')
+  final String? dutyStatus;
+  @JsonKey(name: 'last_heartbeat_at')
+  final String? lastHeartbeatAt;
   final List<dynamic>? services;
 
   ProviderProfile({
@@ -46,6 +52,9 @@ class ProviderProfile {
     this.rejectionReason,
     this.verifiedAt,
     this.addressLine,
+    this.isOnline,
+    this.dutyStatus,
+    this.lastHeartbeatAt,
     this.services,
   });
 

@@ -56,6 +56,12 @@ abstract class UsersClient {
   @PUT("users/region")
   Future<BaseApiResponse> updateRegion(@Body() UpdateRegionRequest body);
 
+  @PUT("users/online-status")
+  Future<BaseApiResponse> updateOnlineStatus(@Body() UpdateOnlineStatusRequest body);
+
+  @POST("users/location/ping")
+  Future<BaseApiResponse> pingLocation(@Body() PingLocationRequest body);
+
   @POST("users/provider/services")
   Future<BaseApiResponse> addProviderService(@Body() AddServiceRequest body);
 

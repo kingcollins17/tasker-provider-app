@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
-import 'package:shimmer/shimmer.dart';
+
 import 'package:tasker_app/core/router/navigator_keys.dart';
 
 import '../../../core/ui/designs/designs.dart';
@@ -248,17 +248,6 @@ class ProfileScreen extends ConsumerWidget {
         ),
         AppSpacing.hSm,
 
-        // Notification Preferences
-        OptionTile(
-          icon: Icons.notifications_active_outlined,
-          iconColor: AppColors.primary,
-          title: 'Notification Preferences',
-          subtitle: 'Manage SMS, Email and Push',
-          onTap: () =>
-              context.pushNamed(ProfileRoutes.notificationPreferencesRoute),
-        ),
-        AppSpacing.hSm,
-
         // Payouts
         OptionTile(
           icon: Icons.account_balance_wallet_outlined,
@@ -274,11 +263,15 @@ class ProfileScreen extends ConsumerWidget {
         OptionTile(
           icon: Icons.credit_card_outlined,
           iconColor: AppColors.primary,
-          title: 'Update Payout Information',
+          title: 'Payout Information',
           subtitle: 'Manage bank & payment details',
-          onTap: () => context.showToast(
-            'Update Payout Information feature coming soon!',
-          ),
+          onTap: () {
+            if (user != null && user.paymentAccount != null) {
+              context.pushNamed(ProfileRoutes.viewPayoutAccountRoute);
+            } else {
+              context.pushNamed(ProfileRoutes.updatePayoutAccountRoute);
+            }
+          },
         ),
         AppSpacing.hSm,
 

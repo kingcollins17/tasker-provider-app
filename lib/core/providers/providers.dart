@@ -4,3 +4,4 @@ export 'user_provider.dart';
 export 'theme_provider.dart';
 export 'notifications_websocket_provider.dart';
 export 'tasks_provider.dart';
+export 'bank_providers.dart';

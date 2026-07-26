@@ -15,3 +15,7 @@ export 'provider_profile.dart';
 export 'region.dart';
 export 'user.dart';
 export 'customer_lite.dart';
+export 'user_location.dart';
+export 'payment_account.dart';
+export 'update_online_status_request.dart';
+export 'ping_location_request.dart';

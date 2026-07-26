@@ -26,6 +26,15 @@ User _$UserFromJson(Map<String, dynamic> json) => User(
       : ProviderProfile.fromJson(
           json['provider_profile'] as Map<String, dynamic>,
         ),
+  devices: json['devices'] as List<dynamic>?,
+  location: json['location'] == null
+      ? null
+      : UserLocation.fromJson(json['location'] as Map<String, dynamic>),
+  paymentAccount: json['payment_account'] == null
+      ? null
+      : PaymentAccount.fromJson(
+          json['payment_account'] as Map<String, dynamic>,
+        ),
 );
 
 Map<String, dynamic> _$UserToJson(User instance) => <String, dynamic>{
@@ -40,4 +49,7 @@ Map<String, dynamic> _$UserToJson(User instance) => <String, dynamic>{
   'updated_at': instance.updatedAt?.toIso8601String(),
   'region_id': instance.regionId,
   'provider_profile': instance.providerProfile,
+  'devices': instance.devices,
+  'location': instance.location,
+  'payment_account': instance.paymentAccount,
 };
