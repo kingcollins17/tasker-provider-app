@@ -65,9 +65,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                             width: 80.r,
                             height: 80.r,
                             decoration: BoxDecoration(
-                              color: isDark
-                                  ? AppColors.surface
-                                  : const Color(0xFFF1F5F9), // Slate 100/800
+                              color: Theme.of(context).colorScheme.surface, // Slate 100/800
                               shape: BoxShape.circle,
                               border: Border.all(
                                 color: isDark

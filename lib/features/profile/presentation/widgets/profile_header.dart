@@ -29,7 +29,7 @@ class ProfileHeader extends StatelessWidget {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
       decoration: BoxDecoration(
-        color: isDark ? AppColors.surface : Colors.grey.shade50,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: AppDecorations.radiusMd,
       ),
       child: Row(
@@ -52,9 +52,6 @@ class ProfileHeader extends StatelessWidget {
                         style: AppTextStyles.h3.copyWith(
                           fontWeight: FontWeight.bold,
                           fontSize: 18.sp,
-                          color: isDark
-                              ? AppColors.textPrimary
-                              : AppColors.background,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -129,17 +126,21 @@ class ProfileHeader extends StatelessWidget {
           Positioned(
             bottom: 2,
             right: 2,
-            child: Container(
-              width: 12.r,
-              height: 12.r,
-              decoration: BoxDecoration(
-                color: AppColors.success,
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: isDark ? AppColors.surface : Colors.grey.shade50,
-                  width: 2.r,
-                ),
-              ),
+            child: Builder(
+              builder: (context) {
+                return Container(
+                  width: 12.r,
+                  height: 12.r,
+                  decoration: BoxDecoration(
+                    color: AppColors.success,
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: Theme.of(context).colorScheme.surface,
+                      width: 2.r,
+                    ),
+                  ),
+                );
+              },
             ),
           ),
       ],
@@ -152,19 +153,23 @@ class ProfileHeader extends StatelessWidget {
 
   /// Shimmer placeholder shown while user data is loading.
   static Widget shimmer(bool isDark) {
-    final baseColor = isDark ? AppColors.surface : Colors.grey[200]!;
-    final highlightColor = isDark ? AppColors.border : Colors.grey[100]!;
+    return Builder(
+      builder: (context) {
+        final baseColor = Theme.of(context).colorScheme.surface;
+        final highlightColor = isDark ? AppColors.border : Colors.grey[100]!;
 
-    return Shimmer.fromColors(
-      baseColor: baseColor,
-      highlightColor: highlightColor,
-      child: Container(
-        height: 80.h,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: AppDecorations.radiusMd,
-        ),
-      ),
+        return Shimmer.fromColors(
+          baseColor: baseColor,
+          highlightColor: highlightColor,
+          child: Container(
+            height: 80.h,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: AppDecorations.radiusMd,
+            ),
+          ),
+        );
+      },
     );
   }
 }

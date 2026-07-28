@@ -68,9 +68,10 @@ class _UpdatePayoutAccountScreenState
           onSuccess: () {
             context.hideLoading();
             Navigator.pop(context);
-            
+
             Future.delayed(const Duration(milliseconds: 150), () {
-              final rootContext = NavigatorKeys.rootNavigatorKey.currentContext;
+              final rootContext =
+                  NavigatorKeys.rootNavigatorKey.currentContext;
               if (rootContext != null && rootContext.mounted) {
                 rootContext.showInfo('Payout account updated successfully');
               }
@@ -92,6 +93,7 @@ class _UpdatePayoutAccountScreenState
 
     return Scaffold(
       appBar: AppBar(
+        leading: const BackButton(),
         title: Text('Update Payout Account', style: AppTextStyles.h3),
         centerTitle: true,
       ),
@@ -100,8 +102,6 @@ class _UpdatePayoutAccountScreenState
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Text('Bank Details', style: AppTextStyles.h3),
-            // SizedBox(height: 8.h),
             Text(
               'Enter your bank account information to receive payouts.',
               style: AppTextStyles.bodyMedium.copyWith(
@@ -197,9 +197,7 @@ class _UpdatePayoutAccountScreenState
                       );
                     },
                     loading: () => Shimmer.fromColors(
-                      baseColor: isDark
-                          ? AppColors.surface
-                          : Colors.grey.shade200,
+                      baseColor: Theme.of(context).colorScheme.surface,
                       highlightColor: isDark
                           ? AppColors.border
                           : Colors.grey.shade100,
@@ -216,13 +214,27 @@ class _UpdatePayoutAccountScreenState
                   );
                 },
               ),
-            SizedBox(height: 48.h),
+            SizedBox(height: 24.h),
           ],
         ),
       ),
-      bottomNavigationBar: SafeArea(
-        child: Padding(
-          padding: EdgeInsets.all(16.r),
+      bottomNavigationBar: Container(
+        padding: EdgeInsets.only(
+          left: 16.r,
+          right: 16.r,
+          top: 12.h,
+          bottom: MediaQuery.of(context).viewInsets.bottom + 16.r,
+        ),
+        decoration: BoxDecoration(
+          color: theme.scaffoldBackgroundColor,
+          border: Border(
+            top: BorderSide(
+              color: isDark ? AppColors.border : const Color(0xFFE2E8F0),
+              width: 1.r,
+            ),
+          ),
+        ),
+        child: SafeArea(
           child: Consumer(
             builder: (context, ref, child) {
               final canSubmit =

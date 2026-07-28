@@ -91,7 +91,7 @@ class _LoadingOverlayState extends State<_LoadingOverlay>
           // Dimmed backdrop
           ModalBarrier(
             dismissible: false,
-            color: AppColors.background.withValues(alpha: 0.6),
+            color: Theme.of(context).scaffoldBackgroundColor.withValues(alpha: 0.6),
           ),
           // Spinner
           Center(

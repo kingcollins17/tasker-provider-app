@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
@@ -12,6 +13,7 @@ import '../../../features/auth/providers/auth_provider.dart';
 import '../../../core/utils/extensions/flushbar_context_ext.dart';
 import '../../../core/utils/extensions/loading_context_ext.dart';
 import '../../../core/ui/widgets/confirmation_dialog.dart';
+import '../../../core/ui/widgets/debug_view_page.dart';
 import '../../../core/ui/pages/verify_otp_page.dart';
 import '../../../core/models/api/users/users.dart';
 import '../profile_routes.dart';
@@ -32,7 +34,6 @@ class ProfileScreen extends ConsumerWidget {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final userAsync = ref.watch(userProvider);
-    final addressAsync = ref.watch(userAddressProvider);
     final kycStatusAsync = ref.watch(kycStatusProvider);
 
     return Scaffold(
@@ -46,9 +47,18 @@ class ProfileScreen extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 // ── Top Bar ──────────────────────────────────────────────
-                const Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [CurrentLocation()],
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'My Profile',
+                      style: AppTextStyles.h2.copyWith(
+                        fontSize: 22.sp,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const CurrentLocation(),
+                  ],
                 ),
                 SizedBox(height: 16.h),
 
@@ -275,6 +285,16 @@ class ProfileScreen extends ConsumerWidget {
         ),
         AppSpacing.hSm,
 
+        // Working Availability
+        OptionTile(
+          icon: Icons.access_time_rounded,
+          iconColor: AppColors.secondary,
+          title: 'Working Availability',
+          subtitle: 'Set weekly working days & hours',
+          onTap: () => context.pushNamed(ProfileRoutes.updateAvailabilityRoute),
+        ),
+        AppSpacing.hSm,
+
         // Customer Support
         OptionTile(
           icon: Icons.support_agent_rounded,
@@ -284,6 +304,19 @@ class ProfileScreen extends ConsumerWidget {
           onTap: () =>
               context.showToast('Customer Support feature coming soon!'),
         ),
+        AppSpacing.hSm,
+
+        // Debug Logs Console (Debug Mode Only)
+        if (kDebugMode) ...[
+          OptionTile(
+            icon: Icons.bug_report_outlined,
+            iconColor: AppColors.warning,
+            title: 'Debug Console',
+            subtitle: 'View console logs & network output',
+            onTap: () => DebugViewPage.show(),
+          ),
+          AppSpacing.hSm,
+        ],
         SizedBox(height: 16.h),
 
         // Logout — separated with extra space for visual distinction

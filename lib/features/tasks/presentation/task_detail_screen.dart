@@ -32,7 +32,7 @@ class TaskDetailScreen extends ConsumerWidget {
     final myBidAsync = ref.watch(myBidProvider(taskId));
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       extendBody: true,
       bottomNavigationBar:
           taskAsync.hasValue && taskAsync.value != null && !myBidAsync.isLoading
@@ -173,7 +173,7 @@ class _SendABidFAB extends ConsumerWidget {
         padding: EdgeInsets.fromLTRB(20.w, 12.h, 20.w, 4.h),
         decoration: BoxDecoration(
           color: Theme.of(context).brightness == Brightness.dark
-              ? AppColors.surface
+              ? Theme.of(context).colorScheme.surface
               : Colors.white,
           border: Border(
             top: BorderSide(color: AppColors.border, width: 1.r),
@@ -217,9 +217,9 @@ class _SendABidFAB extends ConsumerWidget {
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [
-            AppColors.background.withValues(alpha: 0.0),
-            AppColors.background.withValues(alpha: 0.85),
-            AppColors.background,
+            Theme.of(context).scaffoldBackgroundColor.withValues(alpha: 0.0),
+            Theme.of(context).scaffoldBackgroundColor.withValues(alpha: 0.85),
+            Theme.of(context).scaffoldBackgroundColor,
           ],
           stops: const [0.0, 0.35, 0.65],
         ),
@@ -400,7 +400,7 @@ class _TaskHeroHeader extends ConsumerWidget {
         gradient: LinearGradient(
           colors: [
             statusInfo.color.withValues(alpha: 0.35),
-            AppColors.background,
+            Theme.of(context).scaffoldBackgroundColor,
           ],
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
@@ -568,7 +568,7 @@ class _PosterInfoRow extends StatelessWidget {
     return Container(
       padding: EdgeInsets.all(16.r),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(20.r),
         border: Border.all(color: AppColors.border, width: 1.r),
         boxShadow: [
@@ -589,15 +589,15 @@ class _PosterInfoRow extends StatelessWidget {
               shape: BoxShape.circle,
               gradient: const LinearGradient(
                 colors: [
-                  Color(0xFF8B5CF6),
-                  Color(0xFFC084FC),
-                ], // Elegant purple gradient
+                  AppColors.primary,
+                  AppColors.primaryDark,
+                ], // Elegant green gradient
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFF8B5CF6).withValues(alpha: 0.25),
+                  color: AppColors.primary.withValues(alpha: 0.25),
                   blurRadius: 8.r,
                   offset: const Offset(0, 4),
                 ),
@@ -713,7 +713,7 @@ class _DescriptionSection extends StatelessWidget {
           width: double.infinity,
           padding: EdgeInsets.all(16.r),
           decoration: BoxDecoration(
-            color: AppColors.surface,
+            color: Theme.of(context).colorScheme.surface,
             borderRadius: AppDecorations.radiusMd,
             border: Border.all(color: AppColors.border, width: 1.r),
           ),
@@ -830,7 +830,7 @@ class _ScheduleSection extends StatelessWidget {
         Container(
           padding: EdgeInsets.all(16.r),
           decoration: BoxDecoration(
-            color: AppColors.surface,
+            color: Theme.of(context).colorScheme.surface,
             borderRadius: AppDecorations.radiusMd,
             border: Border.all(color: AppColors.border, width: 1.r),
           ),
@@ -921,7 +921,7 @@ class _LocationCard extends StatelessWidget {
     return Container(
       padding: EdgeInsets.all(14.r),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: AppDecorations.radiusMd,
         border: Border.all(color: AppColors.border, width: 1.r),
       ),
@@ -1043,7 +1043,7 @@ class _AttachmentsSection extends StatelessWidget {
                 child: Container(
                   width: 200.w,
                   decoration: BoxDecoration(
-                    color: AppColors.surface,
+                    color: Theme.of(context).colorScheme.surface,
                     border: Border.all(color: AppColors.border, width: 1.r),
                     borderRadius: AppDecorations.radiusMd,
                   ),
@@ -1086,7 +1086,7 @@ class _FileAttachmentItem extends StatelessWidget {
     return Container(
       padding: EdgeInsets.all(12.r),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: AppDecorations.radiusMd,
         border: Border.all(color: AppColors.border, width: 1.r),
       ),
@@ -1095,12 +1095,12 @@ class _FileAttachmentItem extends StatelessWidget {
           Container(
             padding: EdgeInsets.all(8.r),
             decoration: BoxDecoration(
-              color: const Color(0xFF8B5CF6).withValues(alpha: 0.12),
+              color: AppColors.primary.withValues(alpha: 0.12),
               borderRadius: AppDecorations.radiusSm,
             ),
             child: Icon(
               _getFileIcon(attachment.mimeType),
-              color: const Color(0xFF8B5CF6),
+              color: AppColors.primary,
               size: 18.r,
             ),
           ),
@@ -1172,7 +1172,7 @@ class _AssignmentCard extends StatelessWidget {
         Container(
           padding: EdgeInsets.all(16.r),
           decoration: BoxDecoration(
-            color: AppColors.surface,
+            color: Theme.of(context).colorScheme.surface,
             borderRadius: AppDecorations.radiusMd,
             border: Border.all(color: AppColors.border, width: 1.r),
           ),
@@ -1373,7 +1373,7 @@ class _CircleIconButton extends StatelessWidget {
         width: 40.r,
         height: 40.r,
         decoration: BoxDecoration(
-          color: AppColors.surface.withValues(alpha: 0.7),
+          color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.7),
           shape: BoxShape.circle,
           border: Border.all(color: AppColors.border, width: 1.r),
         ),
@@ -1397,7 +1397,7 @@ class _TaskDetailShimmer extends StatelessWidget {
     return SafeArea(
       child: Shimmer.fromColors(
         baseColor: AppColors.border,
-        highlightColor: AppColors.surface,
+        highlightColor: Theme.of(context).colorScheme.surface,
         child: SingleChildScrollView(
           padding: AppSpacing.pAllMd,
           child: Column(
@@ -1501,7 +1501,7 @@ class _StatusHelper {
       case 'assigned':
         return const _StatusInfo(
           label: 'Assigned',
-          color: Color(0xFF8B5CF6),
+          color: AppColors.primary,
           icon: Icons.person_pin_rounded,
         );
       case 'in_progress':

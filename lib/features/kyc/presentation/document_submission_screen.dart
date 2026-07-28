@@ -128,13 +128,11 @@ class _DocumentSubmissionScreenState extends State<DocumentSubmissionScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: BackButton(
-          color: isDark ? AppColors.textPrimary : AppColors.background,
         ),
         title: Text(
           'ID Document',
           style:
               (theme.textTheme.titleMedium?.copyWith(
-                color: isDark ? AppColors.textPrimary : AppColors.background,
               )) ??
               AppTextStyles.h3,
         ),
@@ -160,9 +158,6 @@ class _DocumentSubmissionScreenState extends State<DocumentSubmissionScreen> {
                           (theme.textTheme.titleLarge?.copyWith(
                             fontSize: 24.sp,
                             fontWeight: FontWeight.bold,
-                            color: isDark
-                                ? AppColors.textPrimary
-                                : AppColors.background,
                           )) ??
                           AppTextStyles.h2.copyWith(fontSize: 24.sp),
                     ),
@@ -211,9 +206,7 @@ class _DocumentSubmissionScreenState extends State<DocumentSubmissionScreen> {
                           size: 20.r,
                         ),
                         filled: true,
-                        fillColor: isDark
-                            ? AppColors.surface
-                            : theme.colorScheme.surface,
+                        fillColor: Theme.of(context).colorScheme.surface,
                         contentPadding: EdgeInsets.symmetric(
                           horizontal: 16.w,
                           vertical: 16.h,
@@ -242,9 +235,7 @@ class _DocumentSubmissionScreenState extends State<DocumentSubmissionScreen> {
                           ),
                         ),
                       ),
-                      dropdownColor: isDark
-                          ? AppColors.surface
-                          : theme.colorScheme.surface,
+                      dropdownColor: Theme.of(context).colorScheme.surface,
                       icon: Icon(
                         Icons.keyboard_arrow_down_rounded,
                         color: isDark
@@ -252,9 +243,6 @@ class _DocumentSubmissionScreenState extends State<DocumentSubmissionScreen> {
                             : AppColors.textMuted,
                       ),
                       style: AppTextStyles.bodyMedium.copyWith(
-                        color: isDark
-                            ? AppColors.textPrimary
-                            : AppColors.background,
                       ),
                       items: _documentTypes.map((type) {
                         return DropdownMenuItem<String>(
@@ -356,7 +344,7 @@ class _DocumentSubmissionScreenState extends State<DocumentSubmissionScreen> {
       child: Container(
         padding: EdgeInsets.all(20.r),
         decoration: BoxDecoration(
-          color: isDark ? AppColors.surface : theme.colorScheme.surface,
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: AppDecorations.radiusLg,
           border: Border.all(color: AppColors.border, width: 1.r),
           boxShadow: [
@@ -392,9 +380,6 @@ class _DocumentSubmissionScreenState extends State<DocumentSubmissionScreen> {
                     title,
                     style: AppTextStyles.h3.copyWith(
                       fontSize: 16.sp,
-                      color: isDark
-                          ? AppColors.textPrimary
-                          : AppColors.background,
                     ),
                   ),
                   SizedBox(height: 4.h),
@@ -426,7 +411,7 @@ class _DocumentSubmissionScreenState extends State<DocumentSubmissionScreen> {
         Container(
           width: double.infinity,
           decoration: BoxDecoration(
-            color: isDark ? AppColors.surface : theme.colorScheme.surface,
+            color: Theme.of(context).colorScheme.surface,
             borderRadius: AppDecorations.radiusLg,
             border: Border.all(
               color: AppColors.success.withValues(alpha: 0.4),
@@ -458,7 +443,7 @@ class _DocumentSubmissionScreenState extends State<DocumentSubmissionScreen> {
                 padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 14.h),
                 decoration: BoxDecoration(
                   color: isDark
-                      ? AppColors.surface
+                      ? Theme.of(context).colorScheme.surface
                       : theme.scaffoldBackgroundColor,
                   borderRadius: BorderRadius.vertical(
                     bottom: Radius.circular(16.r),
@@ -487,9 +472,6 @@ class _DocumentSubmissionScreenState extends State<DocumentSubmissionScreen> {
                           Text(
                             'Document Selected',
                             style: AppTextStyles.buttonMedium.copyWith(
-                              color: isDark
-                                  ? AppColors.textPrimary
-                                  : AppColors.background,
                             ),
                           ),
                           SizedBox(height: 2.h),

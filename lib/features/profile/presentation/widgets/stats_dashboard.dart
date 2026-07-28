@@ -79,7 +79,7 @@ class _StatCard extends StatelessWidget {
     return Container(
       padding: EdgeInsets.all(12.r),
       decoration: BoxDecoration(
-        color: isDark ? AppColors.surface : Colors.grey.shade50,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: AppDecorations.radiusMd,
       ),
       child: Column(
@@ -103,7 +103,6 @@ class _StatCard extends StatelessWidget {
             style: AppTextStyles.h3.copyWith(
               fontSize: 16.sp,
               fontWeight: FontWeight.bold,
-              color: isDark ? AppColors.textPrimary : AppColors.background,
             ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,

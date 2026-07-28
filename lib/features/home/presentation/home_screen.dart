@@ -11,7 +11,7 @@ import '../../../core/ui/designs/text_styles.dart';
 import '../../../core/ui/designs/decorations.dart';
 import '../../../core/ui/designs/spacing.dart';
 import '../../notifications/presentation/widgets/notification_icon.dart';
-// import 'widgets/stats_widgets.dart';
+import '../../profile/presentation/widgets/earnings_card.dart';
 import 'package:tasker_app/core/ui/widgets/current_location.dart';
 import 'package:tasker_app/core/utils/extensions/flushbar_context_ext.dart';
 
@@ -26,7 +26,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     with TickerProviderStateMixin {
   late final AnimationController _entranceController;
   late final AnimationController _pulseController;
-  late final AnimationController _gradientController;
 
   @override
   void initState() {
@@ -40,18 +39,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       vsync: this,
       duration: const Duration(milliseconds: 2000),
     )..repeat(reverse: true);
-
-    _gradientController = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 4),
-    )..repeat();
   }
 
   @override
   void dispose() {
     _entranceController.dispose();
     _pulseController.dispose();
-    _gradientController.dispose();
     super.dispose();
   }
 
@@ -78,7 +71,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     final firstName = user.value?.providerProfile?.firstName ?? '';
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: Stack(
           children: [
@@ -107,9 +100,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                   sliver: SliverToBoxAdapter(
                     child: _SlideUp(
                       animation: _staggered(1),
-                      child: _EarningsCard(
-                        gradientController: _gradientController,
-                      ),
+                      child: const EarningsCard(),
                     ),
                   ),
                 ),
@@ -318,7 +309,7 @@ class _HomeAppBar extends ConsumerWidget {
                             : AppColors.textMuted,
                         shape: BoxShape.circle,
                         border: Border.all(
-                          color: AppColors.background,
+                          color: Theme.of(context).scaffoldBackgroundColor,
                           width: 2.5.r,
                         ),
                       ),
@@ -345,8 +336,6 @@ class _HomeAppBar extends ConsumerWidget {
                   firstName,
                   style: AppTextStyles.h3.copyWith(fontSize: 20.sp),
                 ),
-                SizedBox(height: 4.h),
-                const CurrentLocation(),
               ],
             ),
           ),
@@ -396,126 +385,6 @@ class _TopIconAction extends StatelessWidget {
         child: Center(
           child: Icon(icon, color: color, size: 24.r),
         ),
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// EARNINGS CARD (Animated gradient + glassmorphism)
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _EarningsCard extends StatelessWidget {
-  final AnimationController gradientController;
-
-  const _EarningsCard({required this.gradientController});
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: gradientController,
-      builder: (context, child) {
-        final angle = gradientController.value * 2 * math.pi;
-        return Container(
-          padding: EdgeInsets.all(16.r),
-          decoration: BoxDecoration(
-            borderRadius: AppDecorations.radiusLg,
-            gradient: LinearGradient(
-              colors: const [
-                Color(0xFF6366F1),
-                Color(0xFF4F46E5),
-                Color(0xFF7C3AED),
-                Color(0xFF6366F1),
-              ],
-              stops: const [0.0, 0.3, 0.7, 1.0],
-              begin: Alignment(math.cos(angle), math.sin(angle)),
-              end: Alignment(-math.cos(angle), -math.sin(angle)),
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.primary.withValues(alpha: 0.4),
-                blurRadius: 24.r,
-                offset: const Offset(0, 12),
-              ),
-            ],
-          ),
-          child: child,
-        );
-      },
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    padding: EdgeInsets.all(8.r),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.15),
-                      borderRadius: AppDecorations.radiusSm,
-                    ),
-                    child: Icon(
-                      Icons.account_balance_wallet_rounded,
-                      color: Colors.white,
-                      size: 20.r,
-                    ),
-                  ),
-                  AppSpacing.wSm,
-                  Text(
-                    "Today's Earnings",
-                    style: AppTextStyles.subtitle.copyWith(
-                      color: Colors.white.withValues(alpha: 0.8),
-                      fontSize: 14.sp,
-                    ),
-                  ),
-                ],
-              ),
-              Container(
-                padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.15),
-                  borderRadius: AppDecorations.radiusXl,
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.trending_up_rounded,
-                      color: Colors.white,
-                      size: 14.r,
-                    ),
-                    AppSpacing.wXs,
-                    Text(
-                      "+12%",
-                      style: AppTextStyles.label.copyWith(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: 12.h),
-          Text(
-            "₦18,500",
-            style: AppTextStyles.h1.copyWith(
-              color: Colors.white,
-              fontSize: 32.sp,
-              letterSpacing: -0.5,
-            ),
-          ),
-          SizedBox(height: 4.h),
-          Text(
-            "3 completed tasks today",
-            style: AppTextStyles.bodyMedium.copyWith(
-              color: Colors.white.withValues(alpha: 0.7),
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -632,7 +501,7 @@ class _ActiveWorkCard extends StatelessWidget {
         margin: EdgeInsets.only(bottom: 12.h),
         padding: EdgeInsets.all(16.r),
         decoration: BoxDecoration(
-          color: AppColors.surface,
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: AppDecorations.radiusMd,
           border: Border.all(color: AppColors.border, width: 1.r),
           boxShadow: [
@@ -661,7 +530,6 @@ class _ActiveWorkCard extends StatelessWidget {
                   Text(
                     title,
                     style: AppTextStyles.bodyLarge.copyWith(
-                      color: AppColors.textPrimary,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -723,7 +591,7 @@ class _PerformanceSnapshotCard extends StatelessWidget {
     return Container(
       padding: EdgeInsets.all(20.r),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: AppDecorations.radiusLg,
         border: Border.all(color: AppColors.border, width: 1.r),
       ),
@@ -781,7 +649,7 @@ class _PerformanceSnapshotCard extends StatelessWidget {
                 icon: Icons.check_circle_rounded,
                 value: "98%",
                 label: "Done",
-                color: const Color(0xFF8B5CF6),
+                color: AppColors.primary,
               ),
             ],
           ),
@@ -858,7 +726,7 @@ class _FloatingOnlineToggle extends StatelessWidget {
         width: 1.sw - 32.w,
         padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 14.h),
         decoration: BoxDecoration(
-          color: AppColors.surface,
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: AppDecorations.radiusLg,
           border: Border.all(
             color: isOnline
@@ -910,9 +778,7 @@ class _FloatingOnlineToggle extends StatelessWidget {
                   Text(
                     isOnline ? "You're Online" : "You're Offline",
                     style: AppTextStyles.buttonMedium.copyWith(
-                      color: isOnline
-                          ? AppColors.success
-                          : AppColors.textPrimary,
+                      color: isOnline ? AppColors.success : null,
                       fontSize: 15.sp,
                     ),
                   ),

@@ -83,6 +83,14 @@ abstract class UsersClient {
     @Part(name: "id_number") required String idNumber,
     @Part(name: "id_doc") required File idDoc,
   });
+
+  @GET("users/provider/availability")
+  Future<BaseApiResponse<List<ProviderAvailability>>> getProviderAvailability();
+
+  @PUT("users/provider/availability")
+  Future<BaseApiResponse<List<ProviderAvailability>>> updateProviderAvailability(
+    @Body() UpdateAvailabilityRequest body,
+  );
 }
 
 /// Provider exposing the [UsersClient] dependency.

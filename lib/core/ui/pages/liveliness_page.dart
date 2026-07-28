@@ -227,7 +227,7 @@ class _LivelinessPageState extends State<LivelinessPage> {
     final cameraCtrl = _controller.cameraController;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Stack(
         fit: StackFit.expand,
         children: [

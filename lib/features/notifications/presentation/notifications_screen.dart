@@ -246,7 +246,7 @@ class _NotificationTile extends StatelessWidget {
         title.contains('verification') ||
         title.contains('password')) {
       iconData = Icons.lock_outline_rounded;
-      iconColor = Colors.purple;
+      iconColor = AppColors.primary;
     }
 
     return Container(

@@ -19,3 +19,5 @@ export 'user_location.dart';
 export 'payment_account.dart';
 export 'update_online_status_request.dart';
 export 'ping_location_request.dart';
+export 'provider_availability.dart';
+export 'update_availability_request.dart';

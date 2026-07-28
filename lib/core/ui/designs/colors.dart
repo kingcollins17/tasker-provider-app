@@ -8,43 +8,43 @@ class AppColors {
 
   // --- BRAND COLORS (Extracted from appLogo.png / Styled to match authUI.png) ---
 
-  /// Primary Brand Color: Indigo (RGB: 99, 102, 241)
-  static const Color primary = Color(0xFF6366F1);
+  /// Primary Brand Color
+  static const Color primary = Color(0xFF007D5A);
 
   /// Light variation of Primary Brand Color
-  static const Color primaryLight = Color(0xFF818CF8);
+  static const Color primaryLight = Color(0xFF00966C);
 
   /// Dark variation of Primary Brand Color
-  static const Color primaryDark = Color(0xFF4F46E5);
+  static const Color primaryDark = Color(0xFF006448);
 
-  /// Secondary Brand Color: Slate/Indigo
-  static const Color secondary = Color(0xFF4F46E5);
+  /// Secondary Brand Color
+  static const Color secondary = Color(0xFF0F766E);
 
   /// Light variation of Secondary Brand Color
-  static const Color secondaryLight = Color(0xFF818CF8);
+  static const Color secondaryLight = Color(0xFF14B8A6);
 
   /// Dark variation of Secondary Brand Color
-  static const Color secondaryDark = Color(0xFF3730A3);
+  static const Color secondaryDark = Color(0xFF0F766E);
 
-  /// Accent Brand Color: Indigo
-  static const Color accent = Color(0xFF6366F1);
+  /// Accent Brand Color
+  static const Color accent = Color(0xFF007D5A);
 
   /// Light Accent Color
-  static const Color accentLight = Color(0xFF818CF8);
+  static const Color accentLight = Color(0xFF00966C);
 
-  /// Deep Navy shade from the logo
-  static const Color navy = Color(0xFF1E1B4B);
+  /// Deep Navy shade replaced with deep dark green
+  static const Color navy = Color(0xFF003828);
 
   // --- NEUTRAL SYSTEM COLORS (Premium Dark Slate Theme) ---
 
   /// Main background color for the application
-  static const Color background = Color(0xFF111424);
+  static const Color background = Color(0xFF121212);
 
   /// Card, sheet, and surface container background color
-  static const Color surface = Color(0xFF1C2237);
+  static const Color surface = Color(0xFF1E1E1E);
 
   /// Divider and border outline color
-  static const Color border = Color(0xFF2A3143);
+  static const Color border = Color(0xFF2C2C2C);
 
   // --- TEXT COLORS ---
 

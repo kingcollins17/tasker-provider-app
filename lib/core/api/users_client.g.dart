@@ -651,6 +651,91 @@ class _UsersClient implements UsersClient {
     return _value;
   }
 
+  @override
+  Future<BaseApiResponse<List<ProviderAvailability>>>
+  getProviderAvailability() async {
+    final _extra = <String, dynamic>{};
+    final queryParameters = <String, dynamic>{};
+    final _headers = <String, dynamic>{};
+    const Map<String, dynamic>? _data = null;
+    final _options =
+        _setStreamType<BaseApiResponse<List<ProviderAvailability>>>(
+          Options(method: 'GET', headers: _headers, extra: _extra)
+              .compose(
+                _dio.options,
+                'users/provider/availability',
+                queryParameters: queryParameters,
+                data: _data,
+              )
+              .copyWith(
+                baseUrl: _combineBaseUrls(_dio.options.baseUrl, baseUrl),
+              ),
+        );
+    final _result = await _dio.fetch<Map<String, dynamic>>(_options);
+    late BaseApiResponse<List<ProviderAvailability>> _value;
+    try {
+      _value = BaseApiResponse<List<ProviderAvailability>>.fromJson(
+        _result.data!,
+        (json) => json is List<dynamic>
+            ? json
+                  .map<ProviderAvailability>(
+                    (i) => ProviderAvailability.fromJson(
+                      i as Map<String, dynamic>,
+                    ),
+                  )
+                  .toList()
+            : List.empty(),
+      );
+    } on Object catch (e, s) {
+      errorLogger?.logError(e, s, _options, response: _result);
+      rethrow;
+    }
+    return _value;
+  }
+
+  @override
+  Future<BaseApiResponse<List<ProviderAvailability>>>
+  updateProviderAvailability(UpdateAvailabilityRequest body) async {
+    final _extra = <String, dynamic>{};
+    final queryParameters = <String, dynamic>{};
+    final _headers = <String, dynamic>{};
+    final _data = <String, dynamic>{};
+    _data.addAll(body.toJson());
+    final _options =
+        _setStreamType<BaseApiResponse<List<ProviderAvailability>>>(
+          Options(method: 'PUT', headers: _headers, extra: _extra)
+              .compose(
+                _dio.options,
+                'users/provider/availability',
+                queryParameters: queryParameters,
+                data: _data,
+              )
+              .copyWith(
+                baseUrl: _combineBaseUrls(_dio.options.baseUrl, baseUrl),
+              ),
+        );
+    final _result = await _dio.fetch<Map<String, dynamic>>(_options);
+    late BaseApiResponse<List<ProviderAvailability>> _value;
+    try {
+      _value = BaseApiResponse<List<ProviderAvailability>>.fromJson(
+        _result.data!,
+        (json) => json is List<dynamic>
+            ? json
+                  .map<ProviderAvailability>(
+                    (i) => ProviderAvailability.fromJson(
+                      i as Map<String, dynamic>,
+                    ),
+                  )
+                  .toList()
+            : List.empty(),
+      );
+    } on Object catch (e, s) {
+      errorLogger?.logError(e, s, _options, response: _result);
+      rethrow;
+    }
+    return _value;
+  }
+
   RequestOptions _setStreamType<T>(RequestOptions requestOptions) {
     if (T != dynamic &&
         !(requestOptions.responseType == ResponseType.bytes ||

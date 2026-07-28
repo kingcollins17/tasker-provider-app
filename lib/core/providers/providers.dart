@@ -5,3 +5,5 @@ export 'theme_provider.dart';
 export 'notifications_websocket_provider.dart';
 export 'tasks_provider.dart';
 export 'bank_providers.dart';
+export 'payments_provider.dart';
+export 'provider_availability_provider.dart';

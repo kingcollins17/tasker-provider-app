@@ -1,127 +1,174 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:intl/intl.dart';
 
+import '../../../../core/providers/payments_provider.dart';
 import '../../../../core/ui/designs/designs.dart';
+import '../../../../core/utils/extensions/num_ext.dart';
+import 'earning_duration_sheet.dart';
 
-/// A prominent, animated card displaying total earnings.
-/// Extracted to be placed at the very top of the profile screen for emphasis.
-class EarningsCard extends StatefulWidget {
+/// EARNINGS CARD (Animated gradient + glassmorphism)
+class EarningsCard extends ConsumerStatefulWidget {
   const EarningsCard({super.key});
 
   @override
-  State<EarningsCard> createState() => _EarningsCardState();
+  ConsumerState<EarningsCard> createState() => _EarningsCardState();
 }
 
-class _EarningsCardState extends State<EarningsCard> with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _scaleAnimation;
-  late Animation<double> _fadeAnimation;
+class _EarningsCardState extends ConsumerState<EarningsCard>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _gradientController;
 
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
+    _gradientController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 800),
-    );
-
-    _scaleAnimation = Tween<double>(begin: 0.95, end: 1.0).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeOutBack),
-    );
-
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeOut),
-    );
-
-    _controller.forward();
+      duration: const Duration(seconds: 4),
+    )..repeat();
   }
 
   @override
   void dispose() {
-    _controller.dispose();
+    _gradientController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final currencyFormatter = NumberFormat.currency(
-      locale: 'en_NG',
-      symbol: '₦',
-    );
-    
-    final String totalEarnings = currencyFormatter.format(12450.00);
+    final selectedDuration = ref.watch(earningsDurationProvider);
+    final selectedEarningsAsync = ref.watch(selectedEarningsProvider);
 
-    return FadeTransition(
-      opacity: _fadeAnimation,
-      child: ScaleTransition(
-        scale: _scaleAnimation,
-        child: Container(
-          padding: EdgeInsets.all(20.r),
+    final String amountDisplay = selectedEarningsAsync.when(
+      data: (earnings) {
+        if (earnings.totalEarnings != null) {
+          return earnings.totalEarnings!.toNaira();
+        }
+        return '₦_';
+      },
+      loading: () => '₦_',
+      error: (e, st) => '₦_',
+    );
+
+    return AnimatedBuilder(
+      animation: _gradientController,
+      builder: (context, child) {
+        final angle = _gradientController.value * 2 * math.pi;
+        return Container(
+          padding: EdgeInsets.all(16.r),
           decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [
-                Color(0xFF0F172A), // Deep dark slate
-                Color(0xFF1E1B4B), // Deep navy
-              ],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
             borderRadius: AppDecorations.radiusLg,
+            gradient: LinearGradient(
+              colors: const [
+                AppColors.primary,
+                AppColors.primaryDark,
+                AppColors.secondary,
+                AppColors.primary,
+              ],
+              stops: const [0.0, 0.3, 0.7, 1.0],
+              begin: Alignment(math.cos(angle), math.sin(angle)),
+              end: Alignment(-math.cos(angle), -math.sin(angle)),
+            ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.2),
-                blurRadius: 16.r,
-                offset: const Offset(0, 8),
+                color: AppColors.primary.withValues(alpha: 0.4),
+                blurRadius: 24.r,
+                offset: const Offset(0, 12),
               ),
             ],
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          child: child,
+        );
+      },
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Container(
-                    padding: EdgeInsets.all(8.r),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(10.r),
-                    ),
-                    child: Icon(
-                      Icons.account_balance_wallet_rounded, 
-                      color: Colors.white, 
-                      size: 20.r
-                    ),
+              InkWell(
+                onTap: () => EarningDurationSheet.show(),
+                borderRadius: AppDecorations.radiusSm,
+                child: Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 2.h),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: EdgeInsets.all(8.r),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.15),
+                          borderRadius: AppDecorations.radiusSm,
+                        ),
+                        child: Icon(
+                          Icons.account_balance_wallet_rounded,
+                          color: Colors.white,
+                          size: 20.r,
+                        ),
+                      ),
+                      AppSpacing.wSm,
+                      Text(
+                        selectedDuration.label,
+                        style: AppTextStyles.subtitle.copyWith(
+                          color: Colors.white.withValues(alpha: 0.9),
+                          fontSize: 14.sp,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      SizedBox(width: 4.w),
+                      Icon(
+                        Icons.keyboard_arrow_down_rounded,
+                        color: Colors.white.withValues(alpha: 0.9),
+                        size: 20.r,
+                      ),
+                    ],
                   ),
-                  Icon(
-                    Icons.trending_up_rounded,
-                    color: AppColors.success,
-                    size: 24.r,
-                  ),
-                ],
-              ),
-              SizedBox(height: 20.h),
-              Text(
-                'Total Earnings',
-                style: AppTextStyles.label.copyWith(
-                  color: Colors.white.withValues(alpha: 0.7),
-                  fontSize: 12.sp,
                 ),
               ),
-              SizedBox(height: 2.h),
-              Text(
-                totalEarnings,
-                style: AppTextStyles.h1.copyWith(
-                  color: Colors.white,
-                  fontSize: 28.sp,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 0.5,
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.15),
+                  borderRadius: AppDecorations.radiusXl,
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.trending_up_rounded,
+                      color: Colors.white,
+                      size: 14.r,
+                    ),
+                    AppSpacing.wXs,
+                    Text(
+                      "+12%",
+                      style: AppTextStyles.label.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
           ),
-        ),
+          SizedBox(height: 12.h),
+          Text(
+            amountDisplay,
+            style: AppTextStyles.h1.copyWith(
+              color: Colors.white,
+              fontSize: 32.sp,
+              letterSpacing: -0.5,
+            ),
+          ),
+          SizedBox(height: 4.h),
+          Text(
+            selectedDuration.cardSubtitle,
+            style: AppTextStyles.bodyMedium.copyWith(
+              color: Colors.white.withValues(alpha: 0.7),
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -292,9 +292,6 @@ class _KycOnboardingScreenState extends ConsumerState<KycOnboardingScreen>
                     (theme.textTheme.titleLarge?.copyWith(
                       fontSize: 28.sp,
                       fontWeight: FontWeight.bold,
-                      color: isDark
-                          ? AppColors.textPrimary
-                          : AppColors.background,
                     )) ??
                     AppTextStyles.h2.copyWith(fontSize: 28.sp),
               ),
@@ -424,7 +421,7 @@ class _KycOnboardingScreenState extends ConsumerState<KycOnboardingScreen>
               Container(
                 height: 8.h,
                 decoration: BoxDecoration(
-                  color: isDark ? AppColors.surface : AppColors.border,
+                  color: Theme.of(context).colorScheme.surface,
                   borderRadius: BorderRadius.circular(6.r),
                 ),
               ),
@@ -487,7 +484,7 @@ class _KycOnboardingScreenState extends ConsumerState<KycOnboardingScreen>
         curve: Curves.easeInOut,
         padding: EdgeInsets.all(20.r),
         decoration: BoxDecoration(
-          color: isDark ? AppColors.surface : theme.colorScheme.surface,
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: AppDecorations.radiusLg,
           border: Border.all(
             color: (isCompleted || isRejected || isSubmitted)
@@ -577,9 +574,6 @@ class _KycOnboardingScreenState extends ConsumerState<KycOnboardingScreen>
                     title,
                     style: AppTextStyles.h3.copyWith(
                       fontSize: 16.sp,
-                      color: isDark
-                          ? AppColors.textPrimary
-                          : AppColors.background,
                     ),
                   ),
                   SizedBox(height: 4.h),
@@ -620,7 +614,7 @@ class _KycOnboardingScreenState extends ConsumerState<KycOnboardingScreen>
   }
 
   Widget _buildShimmerStepCard(bool isDark, ThemeData theme) {
-    final baseColor = isDark ? AppColors.surface : Colors.grey[300]!;
+    final baseColor = Theme.of(context).colorScheme.surface;
     final highlightColor = isDark ? AppColors.border : Colors.grey[100]!;
 
     return Shimmer.fromColors(

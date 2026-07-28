@@ -55,7 +55,7 @@ class _PhoneNumberSheetState extends State<PhoneNumberSheet> {
         bottom: MediaQuery.of(context).viewInsets.bottom + 24.h,
       ),
       decoration: BoxDecoration(
-        color: isDark ? AppColors.surface : Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.vertical(top: Radius.circular(24.r)),
       ),
       child: Form(
@@ -67,7 +67,6 @@ class _PhoneNumberSheetState extends State<PhoneNumberSheet> {
             Text(
               'Enter Phone Number',
               style: AppTextStyles.h3.copyWith(
-                color: isDark ? AppColors.textPrimary : AppColors.background,
               ),
               textAlign: TextAlign.center,
             ),

@@ -16,7 +16,7 @@ class CurrentLocation extends ConsumerWidget {
 
     return addressAsync.when(
       loading: () => Shimmer.fromColors(
-        baseColor: isDark ? AppColors.surface : Colors.grey[200]!,
+        baseColor: Theme.of(context).colorScheme.surface,
         highlightColor: isDark ? AppColors.border : Colors.grey[100]!,
         child: Container(
           width: 100.w,

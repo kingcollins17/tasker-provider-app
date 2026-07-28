@@ -48,7 +48,7 @@ class _OnboardCategoriesScreenState
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: isDark ? AppColors.background : AppColors.textPrimary,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: FadeTransition(
           opacity: _fadeAnimation,
@@ -64,17 +64,14 @@ class _OnboardCategoriesScreenState
                 AppSpacing.hLg,
 
                 // --- Header ---
-                Text('Choose Your Category', 
-                  style: AppTextStyles.h2.copyWith(
-                    color: isDark ? AppColors.textPrimary : AppColors.background,
-                  ),
+                Text(
+                  'Choose Your Category',
+                  style: AppTextStyles.h2.copyWith(),
                 ),
                 AppSpacing.hSm,
                 Text(
                   'Select the category that best describes the services you offer.',
-                  style: AppTextStyles.bodyMedium.copyWith(
-                    color: isDark ? AppColors.textSecondary : AppColors.background.withValues(alpha: 0.7),
-                  ),
+                  style: AppTextStyles.bodyMedium,
                 ),
                 AppSpacing.hLg,
 
@@ -87,7 +84,8 @@ class _OnboardCategoriesScreenState
                       ),
                     ),
                     error: (error, _) => _buildErrorState(error, isDark),
-                    data: (categories) => _buildCategoriesGrid(categories, isDark),
+                    data: (categories) =>
+                        _buildCategoriesGrid(categories, isDark),
                   ),
                 ),
 
@@ -124,8 +122,8 @@ class _OnboardCategoriesScreenState
                       colors: [AppColors.primary, AppColors.primaryLight],
                     )
                   : null,
-              color: !isActive && !isCurrent 
-                  ? (isDark ? AppColors.border : AppColors.textSecondary) 
+              color: !isActive && !isCurrent
+                  ? (isDark ? AppColors.border : AppColors.textSecondary)
                   : null,
             ),
           ),
@@ -141,16 +139,19 @@ class _OnboardCategoriesScreenState
         children: [
           Icon(Icons.cloud_off_rounded, color: AppColors.textMuted, size: 48.r),
           AppSpacing.hMd,
-          Text('Failed to load categories', 
-            style: AppTextStyles.subtitle.copyWith(
-              color: isDark ? AppColors.textSecondary : AppColors.background,
-            ),
+          Text(
+            'Failed to load categories',
+            style: AppTextStyles.subtitle.copyWith(),
           ),
           AppSpacing.hSm,
           Text(
             error.toString(),
             style: AppTextStyles.bodySmall.copyWith(
-              color: isDark ? AppColors.textMuted : AppColors.background.withValues(alpha: 0.7),
+              color: isDark
+                  ? AppColors.textMuted
+                  : Theme.of(
+                      context,
+                    ).scaffoldBackgroundColor.withValues(alpha: 0.7),
             ),
             textAlign: TextAlign.center,
           ),
@@ -170,9 +171,7 @@ class _OnboardCategoriesScreenState
       return Center(
         child: Text(
           'No categories available at the moment.',
-          style: AppTextStyles.bodyMedium.copyWith(
-            color: isDark ? AppColors.textSecondary : AppColors.background,
-          ),
+          style: AppTextStyles.bodyMedium.copyWith(),
         ),
       );
     }
@@ -304,6 +303,8 @@ class _CategoryCardState extends State<_CategoryCard>
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return SlideTransition(
       position: _slideAnimation,
       child: ScaleTransition(
@@ -316,12 +317,16 @@ class _CategoryCardState extends State<_CategoryCard>
             decoration: BoxDecoration(
               color: widget.isSelected
                   ? AppColors.primary.withValues(alpha: 0.12)
-                  : (widget.isDark ? AppColors.surface : AppColors.textPrimary),
+                  : (widget.isDark
+                        ? theme.colorScheme.surface
+                        : AppColors.textPrimary),
               borderRadius: AppDecorations.radiusMd,
               border: Border.all(
-                color: widget.isSelected 
-                    ? AppColors.primary 
-                    : (widget.isDark ? AppColors.border : AppColors.textSecondary),
+                color: widget.isSelected
+                    ? AppColors.primary
+                    : (widget.isDark
+                          ? AppColors.border
+                          : AppColors.textSecondary),
                 width: widget.isSelected ? 2.r : 1.r,
               ),
               boxShadow: widget.isSelected
@@ -346,7 +351,7 @@ class _CategoryCardState extends State<_CategoryCard>
                     shape: BoxShape.circle,
                     color: widget.isSelected
                         ? AppColors.primary.withValues(alpha: 0.2)
-                        : (widget.isDark ? AppColors.background : AppColors.textPrimary),
+                        : (theme.scaffoldBackgroundColor),
                     border: Border.all(
                       color: widget.isSelected
                           ? AppColors.primaryLight
@@ -370,8 +375,10 @@ class _CategoryCardState extends State<_CategoryCard>
                     widget.category.name ?? 'Unknown',
                     style: AppTextStyles.buttonMedium.copyWith(
                       color: widget.isSelected
-                          ? (widget.isDark ? AppColors.textPrimary : AppColors.background)
-                          : (widget.isDark ? AppColors.textSecondary : AppColors.background.withValues(alpha: 0.7)),
+                          ? (theme.scaffoldBackgroundColor)
+                          : (theme.scaffoldBackgroundColor.withValues(
+                              alpha: 0.7,
+                            )),
                     ),
                     textAlign: TextAlign.center,
                     maxLines: 2,
@@ -385,7 +392,11 @@ class _CategoryCardState extends State<_CategoryCard>
                     child: Text(
                       widget.category.description!,
                       style: AppTextStyles.bodySmall.copyWith(
-                        color: widget.isDark ? AppColors.textMuted : AppColors.background.withValues(alpha: 0.5),
+                        color: widget.isDark
+                            ? AppColors.textMuted
+                            : theme.scaffoldBackgroundColor.withValues(
+                                alpha: 0.5,
+                              ),
                       ),
                       textAlign: TextAlign.center,
                       maxLines: 1,

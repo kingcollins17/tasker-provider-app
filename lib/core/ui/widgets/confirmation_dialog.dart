@@ -72,7 +72,7 @@ class ConfirmationDialog extends StatelessWidget {
       child: Container(
         padding: EdgeInsets.all(24.r),
         decoration: BoxDecoration(
-          color: isDark ? AppColors.surface : Colors.white,
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(20.r),
           border: Border.all(
             color: isDark ? AppColors.border : const Color(0xFFE2E8F0),
@@ -113,7 +113,7 @@ class ConfirmationDialog extends StatelessWidget {
               style: AppTextStyles.h3.copyWith(
                 color: isDestructive
                     ? AppColors.error
-                    : (isDark ? AppColors.textPrimary : AppColors.background),
+                    : (Theme.of(context).scaffoldBackgroundColor),
               ),
               textAlign: icon != null ? TextAlign.center : TextAlign.start,
             ),

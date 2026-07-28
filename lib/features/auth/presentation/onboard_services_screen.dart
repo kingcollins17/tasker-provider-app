@@ -57,7 +57,7 @@ class _OnboardServicesScreenState extends ConsumerState<OnboardServicesScreen>
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: isDark ? AppColors.background : AppColors.textPrimary,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: FadeTransition(
           opacity: _fadeAnimation,
@@ -81,7 +81,7 @@ class _OnboardServicesScreenState extends ConsumerState<OnboardServicesScreen>
                         width: 40.r,
                         height: 40.r,
                         decoration: BoxDecoration(
-                          color: isDark ? AppColors.surface : AppColors.textPrimary,
+                          color: isDark ? Theme.of(context).colorScheme.surface : AppColors.textPrimary,
                           shape: BoxShape.circle,
                           border: Border.all(
                             color: isDark ? AppColors.border : AppColors.textSecondary,
@@ -90,7 +90,6 @@ class _OnboardServicesScreenState extends ConsumerState<OnboardServicesScreen>
                         ),
                         child: Icon(
                           Icons.arrow_back_rounded,
-                          color: isDark ? AppColors.textSecondary : AppColors.background,
                           size: 20.r,
                         ),
                       ),
@@ -102,14 +101,13 @@ class _OnboardServicesScreenState extends ConsumerState<OnboardServicesScreen>
                         children: [
                           Text('Select Services', 
                             style: AppTextStyles.h3.copyWith(
-                              color: isDark ? AppColors.textPrimary : AppColors.background,
                             ),
                           ),
                           SizedBox(height: 2.h),
                           Text(
                             'Choose up to $_maxSelections services you provide.',
                             style: AppTextStyles.bodySmall.copyWith(
-                              color: isDark ? AppColors.textMuted : AppColors.background.withValues(alpha: 0.7),
+                              color: isDark ? AppColors.textMuted : Theme.of(context).scaffoldBackgroundColor.withValues(alpha: 0.7),
                             ),
                           ),
                         ],
@@ -189,7 +187,7 @@ class _OnboardServicesScreenState extends ConsumerState<OnboardServicesScreen>
       decoration: BoxDecoration(
         color: _selectedServiceIds.isNotEmpty
             ? AppColors.primary.withValues(alpha: 0.12)
-            : (isDark ? AppColors.surface : AppColors.textPrimary),
+            : (isDark ? Theme.of(context).colorScheme.surface : AppColors.textPrimary),
         borderRadius: AppDecorations.radiusXl,
         border: Border.all(
           color: _selectedServiceIds.isNotEmpty
@@ -232,14 +230,13 @@ class _OnboardServicesScreenState extends ConsumerState<OnboardServicesScreen>
           AppSpacing.hMd,
           Text('Failed to load services', 
             style: AppTextStyles.subtitle.copyWith(
-              color: isDark ? AppColors.textSecondary : AppColors.background,
             ),
           ),
           AppSpacing.hSm,
           Text(
             error.toString(),
             style: AppTextStyles.bodySmall.copyWith(
-              color: isDark ? AppColors.textMuted : AppColors.background.withValues(alpha: 0.7),
+              color: isDark ? AppColors.textMuted : Theme.of(context).scaffoldBackgroundColor.withValues(alpha: 0.7),
             ),
             textAlign: TextAlign.center,
           ),
@@ -267,7 +264,6 @@ class _OnboardServicesScreenState extends ConsumerState<OnboardServicesScreen>
             Text(
               'No services found in this category.',
               style: AppTextStyles.bodyMedium.copyWith(
-                color: isDark ? AppColors.textSecondary : AppColors.background,
               ),
             ),
           ],
@@ -408,6 +404,8 @@ class _ServiceTileState extends State<_ServiceTile>
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    
     return FadeTransition(
       opacity: _fadeAnimation,
       child: SlideTransition(
@@ -422,8 +420,8 @@ class _ServiceTileState extends State<_ServiceTile>
               color: widget.isSelected
                   ? AppColors.primary.withValues(alpha: 0.10)
                   : widget.isDisabled
-                  ? (widget.isDark ? AppColors.surface.withValues(alpha: 0.5) : AppColors.textPrimary.withValues(alpha: 0.5))
-                  : (widget.isDark ? AppColors.surface : AppColors.textPrimary),
+                  ? (widget.isDark ? theme.colorScheme.surface.withValues(alpha: 0.5) : AppColors.textPrimary.withValues(alpha: 0.5))
+                  : (widget.isDark ? theme.colorScheme.surface : AppColors.textPrimary),
               borderRadius: AppDecorations.radiusMd,
               border: Border.all(
                 color: widget.isSelected 
@@ -450,7 +448,7 @@ class _ServiceTileState extends State<_ServiceTile>
                   decoration: BoxDecoration(
                     color: widget.isSelected
                         ? AppColors.primary.withValues(alpha: 0.18)
-                        : (widget.isDark ? AppColors.background : AppColors.textPrimary),
+                        : (theme.scaffoldBackgroundColor),
                     borderRadius: AppDecorations.radiusSm,
                     border: Border.all(
                       color: widget.isSelected
@@ -480,8 +478,8 @@ class _ServiceTileState extends State<_ServiceTile>
                           color: widget.isDisabled
                               ? (widget.isDark ? AppColors.textMuted : AppColors.textSecondary)
                               : widget.isSelected
-                              ? (widget.isDark ? AppColors.textPrimary : AppColors.background)
-                              : (widget.isDark ? AppColors.textSecondary : AppColors.background.withValues(alpha: 0.7)),
+                              ? (theme.scaffoldBackgroundColor)
+                              : (theme.scaffoldBackgroundColor.withValues(alpha: 0.7)),
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -491,7 +489,7 @@ class _ServiceTileState extends State<_ServiceTile>
                         Text(
                           widget.service.category!.name!,
                           style: AppTextStyles.bodySmall.copyWith(
-                            color: widget.isDark ? AppColors.textMuted : AppColors.background.withValues(alpha: 0.5),
+                            color: widget.isDark ? AppColors.textMuted : theme.scaffoldBackgroundColor.withValues(alpha: 0.5),
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,

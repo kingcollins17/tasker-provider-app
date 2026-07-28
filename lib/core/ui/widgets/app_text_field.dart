@@ -66,7 +66,7 @@ class AppTextField extends StatelessWidget {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
-    final fillColor = isDark ? AppColors.surface : Colors.grey.shade50;
+    final fillColor = Theme.of(context).colorScheme.surface;
     // We remove the border color completely for the enabled state
     final focusedBorderColor = isDark ? AppColors.accent : AppColors.primary;
     final hintColor = isDark ? AppColors.textMuted : const Color(0xFF94A3B8);

@@ -14,7 +14,6 @@ class AppTextStyles {
   static TextStyle get h1 => GoogleFonts.poppins(
     fontSize: 28.sp,
     fontWeight: FontWeight.bold,
-    color: AppColors.textPrimary,
     height: 1.2,
   );
 
@@ -22,7 +21,6 @@ class AppTextStyles {
   static TextStyle get h2 => GoogleFonts.poppins(
     fontSize: 24.sp,
     fontWeight: FontWeight.bold,
-    color: AppColors.textPrimary,
     height: 1.25,
   );
 
@@ -30,7 +28,6 @@ class AppTextStyles {
   static TextStyle get h3 => GoogleFonts.poppins(
     fontSize: 20.sp,
     fontWeight: FontWeight.w600,
-    color: AppColors.textPrimary,
     height: 1.3,
   );
 
@@ -38,7 +35,6 @@ class AppTextStyles {
   static TextStyle get subtitle => GoogleFonts.poppins(
     fontSize: 16.sp,
     fontWeight: FontWeight.w500,
-    color: AppColors.textSecondary,
     height: 1.4,
   );
 
@@ -48,7 +44,6 @@ class AppTextStyles {
   static TextStyle get bodyLarge => GoogleFonts.poppins(
     fontSize: 16.sp,
     fontWeight: FontWeight.normal,
-    color: AppColors.textSecondary,
     height: 1.5,
   );
 
@@ -56,7 +51,6 @@ class AppTextStyles {
   static TextStyle get bodyMedium => GoogleFonts.poppins(
     fontSize: 14.sp,
     fontWeight: FontWeight.normal,
-    color: AppColors.textSecondary,
     height: 1.5,
   );
 
@@ -74,7 +68,6 @@ class AppTextStyles {
   static TextStyle get buttonLarge => GoogleFonts.poppins(
     fontSize: 16.sp,
     fontWeight: FontWeight.bold,
-    color: AppColors.textPrimary,
     letterSpacing: 0.5,
   );
 
@@ -82,7 +75,6 @@ class AppTextStyles {
   static TextStyle get buttonMedium => GoogleFonts.poppins(
     fontSize: 14.sp,
     fontWeight: FontWeight.w600,
-    color: AppColors.textPrimary,
     letterSpacing: 0.3,
   );
 

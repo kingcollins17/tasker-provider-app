@@ -185,7 +185,7 @@ class _VerifyOTPPageState extends ConsumerState<VerifyOTPPage> {
                       decoration: InputDecoration(
                         counterText: '',
                         filled: true,
-                        fillColor: isDark ? AppColors.surface : Colors.white,
+                        fillColor: Theme.of(context).colorScheme.surface,
                         contentPadding: EdgeInsets.symmetric(vertical: 8.h),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12.r),

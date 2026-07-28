@@ -54,7 +54,7 @@ class TaskDetailsOptionSheet extends ConsumerWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: isDark ? AppColors.surface : Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.vertical(top: Radius.circular(24.r)),
       ),
       padding: EdgeInsets.fromLTRB(24.w, 12.h, 24.w, 32.h),

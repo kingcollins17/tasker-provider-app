@@ -119,7 +119,6 @@ class _ProfileUpdateScreenState extends ConsumerState<ProfileUpdateScreen> {
         title: Text(
           'Update Profile',
           style: AppTextStyles.h3.copyWith(
-            color: isDark ? AppColors.textPrimary : AppColors.background,
           ),
         ),
         backgroundColor: Colors.transparent,

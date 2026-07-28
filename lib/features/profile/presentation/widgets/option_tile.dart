@@ -44,7 +44,7 @@ class OptionTile extends StatelessWidget {
         child: Ink(
           padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 14.h),
           decoration: BoxDecoration(
-            color: isDark ? AppColors.surface : Colors.grey.shade50,
+            color: Theme.of(context).colorScheme.surface,
             borderRadius: AppDecorations.radiusMd,
           ),
           child: Row(
@@ -69,10 +69,7 @@ class OptionTile extends StatelessWidget {
                       title,
                       style: AppTextStyles.bodyMedium.copyWith(
                         fontWeight: FontWeight.w600,
-                        color: titleColor ??
-                            (isDark
-                                ? AppColors.textPrimary
-                                : AppColors.background),
+                        color: titleColor,
                       ),
                     ),
                     if (subtitle != null) ...[

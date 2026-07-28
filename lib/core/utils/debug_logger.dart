@@ -1,8 +1,42 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 
-/// Logs an object to the console in a formatted JSON structure if possible, falling back to standard string representation.
-void debugLog(Object? object) {
+enum DebugLevel { info, warn, error }
+
+class DebugData {
+  final DebugLevel level;
+  final String data;
+  final DateTime timestamp;
+
+  DebugData({
+    required this.level,
+    required this.data,
+    DateTime? timestamp,
+  }) : timestamp = timestamp ?? DateTime.now();
+}
+
+/// Singleton class storing debug logs in memory and extending [ChangeNotifier].
+class DebugLogger extends ChangeNotifier {
+  DebugLogger._internal();
+  static final DebugLogger instance = DebugLogger._internal();
+
+  final List<DebugData> _logs = [];
+
+  List<DebugData> get logs => List.unmodifiable(_logs);
+
+  void addLog(DebugData data) {
+    _logs.add(data);
+    notifyListeners();
+  }
+
+  void clearLogs() {
+    _logs.clear();
+    notifyListeners();
+  }
+}
+
+/// Logs an object to console and appends it to [DebugLogger.instance].
+void debugLog(Object? object, {DebugLevel level = DebugLevel.info}) {
   if (!kDebugMode) return;
 
   String output;
@@ -12,7 +46,6 @@ void debugLog(Object? object) {
   } catch (_) {
     try {
       if (object != null) {
-        // Attempt to call toJson() dynamically if the object provides it
         final dynamic dynamicObj = object;
         final jsonVal = dynamicObj.toJson();
         const encoder = JsonEncoder.withIndent('     ');
@@ -24,6 +57,14 @@ void debugLog(Object? object) {
       output = object?.toString() ?? 'null';
     }
   }
+
+  DebugLogger.instance.addLog(
+    DebugData(
+      level: level,
+      data: output,
+      timestamp: DateTime.now(),
+    ),
+  );
 
   debugPrint(output);
 }

@@ -96,7 +96,7 @@ class _SelectBankPageState extends ConsumerState<SelectBankPage> {
                       },
                       child: Container(
                         decoration: BoxDecoration(
-                          color: isDark ? AppColors.surface : Colors.white,
+                          color: Theme.of(context).colorScheme.surface,
                           borderRadius: BorderRadius.circular(16.r),
                           border: Border.all(
                             color: isSelected
@@ -120,7 +120,7 @@ class _SelectBankPageState extends ConsumerState<SelectBankPage> {
                                 decoration: BoxDecoration(
                                   shape: BoxShape.circle,
                                   color: isDark
-                                      ? AppColors.background
+                                      ? Theme.of(context).scaffoldBackgroundColor
                                       : Colors.grey.shade100,
                                 ),
                                 clipBehavior: Clip.antiAlias,
@@ -144,7 +144,7 @@ class _SelectBankPageState extends ConsumerState<SelectBankPage> {
                                 decoration: BoxDecoration(
                                   shape: BoxShape.circle,
                                   color: isDark
-                                      ? AppColors.background
+                                      ? Theme.of(context).scaffoldBackgroundColor
                                       : Colors.grey.shade100,
                                 ),
                                 child: Icon(
@@ -179,7 +179,7 @@ class _SelectBankPageState extends ConsumerState<SelectBankPage> {
                 itemBuilder: (context, index) {
                   return Container(
                     decoration: BoxDecoration(
-                      color: isDark ? AppColors.surface : Colors.white,
+                      color: Theme.of(context).colorScheme.surface,
                       borderRadius: BorderRadius.circular(16.r),
                       border: Border.all(
                         color: isDark ? AppColors.border : Colors.grey.shade200,
@@ -189,7 +189,7 @@ class _SelectBankPageState extends ConsumerState<SelectBankPage> {
                     padding: EdgeInsets.all(16.r),
                     child: Shimmer.fromColors(
                       baseColor: isDark ? AppColors.border : Colors.grey.shade300,
-                      highlightColor: isDark ? AppColors.surface : Colors.grey.shade100,
+                      highlightColor: Theme.of(context).colorScheme.surface,
                       child: Row(
                         children: [
                           Container(
