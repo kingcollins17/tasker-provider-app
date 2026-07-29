@@ -9,8 +9,10 @@ import '../../../core/ui/designs/designs.dart';
 import '../../../core/ui/widgets/primary_button.dart';
 import '../../../core/utils/extensions/flushbar_context_ext.dart';
 import '../../../core/utils/extensions/loading_context_ext.dart';
+import '../../../core/utils/extensions/time_of_day_ext.dart';
 
 class _DayState {
+  final String? availabilityId;
   final int dayOfWeek; // 1 = Sunday, ..., 7 = Saturday
   final String name;
   bool isAvailable;
@@ -18,6 +20,7 @@ class _DayState {
   TimeOfDay endTime;
 
   _DayState({
+    this.availabilityId,
     required this.dayOfWeek,
     required this.name,
     required this.isAvailable,
@@ -52,9 +55,6 @@ class _UpdateAvailabilityScreenState
     const defaultStart = TimeOfDay(hour: 9, minute: 0);
     const defaultEnd = TimeOfDay(hour: 18, minute: 0);
 
-    // If initial list is empty or null, initialize all weekdays (1..7) to 9 AM - 6 PM
-    final isListEmpty = initialList.isEmpty;
-
     final Map<int, ProviderAvailability> map = {
       for (final item in initialList)
         if (item.dayOfWeek != null) item.dayOfWeek!: item,
@@ -65,27 +65,19 @@ class _UpdateAvailabilityScreenState
       final name = _dayNames[dayOfWeek] ?? 'Day $dayOfWeek';
       final existing = map[dayOfWeek];
 
-      if (isListEmpty) {
-        return _DayState(
-          dayOfWeek: dayOfWeek,
-          name: name,
-          isAvailable: true,
-          startTime: defaultStart,
-          endTime: defaultEnd,
-        );
-      }
-
       if (existing != null) {
         return _DayState(
+          availabilityId: existing.id,
           dayOfWeek: dayOfWeek,
           name: name,
-          isAvailable: true,
+          isAvailable: existing.isActive ?? false,
           startTime: existing.startTimeOfDay ?? defaultStart,
           endTime: existing.endTimeOfDay ?? defaultEnd,
         );
       }
 
       return _DayState(
+        availabilityId: null,
         dayOfWeek: dayOfWeek,
         name: name,
         isAvailable: false,
@@ -100,10 +92,7 @@ class _UpdateAvailabilityScreenState
     required bool isStart,
   }) async {
     final initial = isStart ? day.startTime : day.endTime;
-    final picked = await showTimePicker(
-      context: context,
-      initialTime: initial,
-    );
+    final picked = await showTimePicker(context: context, initialTime: initial);
 
     if (picked != null) {
       setState(() {
@@ -119,28 +108,35 @@ class _UpdateAvailabilityScreenState
   Future<void> _submit() async {
     if (_days == null) return;
 
-    final activeBlocks = _days!
-        .where((d) => d.isAvailable)
+    final blocksToUpdate = _days!
+        .where((d) => d.availabilityId != null && d.availabilityId!.isNotEmpty)
         .map(
-          (d) => AvailabilityBlock.fromTimeOfDay(
-            dayOfWeek: d.dayOfWeek,
-            startTime: d.startTime,
-            endTime: d.endTime,
+          (d) => (
+            id: d.availabilityId!,
+            startTime: d.startTime.toApiTimeString(),
+            endTime: d.endTime.toApiTimeString(),
+            isActive: d.isAvailable,
           ),
         )
         .toList();
 
+    if (blocksToUpdate.isEmpty) {
+      context.showInfo('No availability items to update');
+      return;
+    }
+
     context.showLoading();
 
-    await ref.read(providerAvailabilityProvider.notifier).updateAvailability(
-          activeBlocks,
+    await ref
+        .read(providerAvailabilityProvider.notifier)
+        .updateAvailabilityBlocks(
+          blocksToUpdate,
           onSuccess: () {
             context.hideLoading();
             Navigator.pop(context);
 
             Future.delayed(const Duration(milliseconds: 150), () {
-              final rootContext =
-                  NavigatorKeys.rootNavigatorKey.currentContext;
+              final rootContext = NavigatorKeys.rootNavigatorKey.currentContext;
               if (rootContext != null && rootContext.mounted) {
                 rootContext.showInfo(
                   'Availability schedule updated successfully',
@@ -158,7 +154,8 @@ class _UpdateAvailabilityScreenState
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
+    final colorScheme = theme.colorScheme;
+    final textTheme = theme.textTheme;
     final availabilityAsync = ref.watch(providerAvailabilityProvider);
 
     return Scaffold(
@@ -182,7 +179,8 @@ class _UpdateAvailabilityScreenState
                   'Set your weekly working days and hours so clients know when you\'re available for tasks.',
                   style: AppTextStyles.bodyMedium.copyWith(
                     color:
-                        isDark ? AppColors.textMuted : AppColors.textSecondary,
+                        textTheme.bodyMedium?.color ??
+                        colorScheme.onSurfaceVariant,
                   ),
                 ),
                 SizedBox(height: 16.h),
@@ -232,14 +230,14 @@ class _UpdateAvailabilityScreenState
                 SizedBox(height: 12.h),
 
                 // Weekdays List
-                ..._days!.map((day) => _buildDayCard(day, isDark)),
+                ..._days!.map((day) => _buildDayCard(day, colorScheme)),
 
                 SizedBox(height: 32.h),
               ],
             ),
           );
         },
-        loading: () => _buildLoadingState(isDark),
+        loading: () => _buildLoadingState(colorScheme),
         error: (error, stackTrace) => Center(
           child: Padding(
             padding: EdgeInsets.all(24.r),
@@ -248,18 +246,19 @@ class _UpdateAvailabilityScreenState
               children: [
                 Icon(
                   Icons.error_outline_rounded,
-                  color: AppColors.error,
+                  color: colorScheme.error,
                   size: 48.r,
                 ),
                 SizedBox(height: 16.h),
                 Text(
                   'Failed to load availability schedule',
-                  style: AppTextStyles.subtitle,
+                  style: AppTextStyles.subtitle.copyWith(
+                    color: colorScheme.onSurface,
+                  ),
                 ),
                 SizedBox(height: 16.h),
                 ElevatedButton(
-                  onPressed: () =>
-                      ref.invalidate(providerAvailabilityProvider),
+                  onPressed: () => ref.invalidate(providerAvailabilityProvider),
                   child: const Text('Retry'),
                 ),
               ],
@@ -279,25 +278,19 @@ class _UpdateAvailabilityScreenState
     );
   }
 
-  Widget _buildDayCard(_DayState day, bool isDark) {
+  Widget _buildDayCard(_DayState day, ColorScheme colorScheme) {
     return Container(
-      margin: EdgeInsets.only(bottom: 12.h),
-      padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 14.h),
+      margin: EdgeInsets.only(bottom: 8.h),
+      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
       decoration: BoxDecoration(
         color: day.isAvailable
-            ? (isDark ? AppColors.surface : Colors.white)
-            : (isDark
-                ? AppColors.surface.withValues(alpha: 0.4)
-                : Colors.grey.shade50),
-        borderRadius: AppDecorations.radiusLg,
+            ? colorScheme.surface
+            : colorScheme.surface.withValues(alpha: 0.5),
+        borderRadius: AppDecorations.radiusMd,
         border: Border.all(
           color: day.isAvailable
-              ? (isDark
-                  ? AppColors.border
-                  : AppColors.primary.withValues(alpha: 0.3))
-              : (isDark
-                  ? AppColors.border.withValues(alpha: 0.3)
-                  : Colors.grey.shade200),
+              ? colorScheme.primary.withValues(alpha: 0.25)
+              : colorScheme.onSurface.withValues(alpha: 0.12),
         ),
       ),
       child: Column(
@@ -312,49 +305,55 @@ class _UpdateAvailabilityScreenState
                     day.name,
                     style: AppTextStyles.subtitle.copyWith(
                       fontWeight: FontWeight.w600,
+                      fontSize: 15.sp,
                       color: day.isAvailable
-                          ? (isDark
-                              ? AppColors.textPrimary
-                              : AppColors.textPrimary)
-                          : AppColors.textMuted,
+                          ? colorScheme.onSurface
+                          : colorScheme.onSurface.withValues(alpha: 0.4),
                     ),
                   ),
-                  SizedBox(width: 8.w),
+                  SizedBox(width: 6.w),
                   Container(
-                    padding:
-                        EdgeInsets.symmetric(horizontal: 8.w, vertical: 2.h),
+                    padding: EdgeInsets.symmetric(
+                      horizontal: 6.w,
+                      vertical: 2.h,
+                    ),
                     decoration: BoxDecoration(
                       color: day.isAvailable
-                          ? AppColors.success.withValues(alpha: 0.15)
-                          : Colors.grey.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(12.r),
+                          ? colorScheme.primary.withValues(alpha: 0.12)
+                          : colorScheme.onSurface.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(10.r),
                     ),
                     child: Text(
                       day.isAvailable ? 'Available' : 'Off',
                       style: AppTextStyles.bodySmall.copyWith(
                         color: day.isAvailable
-                            ? AppColors.success
-                            : AppColors.textMuted,
-                        fontSize: 11.sp,
+                            ? colorScheme.primary
+                            : colorScheme.onSurface.withValues(alpha: 0.5),
+                        fontSize: 10.sp,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
                   ),
                 ],
               ),
-              Switch.adaptive(
-                value: day.isAvailable,
-                activeTrackColor: AppColors.primary,
-                onChanged: (val) {
-                  setState(() {
-                    day.isAvailable = val;
-                  });
-                },
+              Transform.scale(
+                scale: 0.8,
+                alignment: Alignment.centerRight,
+                child: Switch.adaptive(
+                  value: day.isAvailable,
+                  activeTrackColor: colorScheme.primary,
+                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  onChanged: (val) {
+                    setState(() {
+                      day.isAvailable = val;
+                    });
+                  },
+                ),
               ),
             ],
           ),
           if (day.isAvailable) ...[
-            SizedBox(height: 12.h),
+            SizedBox(height: 8.h),
             Row(
               children: [
                 Expanded(
@@ -362,15 +361,15 @@ class _UpdateAvailabilityScreenState
                     label: 'Start Time',
                     time: day.startTime,
                     onTap: () => _pickTime(day: day, isStart: true),
-                    isDark: isDark,
+                    colorScheme: colorScheme,
                   ),
                 ),
                 Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 12.w),
+                  padding: EdgeInsets.symmetric(horizontal: 6.w),
                   child: Icon(
                     Icons.arrow_forward_rounded,
-                    size: 18.r,
-                    color: AppColors.textMuted,
+                    size: 14.r,
+                    color: colorScheme.onSurface.withValues(alpha: 0.4),
                   ),
                 ),
                 Expanded(
@@ -378,7 +377,7 @@ class _UpdateAvailabilityScreenState
                     label: 'End Time',
                     time: day.endTime,
                     onTap: () => _pickTime(day: day, isStart: false),
-                    isDark: isDark,
+                    colorScheme: colorScheme,
                   ),
                 ),
               ],
@@ -393,23 +392,17 @@ class _UpdateAvailabilityScreenState
     required String label,
     required TimeOfDay time,
     required VoidCallback onTap,
-    required bool isDark,
+    required ColorScheme colorScheme,
   }) {
     return InkWell(
       onTap: onTap,
       borderRadius: AppDecorations.radiusMd,
       child: Container(
-        padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
+        padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
         decoration: BoxDecoration(
-          color: isDark
-              ? AppColors.background
-              : AppColors.primary.withValues(alpha: 0.05),
+          color: colorScheme.primary.withValues(alpha: 0.05),
           borderRadius: AppDecorations.radiusMd,
-          border: Border.all(
-            color: isDark
-                ? AppColors.border
-                : AppColors.primary.withValues(alpha: 0.2),
-          ),
+          border: Border.all(color: colorScheme.primary.withValues(alpha: 0.2)),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -420,24 +413,25 @@ class _UpdateAvailabilityScreenState
                 Text(
                   label,
                   style: AppTextStyles.bodySmall.copyWith(
-                    color: AppColors.textMuted,
-                    fontSize: 10.sp,
+                    color: colorScheme.onSurface.withValues(alpha: 0.6),
+                    fontSize: 9.sp,
                   ),
                 ),
-                SizedBox(height: 2.h),
+                SizedBox(height: 1.h),
                 Text(
                   time.format(context),
                   style: AppTextStyles.bodyMedium.copyWith(
                     fontWeight: FontWeight.w600,
-                    fontSize: 14.sp,
+                    fontSize: 13.sp,
+                    color: colorScheme.onSurface,
                   ),
                 ),
               ],
             ),
             Icon(
               Icons.access_time_rounded,
-              size: 18.r,
-              color: AppColors.primary,
+              size: 15.r,
+              color: colorScheme.primary,
             ),
           ],
         ),
@@ -445,21 +439,21 @@ class _UpdateAvailabilityScreenState
     );
   }
 
-  Widget _buildLoadingState(bool isDark) {
+  Widget _buildLoadingState(ColorScheme colorScheme) {
     return SingleChildScrollView(
       padding: EdgeInsets.all(16.r),
       child: Shimmer.fromColors(
-        baseColor: isDark ? AppColors.surface : Colors.grey.shade300,
-        highlightColor: isDark ? AppColors.border : Colors.grey.shade100,
+        baseColor: colorScheme.surface,
+        highlightColor: colorScheme.surface.withValues(alpha: 0.5),
         child: Column(
           children: List.generate(
             7,
             (index) => Container(
-              height: 100.h,
-              margin: EdgeInsets.only(bottom: 12.h),
+              height: 64.h,
+              margin: EdgeInsets.only(bottom: 8.h),
               decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: AppDecorations.radiusLg,
+                color: colorScheme.surface,
+                borderRadius: AppDecorations.radiusMd,
               ),
             ),
           ),

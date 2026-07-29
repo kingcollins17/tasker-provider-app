@@ -1,4 +1,3 @@
-import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -12,7 +11,6 @@ import '../../../core/ui/designs/decorations.dart';
 import '../../../core/ui/designs/spacing.dart';
 import '../../notifications/presentation/widgets/notification_icon.dart';
 import '../../profile/presentation/widgets/earnings_card.dart';
-import 'package:tasker_app/core/ui/widgets/current_location.dart';
 import 'package:tasker_app/core/utils/extensions/flushbar_context_ext.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
@@ -66,7 +64,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     ref.watch(offerPingListenerProvider);
     ref.watch(pingLocationProvider);
     final user = ref.watch(userProvider);
-    final address = ref.watch(userAddressProvider);
 
     final firstName = user.value?.providerProfile?.firstName ?? '';
 
@@ -75,66 +72,80 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       body: SafeArea(
         child: Stack(
           children: [
-            CustomScrollView(
-              physics: const BouncingScrollPhysics(),
-              slivers: [
-                // ─── APP BAR ───
-                SliverPadding(
-                  padding: AppSpacing.pHorsMd,
-                  sliver: SliverToBoxAdapter(
-                    child: _SlideUp(
-                      animation: _staggered(0),
-                      child: _HomeAppBar(
-                        firstName: firstName,
-                        pulseController: _pulseController,
+            RefreshIndicator(
+              onRefresh: () async {
+                ref.invalidate(userProvider);
+                ref.invalidate(selectedEarningsProvider);
+                try {
+                  await Future.wait([
+                    ref.refresh(userProvider.future),
+                    ref.refresh(selectedEarningsProvider.future),
+                  ]);
+                } catch (_) {}
+              },
+              child: CustomScrollView(
+                physics: const BouncingScrollPhysics(
+                  parent: AlwaysScrollableScrollPhysics(),
+                ),
+                slivers: [
+                  // ─── APP BAR ───
+                  SliverPadding(
+                    padding: AppSpacing.pHorsMd,
+                    sliver: SliverToBoxAdapter(
+                      child: _SlideUp(
+                        animation: _staggered(0),
+                        child: _HomeAppBar(
+                          firstName: firstName,
+                          pulseController: _pulseController,
+                        ),
                       ),
                     ),
                   ),
-                ),
 
-                SliverToBoxAdapter(child: AppSpacing.hLg),
+                  SliverToBoxAdapter(child: AppSpacing.hLg),
 
-                // ─── EARNINGS CARD ───
-                SliverPadding(
-                  padding: AppSpacing.pHorsMd,
-                  sliver: SliverToBoxAdapter(
-                    child: _SlideUp(
-                      animation: _staggered(1),
-                      child: const EarningsCard(),
+                  // ─── EARNINGS CARD ───
+                  SliverPadding(
+                    padding: AppSpacing.pHorsMd,
+                    sliver: SliverToBoxAdapter(
+                      child: _SlideUp(
+                        animation: _staggered(1),
+                        child: const EarningsCard(),
+                      ),
                     ),
                   ),
-                ),
 
-                SliverToBoxAdapter(child: AppSpacing.hLg),
+                  SliverToBoxAdapter(child: AppSpacing.hLg),
 
-                // ─── ACTIVE WORK ───
-                SliverPadding(
-                  padding: AppSpacing.pHorsMd,
-                  sliver: SliverToBoxAdapter(
-                    child: _SlideUp(
-                      animation: _staggered(2),
-                      child: const _ActiveWorkSection(),
+                  // ─── ACTIVE WORK ───
+                  SliverPadding(
+                    padding: AppSpacing.pHorsMd,
+                    sliver: SliverToBoxAdapter(
+                      child: _SlideUp(
+                        animation: _staggered(2),
+                        child: const _ActiveWorkSection(),
+                      ),
                     ),
                   ),
-                ),
 
-                SliverToBoxAdapter(child: AppSpacing.hLg),
+                  SliverToBoxAdapter(child: AppSpacing.hLg),
 
-                // ─── PERFORMANCE SNAPSHOT ───
-                SliverPadding(
-                  padding: AppSpacing.pHorsMd,
-                  sliver: SliverToBoxAdapter(
-                    child: _SlideUp(
-                      animation: _staggered(3),
-                      child: const _PerformanceSnapshotCard(),
+                  // ─── PERFORMANCE SNAPSHOT ───
+                  SliverPadding(
+                    padding: AppSpacing.pHorsMd,
+                    sliver: SliverToBoxAdapter(
+                      child: _SlideUp(
+                        animation: _staggered(3),
+                        child: const _PerformanceSnapshotCard(),
+                      ),
                     ),
                   ),
-                ),
 
-                SliverToBoxAdapter(child: AppSpacing.hLg),
-                // Bottom padding for the floating banner
-                SliverToBoxAdapter(child: SizedBox(height: 120.h)),
-              ],
+                  SliverToBoxAdapter(child: AppSpacing.hLg),
+                  // Bottom padding for the floating banner
+                  SliverToBoxAdapter(child: SizedBox(height: 120.h)),
+                ],
+              ),
             ),
             Align(
               alignment: Alignment.bottomCenter,
@@ -583,11 +594,21 @@ class _ActiveWorkCard extends StatelessWidget {
 // PERFORMANCE SNAPSHOT
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _PerformanceSnapshotCard extends StatelessWidget {
+class _PerformanceSnapshotCard extends ConsumerWidget {
   const _PerformanceSnapshotCard();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final user = ref.watch(userProvider).value;
+
+    final avgRating = user?.averageRatings != null
+        ? user!.averageRatings!.toDouble().toStringAsFixed(1)
+        : '0.0';
+    final totalJobs = user?.providerProfile?.totalTasksCompleted ?? 0;
+    final credibility = user?.credibilityScore != null
+        ? '${user!.credibilityScore}%'
+        : '0%';
+
     return Container(
       padding: EdgeInsets.all(20.r),
       decoration: BoxDecoration(
@@ -626,14 +647,14 @@ class _PerformanceSnapshotCard extends StatelessWidget {
             children: [
               _PerformanceStat(
                 icon: Icons.star_rounded,
-                value: "4.9",
+                value: avgRating,
                 label: "Rating",
                 color: const Color(0xFFF59E0B),
               ),
               _statDivider(),
               _PerformanceStat(
                 icon: Icons.work_rounded,
-                value: "18",
+                value: "$totalJobs",
                 label: "Jobs",
                 color: const Color(0xFF3B82F6),
               ),
@@ -647,7 +668,7 @@ class _PerformanceSnapshotCard extends StatelessWidget {
               _statDivider(),
               _PerformanceStat(
                 icon: Icons.check_circle_rounded,
-                value: "98%",
+                value: credibility,
                 label: "Done",
                 color: AppColors.primary,
               ),

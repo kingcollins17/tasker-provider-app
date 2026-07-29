@@ -25,6 +25,7 @@ ProviderProfile _$ProviderProfileFromJson(Map<String, dynamic> json) =>
       isOnline: json['is_online'] as bool?,
       dutyStatus: json['duty_status'] as String?,
       lastHeartbeatAt: json['last_heartbeat_at'] as String?,
+      totalTasksCompleted: (json['total_tasks_completed'] as num?)?.toInt(),
       services: json['services'] as List<dynamic>?,
     );
 
@@ -47,5 +48,6 @@ Map<String, dynamic> _$ProviderProfileToJson(ProviderProfile instance) =>
       'is_online': instance.isOnline,
       'duty_status': instance.dutyStatus,
       'last_heartbeat_at': instance.lastHeartbeatAt,
+      'total_tasks_completed': instance.totalTasksCompleted,
       'services': instance.services,
     };

@@ -35,6 +35,8 @@ class ProviderProfile {
   final String? dutyStatus;
   @JsonKey(name: 'last_heartbeat_at')
   final String? lastHeartbeatAt;
+  @JsonKey(name: 'total_tasks_completed')
+  final int? totalTasksCompleted;
   final List<dynamic>? services;
 
   ProviderProfile({
@@ -55,6 +57,7 @@ class ProviderProfile {
     this.isOnline,
     this.dutyStatus,
     this.lastHeartbeatAt,
+    this.totalTasksCompleted,
     this.services,
   });
 

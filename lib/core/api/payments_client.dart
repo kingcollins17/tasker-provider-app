@@ -15,6 +15,15 @@ abstract class PaymentsClient {
     @Query("start_date") String? startDate,
     @Query("end_date") String? endDate,
   });
+
+  @GET("payments/provider/payouts")
+  Future<BaseApiResponse<PaginatedData<Payout>>> getProviderPayouts({
+    @Query("page") int? page,
+    @Query("per_page") int? perPage,
+    @Query("sort_by") String? sortBy,
+    @Query("sort_desc") bool? sortDesc,
+    @Query("status") String? status,
+  });
 }
 
 /// Provider exposing the [PaymentsClient] dependency.

@@ -5,49 +5,29 @@ import '../../../utils/extensions/time_of_day_ext.dart';
 part 'update_availability_request.g.dart';
 
 @JsonSerializable(fieldRename: FieldRename.snake)
-class AvailabilityBlock {
-  final int? dayOfWeek;
+class UpdateAvailabilityRequest {
   final String? startTime;
   final String? endTime;
+  final bool? isActive;
 
-  AvailabilityBlock({
-    this.dayOfWeek,
+  UpdateAvailabilityRequest({
     this.startTime,
     this.endTime,
+    this.isActive,
   });
 
   /// Helper factory constructor from [TimeOfDay] objects.
-  factory AvailabilityBlock.fromTimeOfDay({
-    int? dayOfWeek,
+  factory UpdateAvailabilityRequest.fromTimeOfDay({
     TimeOfDay? startTime,
     TimeOfDay? endTime,
+    bool? isActive,
   }) {
-    return AvailabilityBlock(
-      dayOfWeek: dayOfWeek,
+    return UpdateAvailabilityRequest(
       startTime: startTime?.toApiTimeString(),
       endTime: endTime?.toApiTimeString(),
+      isActive: isActive,
     );
   }
-
-  /// Helper getter to convert [startTime] string into Flutter [TimeOfDay].
-  TimeOfDay? get startTimeOfDay => startTime?.toTimeOfDay();
-
-  /// Helper getter to convert [endTime] string into Flutter [TimeOfDay].
-  TimeOfDay? get endTimeOfDay => endTime?.toTimeOfDay();
-
-  factory AvailabilityBlock.fromJson(Map<String, dynamic> json) =>
-      _$AvailabilityBlockFromJson(json);
-
-  Map<String, dynamic> toJson() => _$AvailabilityBlockToJson(this);
-}
-
-@JsonSerializable(fieldRename: FieldRename.snake)
-class UpdateAvailabilityRequest {
-  final List<AvailabilityBlock>? availabilityBlocks;
-
-  UpdateAvailabilityRequest({
-    this.availabilityBlocks,
-  });
 
   factory UpdateAvailabilityRequest.fromJson(Map<String, dynamic> json) =>
       _$UpdateAvailabilityRequestFromJson(json);

@@ -694,19 +694,52 @@ class _UsersClient implements UsersClient {
   }
 
   @override
-  Future<BaseApiResponse<List<ProviderAvailability>>>
-  updateProviderAvailability(UpdateAvailabilityRequest body) async {
+  Future<BaseApiResponse<dynamic>> updateProviderAvailability(
+    String availabilityId,
+    UpdateAvailabilityRequest body,
+  ) async {
     final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{};
     final _headers = <String, dynamic>{};
     final _data = <String, dynamic>{};
     _data.addAll(body.toJson());
+    final _options = _setStreamType<BaseApiResponse<dynamic>>(
+      Options(method: 'PUT', headers: _headers, extra: _extra)
+          .compose(
+            _dio.options,
+            'users/provider/availability/${availabilityId}',
+            queryParameters: queryParameters,
+            data: _data,
+          )
+          .copyWith(baseUrl: _combineBaseUrls(_dio.options.baseUrl, baseUrl)),
+    );
+    final _result = await _dio.fetch<Map<String, dynamic>>(_options);
+    late BaseApiResponse<dynamic> _value;
+    try {
+      _value = BaseApiResponse<dynamic>.fromJson(
+        _result.data!,
+        (json) => json as dynamic,
+      );
+    } on Object catch (e, s) {
+      errorLogger?.logError(e, s, _options, response: _result);
+      rethrow;
+    }
+    return _value;
+  }
+
+  @override
+  Future<BaseApiResponse<List<ProviderAvailability>>>
+  createDefaultProviderAvailability() async {
+    final _extra = <String, dynamic>{};
+    final queryParameters = <String, dynamic>{};
+    final _headers = <String, dynamic>{};
+    const Map<String, dynamic>? _data = null;
     final _options =
         _setStreamType<BaseApiResponse<List<ProviderAvailability>>>(
-          Options(method: 'PUT', headers: _headers, extra: _extra)
+          Options(method: 'POST', headers: _headers, extra: _extra)
               .compose(
                 _dio.options,
-                'users/provider/availability',
+                'users/provider/availability/default',
                 queryParameters: queryParameters,
                 data: _data,
               )

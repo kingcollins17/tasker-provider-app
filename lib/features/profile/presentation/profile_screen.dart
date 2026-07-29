@@ -39,55 +39,69 @@ class ProfileScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
-        child: SingleChildScrollView(
-          physics: const BouncingScrollPhysics(),
-          child: Padding(
-            padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 16.h),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // ── Top Bar ──────────────────────────────────────────────
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'My Profile',
-                      style: AppTextStyles.h2.copyWith(
-                        fontSize: 22.sp,
-                        fontWeight: FontWeight.bold,
+        child: RefreshIndicator(
+          onRefresh: () async {
+            ref.invalidate(userProvider);
+            ref.invalidate(selectedEarningsProvider);
+            try {
+              await Future.wait([
+                ref.refresh(userProvider.future),
+                ref.refresh(selectedEarningsProvider.future),
+              ]);
+            } catch (_) {}
+          },
+          child: SingleChildScrollView(
+            physics: const BouncingScrollPhysics(
+              parent: AlwaysScrollableScrollPhysics(),
+            ),
+            child: Padding(
+              padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 16.h),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // ── Top Bar ──────────────────────────────────────────────
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'My Profile',
+                        style: AppTextStyles.h2.copyWith(
+                          fontSize: 22.sp,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
-                    ),
-                    const CurrentLocation(),
-                  ],
-                ),
-                SizedBox(height: 16.h),
+                      const CurrentLocation(),
+                    ],
+                  ),
+                  SizedBox(height: 16.h),
 
-                // ── Hero Earnings Card ──────────────────────────
-                const EarningsCard(),
-                SizedBox(height: 24.h),
+                  // ── Hero Earnings Card ──────────────────────────
+                  const EarningsCard(),
+                  SizedBox(height: 24.h),
 
-                // ── Profile Header ──────────────────────────────
-                _buildProfileSection(userAsync, isDark),
-                SizedBox(height: 20.h),
+                  // ── Profile Header ──────────────────────────────
+                  _buildProfileSection(userAsync, isDark),
+                  SizedBox(height: 20.h),
 
-                // ── Stats Dashboard ─────────────────────────────
-                _SectionLabel(label: 'DASHBOARD'),
-                AppSpacing.hSm,
-                const StatsDashboard(),
-                SizedBox(height: 20.h),
+                  // ── Stats Dashboard ─────────────────────────────
+                  _SectionLabel(label: 'DASHBOARD'),
+                  AppSpacing.hSm,
+                  StatsDashboard(user: userAsync.value),
+                  SizedBox(height: 20.h),
 
-                // ── Account & Preferences ───────────────────────
-                _SectionLabel(label: 'ACCOUNT & PREFERENCES'),
-                AppSpacing.hSm,
-                _buildPreferences(
-                  context,
-                  ref,
-                  isDark,
-                  kycStatusAsync,
-                  userAsync.value,
-                ),
-                SizedBox(height: 24.h),
-              ],
+                  // ── Account & Preferences ───────────────────────
+                  _SectionLabel(label: 'ACCOUNT & PREFERENCES'),
+                  AppSpacing.hSm,
+                  _buildPreferences(
+                    context,
+                    ref,
+                    isDark,
+                    kycStatusAsync,
+                    userAsync.value,
+                  ),
+                  SizedBox(height: 24.h),
+                ],
+              ),
             ),
           ),
         ),
@@ -264,8 +278,7 @@ class ProfileScreen extends ConsumerWidget {
           iconColor: AppColors.success,
           title: 'Payouts',
           subtitle: 'View your earnings history',
-          onTap: () =>
-              context.showToast('Payouts history feature coming soon!'),
+          onTap: () => context.pushNamed(ProfileRoutes.payoutsRoute),
         ),
         AppSpacing.hSm,
 

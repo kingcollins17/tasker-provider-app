@@ -43,12 +43,18 @@ class _EarningsCardState extends ConsumerState<EarningsCard>
     final String amountDisplay = selectedEarningsAsync.when(
       data: (earnings) {
         if (earnings.totalEarnings != null) {
-          return earnings.totalEarnings!.toNaira();
+          return earnings.totalEarnings!.toNaira(2);
         }
-        return '₦_';
+        return '₦__';
       },
-      loading: () => '₦_',
-      error: (e, st) => '₦_',
+      loading: () => '₦__',
+      error: (e, st) => '₦__',
+    );
+
+    final double? percentageGrowth = selectedEarningsAsync.when(
+      data: (earnings) => earnings.percentageGrowth,
+      loading: () => null,
+      error: (e, st) => null,
     );
 
     return AnimatedBuilder(
@@ -125,31 +131,37 @@ class _EarningsCardState extends ConsumerState<EarningsCard>
                   ),
                 ),
               ),
-              Container(
-                padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.15),
-                  borderRadius: AppDecorations.radiusXl,
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.trending_up_rounded,
-                      color: Colors.white,
-                      size: 14.r,
-                    ),
-                    AppSpacing.wXs,
-                    Text(
-                      "+12%",
-                      style: AppTextStyles.label.copyWith(
+              if (percentageGrowth != null)
+                Container(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: 10.w,
+                    vertical: 4.h,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.15),
+                    borderRadius: AppDecorations.radiusXl,
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        percentageGrowth >= 0
+                            ? Icons.trending_up_rounded
+                            : Icons.trending_down_rounded,
                         color: Colors.white,
-                        fontWeight: FontWeight.w600,
+                        size: 14.r,
                       ),
-                    ),
-                  ],
+                      AppSpacing.wXs,
+                      Text(
+                        '${percentageGrowth >= 0 ? '+' : ''}${percentageGrowth % 1 == 0 ? percentageGrowth.toInt() : percentageGrowth.toStringAsFixed(1)}%',
+                        style: AppTextStyles.label.copyWith(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
             ],
           ),
           SizedBox(height: 12.h),
