@@ -189,7 +189,7 @@ class ProfileScreen extends ConsumerWidget {
               subtitle: isDarkMode ? 'Currently on' : 'Currently off',
               trailing: Switch.adaptive(
                 value: isDarkMode,
-                activeThumbColor: AppColors.primary,
+                activeTrackColor: AppColors.primary,
                 onChanged: ref.read(themeProvider.notifier).toggleTheme,
               ),
             );

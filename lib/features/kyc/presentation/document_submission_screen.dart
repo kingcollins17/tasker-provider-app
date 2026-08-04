@@ -195,7 +195,7 @@ class _DocumentSubmissionScreenState extends State<DocumentSubmissionScreen> {
                     ),
                     SizedBox(height: 8.h),
                     DropdownButtonFormField<String>(
-                      initialValue: _selectedDocumentType,
+                      value: _selectedDocumentType,
                       decoration: InputDecoration(
                         hintText: 'Select document type',
                         hintStyle: AppTextStyles.bodyMedium.copyWith(
