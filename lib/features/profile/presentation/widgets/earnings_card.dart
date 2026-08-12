@@ -43,12 +43,12 @@ class _EarningsCardState extends ConsumerState<EarningsCard>
     final String amountDisplay = selectedEarningsAsync.when(
       data: (earnings) {
         if (earnings.totalEarnings != null) {
-          return earnings.totalEarnings!.toNaira();
+          return earnings.totalEarnings!.toNaira(2);
         }
-        return '₦_';
+        return 0.toNaira(2);
       },
-      loading: () => '₦_',
-      error: (e, st) => '₦_',
+      loading: () => 0.toNaira(2),
+      error: (e, st) => 0.toNaira(2),
     );
 
     return AnimatedBuilder(

@@ -59,6 +59,11 @@ abstract class UsersClient {
   @PUT("users/online-status")
   Future<BaseApiResponse> updateOnlineStatus(@Body() UpdateOnlineStatusRequest body);
 
+  @PUT("users/cloud-messaging-token")
+  Future<BaseApiResponse> updateCloudMessagingToken(
+    @Body() UpdateCloudMessagingTokenRequest body,
+  );
+
   @POST("users/location/ping")
   Future<BaseApiResponse> pingLocation(@Body() PingLocationRequest body);
 
