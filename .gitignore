@@ -44,3 +44,13 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Signing
+*.jks
+*.keystore
+android/key.properties
+
+# Environment
+.env
+
+learnitin-f7d0f-f572137d4b18*

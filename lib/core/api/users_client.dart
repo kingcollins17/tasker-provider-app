@@ -67,12 +67,19 @@ abstract class UsersClient {
   @POST("users/location/ping")
   Future<BaseApiResponse> pingLocation(@Body() PingLocationRequest body);
 
-  @POST("users/provider/services")
-  Future<BaseApiResponse> addProviderService(@Body() AddServiceRequest body);
-
   @DELETE("users/provider/services/{service_id}")
   Future<BaseApiResponse> removeProviderService(
     @Path("service_id") String serviceId,
+  );
+
+  @POST("users/provider/services/bulk")
+  Future<BaseApiResponse> bulkAddProviderServices(
+    @Body() BulkServiceRequest body,
+  );
+
+  @DELETE("users/provider/services/bulk")
+  Future<BaseApiResponse> bulkRemoveProviderServices(
+    @Body() BulkServiceRequest body,
   );
 
   @POST("users/kyc/selfie")

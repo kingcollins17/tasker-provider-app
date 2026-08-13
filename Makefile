@@ -6,6 +6,12 @@
 gen:
 	flutter pub run build_runner build --delete-conflicting-outputs
 
+icon:
+	dart run flutter_launcher_icons
+
+splash:
+	dart run flutter_native_splash:create
+
 ## Build debug APK
 apk-debug:
 	flutter build apk --debug

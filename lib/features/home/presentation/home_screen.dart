@@ -2,6 +2,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:tasker_app/core/providers/notifications_provider.dart';
 
 import 'package:tasker_app/core/providers/providers.dart';
 import 'package:tasker_app/core/utils/extensions/loading_context_ext.dart';
@@ -66,7 +67,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     ref.watch(offerPingListenerProvider);
     final user = ref.watch(userProvider);
     ref.watch(syncUserLocationProvider);
-    final address = ref.watch(userAddressProvider);
+    ref.watch(userAddressProvider);
 
     final firstName = user.value?.providerProfile?.firstName ?? '';
 
@@ -75,66 +76,83 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       body: SafeArea(
         child: Stack(
           children: [
-            CustomScrollView(
-              physics: const BouncingScrollPhysics(),
-              slivers: [
-                // ─── APP BAR ───
-                SliverPadding(
-                  padding: AppSpacing.pHorsMd,
-                  sliver: SliverToBoxAdapter(
-                    child: _SlideUp(
-                      animation: _staggered(0),
-                      child: _HomeAppBar(
-                        firstName: firstName,
-                        pulseController: _pulseController,
+            RefreshIndicator(
+              color: AppColors.primary,
+              onRefresh: () async {
+                ref.invalidate(userProvider);
+                ref.invalidate(isOnlineProvider);
+                ref.invalidate(notificationsProvider);
+                ref.invalidate(selectedEarningsProvider);
+                try {
+                  await Future.wait([
+                    ref.read(userProvider.future),
+                    ref.read(selectedEarningsProvider.future),
+                  ]);
+                } catch (_) {}
+              },
+              child: CustomScrollView(
+                physics: const AlwaysScrollableScrollPhysics(
+                  parent: BouncingScrollPhysics(),
+                ),
+                slivers: [
+                  // ─── APP BAR ───
+                  SliverPadding(
+                    padding: AppSpacing.pHorsMd,
+                    sliver: SliverToBoxAdapter(
+                      child: _SlideUp(
+                        animation: _staggered(0),
+                        child: _HomeAppBar(
+                          firstName: firstName,
+                          pulseController: _pulseController,
+                        ),
                       ),
                     ),
                   ),
-                ),
 
-                SliverToBoxAdapter(child: AppSpacing.hLg),
+                  SliverToBoxAdapter(child: AppSpacing.hLg),
 
-                // ─── EARNINGS CARD ───
-                SliverPadding(
-                  padding: AppSpacing.pHorsMd,
-                  sliver: SliverToBoxAdapter(
-                    child: _SlideUp(
-                      animation: _staggered(1),
-                      child: const EarningsCard(),
+                  // ─── EARNINGS CARD ───
+                  SliverPadding(
+                    padding: AppSpacing.pHorsMd,
+                    sliver: SliverToBoxAdapter(
+                      child: _SlideUp(
+                        animation: _staggered(1),
+                        child: const EarningsCard(),
+                      ),
                     ),
                   ),
-                ),
 
-                SliverToBoxAdapter(child: AppSpacing.hLg),
+                  SliverToBoxAdapter(child: AppSpacing.hLg),
 
-                // ─── ACTIVE WORK ───
-                SliverPadding(
-                  padding: AppSpacing.pHorsMd,
-                  sliver: SliverToBoxAdapter(
-                    child: _SlideUp(
-                      animation: _staggered(2),
-                      child: const _ActiveWorkSection(),
+                  // ─── ACTIVE WORK ───
+                  SliverPadding(
+                    padding: AppSpacing.pHorsMd,
+                    sliver: SliverToBoxAdapter(
+                      child: _SlideUp(
+                        animation: _staggered(2),
+                        child: const _ActiveWorkSection(),
+                      ),
                     ),
                   ),
-                ),
 
-                SliverToBoxAdapter(child: AppSpacing.hLg),
+                  SliverToBoxAdapter(child: AppSpacing.hLg),
 
-                // ─── PERFORMANCE SNAPSHOT ───
-                SliverPadding(
-                  padding: AppSpacing.pHorsMd,
-                  sliver: SliverToBoxAdapter(
-                    child: _SlideUp(
-                      animation: _staggered(3),
-                      child: const _PerformanceSnapshotCard(),
+                  // ─── PERFORMANCE SNAPSHOT ───
+                  SliverPadding(
+                    padding: AppSpacing.pHorsMd,
+                    sliver: SliverToBoxAdapter(
+                      child: _SlideUp(
+                        animation: _staggered(3),
+                        child: const _PerformanceSnapshotCard(),
+                      ),
                     ),
                   ),
-                ),
 
-                SliverToBoxAdapter(child: AppSpacing.hLg),
-                // Bottom padding for the floating banner
-                SliverToBoxAdapter(child: SizedBox(height: 120.h)),
-              ],
+                  SliverToBoxAdapter(child: AppSpacing.hLg),
+                  // Bottom padding for the floating banner
+                  SliverToBoxAdapter(child: SizedBox(height: 120.h)),
+                ],
+              ),
             ),
             Align(
               alignment: Alignment.bottomCenter,

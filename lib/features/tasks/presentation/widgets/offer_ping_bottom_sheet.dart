@@ -18,13 +18,14 @@ import 'package:tasker_app/core/providers/services_provider.dart';
 class OfferPingBottomSheet extends ConsumerStatefulWidget {
   final String taskId;
 
-  const OfferPingBottomSheet({super.key, required this.taskId});
+  final DateTime? expiresAt;
+  const OfferPingBottomSheet({super.key, required this.taskId, this.expiresAt});
 
   /// Shows the offer-ping bottom sheet using the root navigator context.
   ///
   /// Returns `true` if accepted, `false` if declined, and `null` if dismissed
   /// or timed out.
-  static Future<bool?> show(String taskId) {
+  static Future<bool?> show(String taskId, {DateTime? expiresAt}) {
     final context = NavigatorKeys.rootNavigatorKey.currentContext;
     if (context == null) return Future.value(null);
 
@@ -34,7 +35,7 @@ class OfferPingBottomSheet extends ConsumerStatefulWidget {
       enableDrag: false,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => OfferPingBottomSheet(taskId: taskId),
+      builder: (_) => OfferPingBottomSheet(taskId: taskId, expiresAt: expiresAt),
     );
   }
 
@@ -45,20 +46,28 @@ class OfferPingBottomSheet extends ConsumerStatefulWidget {
 
 class _OfferPingBottomSheetState extends ConsumerState<OfferPingBottomSheet>
     with TickerProviderStateMixin {
-  static const _timeoutSeconds = 120 * 5;
-
   late final AnimationController _countdownController;
   late final AnimationController _entranceController;
   Timer? _autoDeclineTimer;
   bool _isResponding = false;
 
+  Duration get _timeoutDuration {
+    if (widget.expiresAt != null) {
+      final difference = widget.expiresAt!.difference(DateTime.now());
+      return difference.isNegative ? Duration.zero : difference;
+    }
+    return const Duration(minutes: 5);
+  }
+
   @override
   void initState() {
     super.initState();
 
+    final duration = _timeoutDuration;
+
     _countdownController = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: _timeoutSeconds),
+      duration: duration,
     )..forward();
 
     _entranceController = AnimationController(
@@ -67,7 +76,7 @@ class _OfferPingBottomSheetState extends ConsumerState<OfferPingBottomSheet>
     )..forward();
 
     _autoDeclineTimer = Timer(
-      const Duration(seconds: _timeoutSeconds),
+      duration,
       _onTimeout,
     );
   }

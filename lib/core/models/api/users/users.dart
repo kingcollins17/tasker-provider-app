@@ -9,6 +9,7 @@ export 'verify_otp_request.dart';
 export 'update_location_request.dart';
 export 'update_region_request.dart';
 export 'add_service_request.dart';
+export 'bulk_service_request.dart';
 export 'update_provider_profile_request.dart';
 export 'update_cloud_messaging_token_request.dart';
 

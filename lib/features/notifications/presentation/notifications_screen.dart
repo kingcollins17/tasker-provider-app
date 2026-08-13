@@ -7,7 +7,7 @@ import 'package:tasker_app/core/providers/notifications_provider.dart';
 
 import '../../../../core/models/api/notifications/notification_item.dart';
 import '../../../../core/ui/designs/designs.dart';
-
+import 'widgets/notification_detail_bottom_sheet.dart';
 
 enum NotificationFilter { all, unread }
 
@@ -39,7 +39,13 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         leading: const BackButton(),
-        title: Text('Notifications', style: AppTextStyles.h2),
+        title: Text(
+          'Notifications',
+          style: AppTextStyles.h2.copyWith(
+            fontSize: 20.sp,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         centerTitle: true,
       ),
       body: Column(
@@ -79,6 +85,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                               context.showError(err);
                             },
                           );
+                      if (!context.mounted) return;
                       context.hideLoading();
                     }
                   },
@@ -206,25 +213,31 @@ class _FilterChip extends StatelessWidget {
   }
 }
 
-class _NotificationTile extends StatelessWidget {
+class _NotificationTile extends ConsumerWidget {
   final NotificationItem item;
 
   const _NotificationTile({required this.item});
 
   String _formatTimeAgo(DateTime date) {
     final diff = DateTime.now().difference(date);
-    if (diff.inSeconds < 60)
+    if (diff.inSeconds < 60) {
       return '${diff.inSeconds} sec${diff.inSeconds == 1 ? '' : 's'} ago';
-    if (diff.inMinutes < 60)
+    }
+    if (diff.inMinutes < 60) {
       return '${diff.inMinutes} min${diff.inMinutes == 1 ? '' : 's'} ago';
-    if (diff.inHours < 24)
+    }
+    if (diff.inHours < 24) {
       return '${diff.inHours} hour${diff.inHours == 1 ? '' : 's'} ago';
+    }
     if (diff.inDays == 1) return '1 day ago';
     return '${diff.inDays} days ago';
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     // Generate an icon and color based on type or fallback
     IconData iconData = Icons.notifications_rounded;
     Color iconColor = AppColors.primary;
@@ -249,86 +262,108 @@ class _NotificationTile extends StatelessWidget {
       iconColor = AppColors.primary;
     }
 
-    return Container(
-      margin: EdgeInsets.only(bottom: 12.h),
-      padding: EdgeInsets.all(16.r),
-      decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
+    final titleTextColor = isDark
+        ? AppColors.textPrimary
+        : theme.colorScheme.onSurface;
+    final bodyTextColor = isDark
+        ? AppColors.textSecondary
+        : theme.colorScheme.onSurface.withValues(alpha: 0.75);
+    final timeTextColor = isDark
+        ? AppColors.textMuted
+        : theme.colorScheme.onSurface.withValues(alpha: 0.5);
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () {
+          if (!item.isRead && item.notificationId != null) {
+            ref.read(notificationsProvider.notifier).markAsRead([
+              item.notificationId!,
+            ]);
+          }
+          NotificationDetailBottomSheet.show(context, item: item);
+        },
         borderRadius: BorderRadius.circular(16.r),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 48.r,
-            height: 48.r,
-            decoration: BoxDecoration(
-              color: iconColor.withValues(alpha: 0.1),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(iconData, color: iconColor, size: 24.r),
-          ),
-          SizedBox(width: 16.w),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
+        child: Container(
+          margin: EdgeInsets.only(bottom: 12.h),
+          padding: EdgeInsets.all(16.r),
+          decoration: const BoxDecoration(color: Colors.transparent),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 48.r,
+                height: 48.r,
+                decoration: BoxDecoration(
+                  color: iconColor.withValues(alpha: 0.12),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(iconData, color: iconColor, size: 24.r),
+              ),
+              SizedBox(width: 16.w),
+              Expanded(
+                child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Flexible(
-                            child: Text(
-                              item.title ?? 'Notification',
-                              style: AppTextStyles.subtitle.copyWith(
-                                fontWeight: FontWeight.w600,
-                                fontSize: 13.sp,
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Flexible(
+                                child: Text(
+                                  item.title ?? 'Notification',
+                                  style: AppTextStyles.subtitle.copyWith(
+                                    color: titleTextColor,
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 13.sp,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
                               ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
+                              if (!item.isRead) ...[
+                                SizedBox(width: 6.w),
+                                Container(
+                                  width: 6.r,
+                                  height: 6.r,
+                                  decoration: const BoxDecoration(
+                                    color: AppColors.primary,
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                              ],
+                            ],
                           ),
-                          if (!item.isRead) ...[
-                            SizedBox(width: 6.w),
-                            Container(
-                              width: 6.r,
-                              height: 6.r,
-                              decoration: const BoxDecoration(
-                                color: AppColors.primary,
-                                shape: BoxShape.circle,
-                              ),
-                            ),
-                          ],
-                        ],
-                      ),
+                        ),
+                        SizedBox(width: 8.w),
+                        Text(
+                          item.createdAt != null
+                              ? _formatTimeAgo(item.createdAt!)
+                              : '',
+                          style: AppTextStyles.bodySmall.copyWith(
+                            color: timeTextColor,
+                            fontSize: 10.sp,
+                          ),
+                        ),
+                      ],
                     ),
-                    SizedBox(width: 8.w),
+                    SizedBox(height: 4.h),
                     Text(
-                      item.createdAt != null
-                          ? _formatTimeAgo(item.createdAt!)
-                          : '',
+                      item.body ?? '',
                       style: AppTextStyles.bodySmall.copyWith(
-                        color: AppColors.textMuted,
-                        fontSize: 10.sp,
+                        color: bodyTextColor,
+                        height: 1.4,
                       ),
                     ),
                   ],
                 ),
-                SizedBox(height: 4.h),
-                Text(
-                  item.body ?? '',
-                  style: AppTextStyles.bodySmall.copyWith(
-                    color: AppColors.textSecondary,
-                    height: 1.4,
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }

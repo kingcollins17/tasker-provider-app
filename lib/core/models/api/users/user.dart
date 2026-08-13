@@ -1,4 +1,5 @@
 import 'package:json_annotation/json_annotation.dart';
+import '../services/service.dart';
 import 'provider_profile.dart';
 import 'user_location.dart';
 import 'payment_account.dart';
@@ -30,6 +31,8 @@ class User {
   final UserLocation? location;
   @JsonKey(name: 'payment_account')
   final PaymentAccount? paymentAccount;
+
+  List<Service>? get services => providerProfile?.services;
 
   User({
     this.id,

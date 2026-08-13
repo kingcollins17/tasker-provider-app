@@ -34,27 +34,32 @@ class UserNotifier extends AsyncNotifier<User> {
     return response.data!;
   }
 
-  Future<void> addService(
-    String serviceId, {
+  Future<void> bulkAddServices(
+    List<String> serviceIds, {
     VoidCallback? onSuccess,
     void Function(String)? onError,
   }) async {
     try {
-      debugLog('[UserNotifier.addService] Adding service: $serviceId');
+      debugLog(
+        '[UserNotifier.bulkAddServices] Bulk adding services: $serviceIds',
+      );
       final client = ref.read(usersClientProvider);
-      final response = await client.addProviderService(
-        AddServiceRequest(serviceId: serviceId),
+      final response = await client.bulkAddProviderServices(
+        BulkServiceRequest(serviceIds: serviceIds),
       );
       if (response.isSuccessful) {
-        debugLog('[UserNotifier.addService] Service added successfully');
+        debugLog('[UserNotifier.bulkAddServices] Services added successfully');
         ref.invalidateSelf();
         await future;
         onSuccess?.call();
       } else {
-        throw (response.detail ?? 'Failed to add service');
+        throw (response.detail ?? 'Failed to add services');
       }
     } catch (e, st) {
-      debugLog('[UserNotifier.addService] Error: $e', level: DebugLevel.error);
+      debugLog(
+        '[UserNotifier.bulkAddServices] Error: $e',
+        level: DebugLevel.error,
+      );
       AppExceptionHandler.instance.handleError(e, st);
       onError?.call(e.toFriendlyString());
     }
@@ -271,7 +276,7 @@ final userProvider = AsyncNotifierProvider<UserNotifier, User>(
   () => UserNotifier(),
 );
 
-final updateCloudMessagingTokenProvider = FutureProvider<void>((ref) async {
+final syncCloudMessagingTokenProvider = FutureProvider<void>((ref) async {
   try {
     debugLog('[updateCloudMessagingTokenProvider] Updating FCM token...');
     final token = const Uuid().v4();
@@ -431,4 +436,12 @@ final documentRejectionReasonProvider = FutureProvider<String?>((ref) async {
   final reason = user.providerProfile?.rejectionReason;
   debugLog('[documentRejectionReasonProvider] Rejection reason: $reason');
   return reason;
+});
+
+final userServicesProvider = FutureProvider<List<Service>>((ref) async {
+  debugLog('[userServicesProvider] Reading user services...');
+  final services = await ref.watch(
+    userProvider.selectAsync((u) => u.services ?? <Service>[]),
+  );
+  return services;
 });

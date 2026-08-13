@@ -81,17 +81,18 @@ class _OnboardServicesScreenState extends ConsumerState<OnboardServicesScreen>
                         width: 40.r,
                         height: 40.r,
                         decoration: BoxDecoration(
-                          color: isDark ? Theme.of(context).colorScheme.surface : AppColors.textPrimary,
+                          color: isDark
+                              ? Theme.of(context).colorScheme.surface
+                              : Colors.white,
                           shape: BoxShape.circle,
                           border: Border.all(
-                            color: isDark ? AppColors.border : AppColors.textSecondary,
+                            color: isDark
+                                ? AppColors.border
+                                : const Color(0xFFE2E8F0),
                             width: 1.r,
                           ),
                         ),
-                        child: Icon(
-                          Icons.arrow_back_rounded,
-                          size: 20.r,
-                        ),
+                        child: Icon(Icons.arrow_back_rounded, size: 20.r),
                       ),
                     ),
                     AppSpacing.wMd,
@@ -99,15 +100,17 @@ class _OnboardServicesScreenState extends ConsumerState<OnboardServicesScreen>
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Select Services', 
-                            style: AppTextStyles.h3.copyWith(
-                            ),
+                          Text(
+                            'Select Services',
+                            style: AppTextStyles.h3.copyWith(),
                           ),
                           SizedBox(height: 2.h),
                           Text(
                             'Choose up to $_maxSelections services you provide.',
                             style: AppTextStyles.bodySmall.copyWith(
-                              color: isDark ? AppColors.textMuted : Theme.of(context).scaffoldBackgroundColor.withValues(alpha: 0.7),
+                              color: isDark
+                                  ? AppColors.textMuted
+                                  : const Color(0xFF64748B),
                             ),
                           ),
                         ],
@@ -170,8 +173,8 @@ class _OnboardServicesScreenState extends ConsumerState<OnboardServicesScreen>
                       colors: [AppColors.primary, AppColors.primaryLight],
                     )
                   : null,
-              color: !isActive && !isCurrent 
-                  ? (isDark ? AppColors.border : AppColors.textSecondary) 
+              color: !isActive && !isCurrent
+                  ? (isDark ? AppColors.border : AppColors.textSecondary)
                   : null,
             ),
           ),
@@ -187,12 +190,14 @@ class _OnboardServicesScreenState extends ConsumerState<OnboardServicesScreen>
       decoration: BoxDecoration(
         color: _selectedServiceIds.isNotEmpty
             ? AppColors.primary.withValues(alpha: 0.12)
-            : (isDark ? Theme.of(context).colorScheme.surface : AppColors.textPrimary),
+            : (isDark
+                  ? Theme.of(context).colorScheme.surface
+                  : Colors.white),
         borderRadius: AppDecorations.radiusXl,
         border: Border.all(
           color: _selectedServiceIds.isNotEmpty
               ? AppColors.primary.withValues(alpha: 0.4)
-              : (isDark ? AppColors.border : AppColors.textSecondary),
+              : (isDark ? AppColors.border : const Color(0xFFE2E8F0)),
           width: 1.r,
         ),
       ),
@@ -228,15 +233,15 @@ class _OnboardServicesScreenState extends ConsumerState<OnboardServicesScreen>
         children: [
           Icon(Icons.cloud_off_rounded, color: AppColors.textMuted, size: 48.r),
           AppSpacing.hMd,
-          Text('Failed to load services', 
-            style: AppTextStyles.subtitle.copyWith(
-            ),
+          Text(
+            'Failed to load services',
+            style: AppTextStyles.subtitle.copyWith(),
           ),
           AppSpacing.hSm,
           Text(
             error.toString(),
             style: AppTextStyles.bodySmall.copyWith(
-              color: isDark ? AppColors.textMuted : Theme.of(context).scaffoldBackgroundColor.withValues(alpha: 0.7),
+              color: isDark ? AppColors.textMuted : const Color(0xFF64748B),
             ),
             textAlign: TextAlign.center,
           ),
@@ -263,8 +268,7 @@ class _OnboardServicesScreenState extends ConsumerState<OnboardServicesScreen>
             AppSpacing.hMd,
             Text(
               'No services found in this category.',
-              style: AppTextStyles.bodyMedium.copyWith(
-              ),
+              style: AppTextStyles.bodyMedium.copyWith(),
             ),
           ],
         ),
@@ -274,7 +278,7 @@ class _OnboardServicesScreenState extends ConsumerState<OnboardServicesScreen>
     return ListView.separated(
       physics: const BouncingScrollPhysics(),
       itemCount: services.length,
-      separatorBuilder: (_, _) => AppSpacing.hSm,
+      separatorBuilder: (_, _) => SizedBox(height: 4.h),
       itemBuilder: (context, index) {
         final service = services[index];
         final isSelected = _selectedServiceIds.contains(service.id);
@@ -317,30 +321,25 @@ class _OnboardServicesScreenState extends ConsumerState<OnboardServicesScreen>
     setState(() => _isSubmitting = true);
     context.showLoading();
 
-    int successCount = 0;
-    String? lastError;
-
-    for (final serviceId in _selectedServiceIds) {
-      await ref
-          .read(userProvider.notifier)
-          .addService(
-            serviceId,
-            onSuccess: () => successCount++,
-            onError: (error) => lastError = error,
-          );
-    }
-
-    if (!mounted) return;
-    context.hideLoading();
-    setState(() => _isSubmitting = false);
-
-    if (successCount == _selectedServiceIds.length) {
-      context.showToast('Services added successfully!');
-      // Navigate to home / dashboard
-      context.go('/');
-    } else if (lastError != null) {
-      context.showError(lastError!, title: 'Some services could not be added');
-    }
+    await ref
+        .read(userProvider.notifier)
+        .bulkAddServices(
+          _selectedServiceIds.toList(),
+          onSuccess: () {
+            if (!mounted) return;
+            context.hideLoading();
+            setState(() => _isSubmitting = false);
+            context.showToast('Services added successfully!');
+            // Navigate to home / dashboard
+            context.go('/');
+          },
+          onError: (error) {
+            if (!mounted) return;
+            context.hideLoading();
+            setState(() => _isSubmitting = false);
+            context.showError(error, title: 'Failed to add services');
+          },
+        );
   }
 }
 
@@ -391,7 +390,7 @@ class _ServiceTileState extends State<_ServiceTile>
           CurvedAnimation(parent: _entranceController, curve: Curves.easeOut),
         );
 
-    Future.delayed(Duration(milliseconds: 60 * widget.index), () {
+    Future.delayed(Duration(milliseconds: 40 * widget.index), () {
       if (mounted) _entranceController.forward();
     });
   }
@@ -404,101 +403,120 @@ class _ServiceTileState extends State<_ServiceTile>
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    
     return FadeTransition(
       opacity: _fadeAnimation,
       child: SlideTransition(
         position: _slideAnimation,
-        child: GestureDetector(
-          onTap: widget.isDisabled ? null : widget.onTap,
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 250),
-            curve: Curves.easeInOut,
-            padding: AppSpacing.pAllMd,
-            decoration: BoxDecoration(
-              color: widget.isSelected
-                  ? AppColors.primary.withValues(alpha: 0.10)
-                  : widget.isDisabled
-                  ? (widget.isDark ? theme.colorScheme.surface.withValues(alpha: 0.5) : AppColors.textPrimary.withValues(alpha: 0.5))
-                  : (widget.isDark ? theme.colorScheme.surface : AppColors.textPrimary),
-              borderRadius: AppDecorations.radiusMd,
-              border: Border.all(
-                color: widget.isSelected 
-                    ? AppColors.primary 
-                    : (widget.isDark ? AppColors.border : AppColors.textSecondary),
-                width: widget.isSelected ? 1.5.r : 1.r,
+        child: Opacity(
+          opacity: widget.isDisabled ? 0.4 : 1.0,
+          child: GestureDetector(
+            onTap: widget.isDisabled ? null : widget.onTap,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              curve: Curves.easeInOut,
+              padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
+              decoration: BoxDecoration(
+                color: widget.isSelected
+                    ? AppColors.primary.withValues(alpha: 0.12)
+                    : Colors.transparent,
+                borderRadius: AppDecorations.radiusMd,
+                border: Border.all(
+                  color: widget.isSelected
+                      ? AppColors.primary
+                      : Colors.transparent,
+                  width: 1.5.r,
+                ),
               ),
-              boxShadow: widget.isSelected
-                  ? [
-                      BoxShadow(
-                        color: AppColors.primary.withValues(alpha: 0.15),
-                        blurRadius: 12.r,
-                        offset: const Offset(0, 4),
-                      ),
-                    ]
-                  : [],
-            ),
-            child: Row(
-              children: [
-                // Service icon
-                Container(
-                  width: 44.r,
-                  height: 44.r,
-                  decoration: BoxDecoration(
-                    color: widget.isSelected
-                        ? AppColors.primary.withValues(alpha: 0.18)
-                        : (theme.scaffoldBackgroundColor),
-                    borderRadius: AppDecorations.radiusSm,
-                    border: Border.all(
+              child: Row(
+                children: [
+                  // Service icon
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    width: 38.r,
+                    height: 38.r,
+                    decoration: BoxDecoration(
                       color: widget.isSelected
-                          ? AppColors.primaryLight.withValues(alpha: 0.4)
-                          : AppColors.border,
-                      width: 1.r,
+                          ? AppColors.primary.withValues(alpha: 0.2)
+                          : (widget.isDark
+                              ? AppColors.surface
+                              : const Color(0xFFF1F5F9)),
+                      borderRadius: AppDecorations.radiusSm,
+                      border: Border.all(
+                        color: widget.isSelected
+                            ? AppColors.primaryLight.withValues(alpha: 0.5)
+                            : (widget.isDark
+                                ? AppColors.border
+                                : const Color(0xFFE2E8F0)),
+                        width: 1.r,
+                      ),
+                    ),
+                    child: Icon(
+                      Icons.build_circle_outlined,
+                      color: widget.isSelected
+                          ? AppColors.primaryLight
+                          : (widget.isDark
+                              ? AppColors.textSecondary
+                              : const Color(0xFF475569)),
+                      size: 20.r,
                     ),
                   ),
-                  child: Icon(
-                    Icons.build_circle_outlined,
-                    color: widget.isSelected
-                        ? AppColors.primaryLight
-                        : AppColors.textMuted,
-                    size: 22.r,
-                  ),
-                ),
-                AppSpacing.wMd,
+                  SizedBox(width: 12.w),
 
-                // Service details
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        widget.service.name ?? 'Unnamed Service',
-                        style: AppTextStyles.buttonMedium.copyWith(
-                          color: widget.isDisabled
-                              ? (widget.isDark ? AppColors.textMuted : AppColors.textSecondary)
-                              : widget.isSelected
-                              ? (theme.scaffoldBackgroundColor)
-                              : (theme.scaffoldBackgroundColor.withValues(alpha: 0.7)),
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      if (widget.service.category?.name != null) ...[
-                        SizedBox(height: 2.h),
+                  // Service details
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
                         Text(
-                          widget.service.category!.name!,
-                          style: AppTextStyles.bodySmall.copyWith(
-                            color: widget.isDark ? AppColors.textMuted : theme.scaffoldBackgroundColor.withValues(alpha: 0.5),
+                          widget.service.name ?? 'Unnamed Service',
+                          style: AppTextStyles.buttonMedium.copyWith(
+                            fontSize: 13.5.sp,
+                            color: widget.isSelected
+                                ? (widget.isDark
+                                      ? AppColors.primaryLight
+                                      : AppColors.primary)
+                                : (widget.isDark
+                                      ? AppColors.textPrimary
+                                      : const Color(0xFF0F172A)),
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
+                        if (widget.service.category?.name != null) ...[
+                          SizedBox(height: 2.h),
+                          Text(
+                            widget.service.category!.name!,
+                            style: AppTextStyles.bodySmall.copyWith(
+                              fontSize: 11.5.sp,
+                              color: widget.isSelected
+                                  ? (widget.isDark
+                                      ? AppColors.primaryLight.withValues(alpha: 0.8)
+                                      : AppColors.primaryDark)
+                                  : (widget.isDark
+                                      ? AppColors.textMuted
+                                      : const Color(0xFF64748B)),
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
                       ],
-                    ],
+                    ),
                   ),
-                ),
-              ],
+
+                  // Selection Checkmark indicator
+                  if (widget.isSelected) ...[
+                    SizedBox(width: 8.w),
+                    Icon(
+                      Icons.check_circle_rounded,
+                      color: widget.isDark
+                          ? AppColors.primaryLight
+                          : AppColors.primary,
+                      size: 20.r,
+                    ),
+                  ],
+                ],
+              ),
             ),
           ),
         ),

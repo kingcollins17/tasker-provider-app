@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tasker_app/core/utils/debug_logger.dart';
-import '../models/api/api.dart';
 import '../services/network_service.dart';
 import '../services/local_storage_service.dart';
 import '../services/web_socket_connection_handler.dart';
@@ -254,7 +253,25 @@ final offerPingListenerProvider = Provider<void>((ref) {
       return;
     }
 
-    debugLog('offerPingListenerProvider: showing offer ping for task $taskId');
-    OfferPingBottomSheet.show(taskId);
+    // Extract expires_at from payload (root or nested 'data') and ensure DateTime conversion
+    final dynamic expiresAtRaw =
+        raw['expires_at'] ??
+        raw['expiresAt'] ??
+        (raw['data'] is Map<String, dynamic>
+            ? ((raw['data'] as Map<String, dynamic>)['expires_at'] ??
+                (raw['data'] as Map<String, dynamic>)['expiresAt'])
+            : null);
+
+    DateTime? expiresAt;
+    if (expiresAtRaw is DateTime) {
+      expiresAt = expiresAtRaw;
+    } else if (expiresAtRaw is String && expiresAtRaw.isNotEmpty) {
+      expiresAt = DateTime.tryParse(expiresAtRaw);
+    } else if (expiresAtRaw is int) {
+      expiresAt = DateTime.fromMillisecondsSinceEpoch(expiresAtRaw);
+    }
+
+    debugLog('offerPingListenerProvider: showing offer ping for task $taskId (expiresAt: $expiresAt)');
+    OfferPingBottomSheet.show(taskId, expiresAt: expiresAt);
   });
 });

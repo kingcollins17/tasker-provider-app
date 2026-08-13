@@ -52,7 +52,7 @@ class _PaymentsClient implements PaymentsClient {
         (json) => Earnings.fromJson(json as Map<String, dynamic>),
       );
     } on Object catch (e, s) {
-      errorLogger?.logError(e, s, _options);
+      errorLogger?.logError(e, s, _options, _result);
       rethrow;
     }
     return _value;

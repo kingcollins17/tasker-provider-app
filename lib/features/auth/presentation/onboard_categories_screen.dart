@@ -147,11 +147,7 @@ class _OnboardCategoriesScreenState
           Text(
             error.toString(),
             style: AppTextStyles.bodySmall.copyWith(
-              color: isDark
-                  ? AppColors.textMuted
-                  : Theme.of(
-                      context,
-                    ).scaffoldBackgroundColor.withValues(alpha: 0.7),
+              color: isDark ? AppColors.textMuted : const Color(0xFF64748B),
             ),
             textAlign: TextAlign.center,
           ),
@@ -277,27 +273,37 @@ class _CategoryCardState extends State<_CategoryCard>
     if (lower.contains('plumb')) return Icons.plumbing_rounded;
     if (lower.contains('electric')) return Icons.electrical_services_rounded;
     if (lower.contains('paint')) return Icons.format_paint_rounded;
-    if (lower.contains('tech') || lower.contains('it'))
+    if (lower.contains('tech') || lower.contains('it')) {
       return Icons.computer_rounded;
-    if (lower.contains('garden') || lower.contains('lawn'))
+    }
+    if (lower.contains('garden') || lower.contains('lawn')) {
       return Icons.grass_rounded;
-    if (lower.contains('car') || lower.contains('auto'))
+    }
+    if (lower.contains('car') || lower.contains('auto')) {
       return Icons.directions_car_rounded;
-    if (lower.contains('beauty') || lower.contains('hair'))
+    }
+    if (lower.contains('beauty') || lower.contains('hair')) {
       return Icons.content_cut_rounded;
-    if (lower.contains('cook') || lower.contains('cater'))
+    }
+    if (lower.contains('cook') || lower.contains('cater')) {
       return Icons.restaurant_rounded;
-    if (lower.contains('move') || lower.contains('delivery'))
+    }
+    if (lower.contains('move') || lower.contains('delivery')) {
       return Icons.local_shipping_rounded;
-    if (lower.contains('tutor') || lower.contains('teach'))
+    }
+    if (lower.contains('tutor') || lower.contains('teach')) {
       return Icons.school_rounded;
-    if (lower.contains('health') || lower.contains('fit'))
+    }
+    if (lower.contains('health') || lower.contains('fit')) {
       return Icons.fitness_center_rounded;
-    if (lower.contains('photo') || lower.contains('video'))
+    }
+    if (lower.contains('photo') || lower.contains('video')) {
       return Icons.camera_alt_rounded;
+    }
     if (lower.contains('laundry')) return Icons.local_laundry_service_rounded;
-    if (lower.contains('tailor') || lower.contains('fashion'))
+    if (lower.contains('tailor') || lower.contains('fashion')) {
       return Icons.checkroom_rounded;
+    }
     return Icons.handyman_rounded;
   }
 
@@ -317,16 +323,14 @@ class _CategoryCardState extends State<_CategoryCard>
             decoration: BoxDecoration(
               color: widget.isSelected
                   ? AppColors.primary.withValues(alpha: 0.12)
-                  : (widget.isDark
-                        ? theme.colorScheme.surface
-                        : AppColors.textPrimary),
+                  : (widget.isDark ? theme.colorScheme.surface : Colors.white),
               borderRadius: AppDecorations.radiusMd,
               border: Border.all(
                 color: widget.isSelected
                     ? AppColors.primary
                     : (widget.isDark
                           ? AppColors.border
-                          : AppColors.textSecondary),
+                          : const Color(0xFFE2E8F0)),
                 width: widget.isSelected ? 2.r : 1.r,
               ),
               boxShadow: widget.isSelected
@@ -351,11 +355,15 @@ class _CategoryCardState extends State<_CategoryCard>
                     shape: BoxShape.circle,
                     color: widget.isSelected
                         ? AppColors.primary.withValues(alpha: 0.2)
-                        : (theme.scaffoldBackgroundColor),
+                        : (widget.isDark
+                              ? AppColors.background
+                              : const Color(0xFFF1F5F9)),
                     border: Border.all(
                       color: widget.isSelected
                           ? AppColors.primaryLight
-                          : AppColors.border,
+                          : (widget.isDark
+                                ? AppColors.border
+                                : const Color(0xFFE2E8F0)),
                       width: 1.r,
                     ),
                   ),
@@ -363,7 +371,9 @@ class _CategoryCardState extends State<_CategoryCard>
                     _iconForCategory(widget.category.name),
                     color: widget.isSelected
                         ? AppColors.primaryLight
-                        : AppColors.textMuted,
+                        : (widget.isDark
+                              ? AppColors.textSecondary
+                              : const Color(0xFF475569)),
                     size: 24.r,
                   ),
                 ),
@@ -375,10 +385,12 @@ class _CategoryCardState extends State<_CategoryCard>
                     widget.category.name ?? 'Unknown',
                     style: AppTextStyles.buttonMedium.copyWith(
                       color: widget.isSelected
-                          ? (theme.scaffoldBackgroundColor)
-                          : (theme.scaffoldBackgroundColor.withValues(
-                              alpha: 0.7,
-                            )),
+                          ? (widget.isDark
+                                ? AppColors.primaryLight
+                                : AppColors.primary)
+                          : (widget.isDark
+                                ? AppColors.textPrimary
+                                : const Color(0xFF0F172A)),
                     ),
                     textAlign: TextAlign.center,
                     maxLines: 2,
@@ -392,11 +404,15 @@ class _CategoryCardState extends State<_CategoryCard>
                     child: Text(
                       widget.category.description!,
                       style: AppTextStyles.bodySmall.copyWith(
-                        color: widget.isDark
-                            ? AppColors.textMuted
-                            : theme.scaffoldBackgroundColor.withValues(
-                                alpha: 0.5,
-                              ),
+                        color: widget.isSelected
+                            ? (widget.isDark
+                                  ? AppColors.primaryLight.withValues(
+                                      alpha: 0.8,
+                                    )
+                                  : AppColors.primaryDark)
+                            : (widget.isDark
+                                  ? AppColors.textMuted
+                                  : const Color(0xFF64748B)),
                       ),
                       textAlign: TextAlign.center,
                       maxLines: 1,
