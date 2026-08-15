@@ -108,6 +108,10 @@ class TaskDetailsOptionSheet extends ConsumerWidget {
                                 paymentMode: paymentMode,
                                 onSuccess: () {
                                   success = true;
+                                  ref.invalidate(taskDetailProvider(taskId));
+                                  ref.invalidate(
+                                    taskAssignmentProvider(taskId),
+                                  );
                                 },
                                 onError: (errorMsg) {
                                   success = false;
@@ -177,6 +181,10 @@ class TaskDetailsOptionSheet extends ConsumerWidget {
                                 pin: pin,
                                 onSuccess: () {
                                   success = true;
+                                  ref.invalidate(taskDetailProvider(taskId));
+                                  ref.invalidate(
+                                    taskAssignmentProvider(taskId),
+                                  );
                                 },
                                 onError: (errorMsg) {
                                   success = false;
