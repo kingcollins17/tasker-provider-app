@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:shimmer/shimmer.dart';
 
 import 'package:tasker_app/core/providers/providers.dart';
 import 'package:tasker_app/core/utils/extensions/loading_context_ext.dart';
@@ -17,50 +18,11 @@ import 'package:tasker_app/core/utils/extensions/flushbar_context_ext.dart';
 import 'package:tasker_app/core/utils/extensions/num_ext.dart';
 import 'package:tasker_app/features/tasks/tasks_routes.dart';
 
-class HomeScreen extends ConsumerStatefulWidget {
+class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
 
   @override
-  ConsumerState<HomeScreen> createState() => _HomeScreenState();
-}
-
-class _HomeScreenState extends ConsumerState<HomeScreen>
-    with TickerProviderStateMixin {
-  late final AnimationController _entranceController;
-  late final AnimationController _pulseController;
-
-  @override
-  void initState() {
-    super.initState();
-    _entranceController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1200),
-    )..forward();
-
-    _pulseController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 2000),
-    )..repeat(reverse: true);
-  }
-
-  @override
-  void dispose() {
-    _entranceController.dispose();
-    _pulseController.dispose();
-    super.dispose();
-  }
-
-  Animation<double> _staggered(int index, {int total = 6}) {
-    final start = (index / total).clamp(0.0, 1.0);
-    final end = ((index + 2) / total).clamp(0.0, 1.0);
-    return CurvedAnimation(
-      parent: _entranceController,
-      curve: Interval(start, end, curve: Curves.easeOutCubic),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     ref.watch(syncUserLocationProvider);
     ref.watch(userAddressProvider);
     ref.watch(currentRegionProvider);
@@ -100,12 +62,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                   SliverPadding(
                     padding: AppSpacing.pHorsMd,
                     sliver: SliverToBoxAdapter(
-                      child: _SlideUp(
-                        animation: _staggered(0),
-                        child: _HomeAppBar(
-                          firstName: firstName,
-                          pulseController: _pulseController,
-                        ),
+                      child: _HomeAppBar(
+                        firstName: firstName,
                       ),
                     ),
                   ),
@@ -115,11 +73,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                   // ─── EARNINGS CARD ───
                   SliverPadding(
                     padding: AppSpacing.pHorsMd,
-                    sliver: SliverToBoxAdapter(
-                      child: _SlideUp(
-                        animation: _staggered(1),
-                        child: const EarningsCard(),
-                      ),
+                    sliver: const SliverToBoxAdapter(
+                      child: EarningsCard(),
                     ),
                   ),
 
@@ -128,11 +83,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                   // ─── ACTIVE WORK ───
                   SliverPadding(
                     padding: AppSpacing.pHorsMd,
-                    sliver: SliverToBoxAdapter(
-                      child: _SlideUp(
-                        animation: _staggered(2),
-                        child: const _ActiveWorkSection(),
-                      ),
+                    sliver: const SliverToBoxAdapter(
+                      child: _ActiveWorkSection(),
                     ),
                   ),
 
@@ -141,11 +93,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                   // ─── PERFORMANCE SNAPSHOT ───
                   SliverPadding(
                     padding: AppSpacing.pHorsMd,
-                    sliver: SliverToBoxAdapter(
-                      child: _SlideUp(
-                        animation: _staggered(3),
-                        child: const _PerformanceSnapshotCard(),
-                      ),
+                    sliver: const SliverToBoxAdapter(
+                      child: _PerformanceSnapshotCard(),
                     ),
                   ),
 
@@ -166,7 +115,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                         .when(
                           data: (isOnline) => _FloatingOnlineToggle(
                             isOnline: isOnline,
-                            pulseController: _pulseController,
                             onToggle: () {
                               context.showLoading();
                               ref
@@ -207,37 +155,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// STAGGERED ENTRANCE ANIMATION WRAPPER
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _SlideUp extends StatelessWidget {
-  final Animation<double> animation;
-  final Widget child;
-
-  const _SlideUp({required this.animation, required this.child});
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: animation,
-      builder: (context, child) => Transform.translate(
-        offset: Offset(0, 30 * (1 - animation.value)),
-        child: Opacity(opacity: animation.value, child: child),
-      ),
-      child: child,
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
 // APP BAR
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _HomeAppBar extends ConsumerWidget {
   final String firstName;
-  final AnimationController pulseController;
 
-  const _HomeAppBar({required this.firstName, required this.pulseController});
+  const _HomeAppBar({required this.firstName});
 
   String get _greeting {
     final hour = DateTime.now().hour;
@@ -255,36 +179,10 @@ class _HomeAppBar extends ConsumerWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // Avatar with online pulse ring
+          // Avatar
           Stack(
             alignment: Alignment.center,
             children: [
-              isOnlineAsync.when(
-                data: (isOnline) {
-                  if (isOnline) {
-                    return AnimatedBuilder(
-                      animation: pulseController,
-                      builder: (context, child) => Container(
-                        width: 52.r + (6 * pulseController.value),
-                        height: 52.r + (6 * pulseController.value),
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: AppColors.success.withValues(
-                              alpha: 0.3 - 0.2 * pulseController.value,
-                            ),
-                            width: 2.r,
-                          ),
-                        ),
-                      ),
-                    );
-                  } else {
-                    return const SizedBox.shrink();
-                  }
-                },
-                loading: () => const SizedBox.shrink(),
-                error: (e, st) => const SizedBox.shrink(),
-              ),
               Container(
                 width: 48.r,
                 height: 48.r,
@@ -591,26 +489,86 @@ class _ActiveWorkSkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final baseColor = isDark ? Colors.grey[800]! : Colors.grey[300]!;
+    final highlightColor = isDark ? Colors.grey[700]! : Colors.grey[100]!;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _SectionHeader(
+        const _SectionHeader(
           title: "Active Work",
-          onAction: () {},
         ),
-        Container(
-          height: 90.h,
-          width: double.infinity,
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surface,
-            borderRadius: AppDecorations.radiusMd,
-            border: Border.all(color: AppColors.border, width: 1.r),
-          ),
-          child: Center(
-            child: SizedBox(
-              width: 24.r,
-              height: 24.r,
-              child: const CircularProgressIndicator(strokeWidth: 2),
+        Shimmer.fromColors(
+          baseColor: baseColor,
+          highlightColor: highlightColor,
+          child: Container(
+            margin: EdgeInsets.only(bottom: 12.h),
+            padding: EdgeInsets.all(16.r),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surface,
+              borderRadius: AppDecorations.radiusMd,
+              border: Border.all(color: AppColors.border, width: 1.r),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 48.r,
+                  height: 48.r,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: AppDecorations.radiusSm,
+                  ),
+                ),
+                SizedBox(width: 16.w),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        width: 140.w,
+                        height: 16.h,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(4.r),
+                        ),
+                      ),
+                      SizedBox(height: 8.h),
+                      Container(
+                        width: 180.w,
+                        height: 12.h,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(4.r),
+                        ),
+                      ),
+                      SizedBox(height: 8.h),
+                      Row(
+                        children: [
+                          Container(
+                            width: 80.w,
+                            height: 12.h,
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(4.r),
+                            ),
+                          ),
+                          const Spacer(),
+                          Container(
+                            width: 50.w,
+                            height: 14.h,
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(4.r),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ),
         ),
@@ -893,12 +851,10 @@ class _PerformanceStat extends StatelessWidget {
 class _FloatingOnlineToggle extends StatelessWidget {
   final bool isOnline;
   final VoidCallback onToggle;
-  final AnimationController pulseController;
 
   const _FloatingOnlineToggle({
     required this.isOnline,
     required this.onToggle,
-    required this.pulseController,
   });
 
   @override
@@ -907,9 +863,7 @@ class _FloatingOnlineToggle extends StatelessWidget {
 
     return GestureDetector(
       onTap: onToggle,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
+      child: Container(
         width: 1.sw - 32.w,
         padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 14.h),
         decoration: BoxDecoration(
@@ -933,27 +887,13 @@ class _FloatingOnlineToggle extends StatelessWidget {
         ),
         child: Row(
           children: [
-            // Pulsing status dot
-            AnimatedBuilder(
-              animation: pulseController,
-              builder: (context, child) => Container(
-                width: 12.r,
-                height: 12.r,
-                decoration: BoxDecoration(
-                  color: statusColor,
-                  shape: BoxShape.circle,
-                  boxShadow: isOnline
-                      ? [
-                          BoxShadow(
-                            color: AppColors.success.withValues(
-                              alpha: 0.5 * pulseController.value,
-                            ),
-                            blurRadius: 8.r * pulseController.value,
-                            spreadRadius: 2.r * pulseController.value,
-                          ),
-                        ]
-                      : null,
-                ),
+            // Status dot
+            Container(
+              width: 12.r,
+              height: 12.r,
+              decoration: BoxDecoration(
+                color: statusColor,
+                shape: BoxShape.circle,
               ),
             ),
             SizedBox(width: 12.w),
@@ -979,8 +919,7 @@ class _FloatingOnlineToggle extends StatelessWidget {
                 ],
               ),
             ),
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 300),
+            Container(
               padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
               decoration: BoxDecoration(
                 color: isOnline

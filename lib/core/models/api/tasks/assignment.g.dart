@@ -18,6 +18,7 @@ Assignment _$AssignmentFromJson(Map<String, dynamic> json) => Assignment(
   startedAt: json['started_at'] == null
       ? null
       : DateTime.parse(json['started_at'] as String),
+  pin: json['pin'] as String?,
   completedAt: json['completed_at'] == null
       ? null
       : DateTime.parse(json['completed_at'] as String),
@@ -37,6 +38,7 @@ Map<String, dynamic> _$AssignmentToJson(Assignment instance) =>
       'provider_id': instance.providerId,
       'accepted_dispatch_attempt_id': instance.acceptedDispatchAttemptId,
       'accepted_price': instance.acceptedPrice,
+      'pin': instance.pin,
       'assigned_at': instance.assignedAt?.toIso8601String(),
       'started_at': instance.startedAt?.toIso8601String(),
       'completed_at': instance.completedAt?.toIso8601String(),

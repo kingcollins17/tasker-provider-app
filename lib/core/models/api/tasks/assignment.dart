@@ -9,6 +9,7 @@ class Assignment {
   final String? providerId;
   final String? acceptedDispatchAttemptId;
   final double? acceptedPrice;
+  final String? pin;
   final DateTime? assignedAt;
   final DateTime? startedAt;
   final DateTime? completedAt;
@@ -24,6 +25,7 @@ class Assignment {
     this.acceptedPrice,
     this.assignedAt,
     this.startedAt,
+    this.pin,
     this.completedAt,
     this.status,
     this.task,

@@ -1,6 +1,6 @@
-import 'package:flutter_spinkit/flutter_spinkit.dart';
-
 import 'package:flutter/material.dart';
+import 'package:flutter_spinkit/flutter_spinkit.dart';
+import 'package:tasker_app/core/router/navigator_keys.dart';
 
 import '../../../core/ui/designs/designs.dart';
 
@@ -18,8 +18,14 @@ extension LoadingContextExt on BuildContext {
 
     _loadingEntry = OverlayEntry(builder: (context) => const _LoadingOverlay());
 
-    Overlay.of(this).insert(_loadingEntry!);
-    onShown?.call();
+    final overlayState =
+        Overlay.maybeOf(this, rootOverlay: true) ??
+        NavigatorKeys.rootNavigatorKey.currentState?.overlay;
+
+    if (overlayState != null) {
+      overlayState.insert(_loadingEntry!);
+      onShown?.call();
+    }
   }
 
   /// Hides the active loading overlay.
