@@ -61,6 +61,9 @@ abstract class TasksClient {
     @Path("taskId") String taskId,
     @Body() DispatchRespondRequest request,
   );
+
+  @GET("assignments/current")
+  Future<BaseApiResponse<Assignment>> getCurrentAssignment();
 }
 
 /// Provider exposing the [TasksClient] dependency.

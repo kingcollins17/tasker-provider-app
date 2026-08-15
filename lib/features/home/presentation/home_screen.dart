@@ -1,8 +1,6 @@
-import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:tasker_app/core/providers/notifications_provider.dart';
 
 import 'package:tasker_app/core/providers/providers.dart';
 import 'package:tasker_app/core/utils/extensions/loading_context_ext.dart';
@@ -13,8 +11,11 @@ import '../../../core/ui/designs/decorations.dart';
 import '../../../core/ui/designs/spacing.dart';
 import '../../notifications/presentation/widgets/notification_icon.dart';
 import '../../profile/presentation/widgets/earnings_card.dart';
-import 'package:tasker_app/core/ui/widgets/current_location.dart';
+import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 import 'package:tasker_app/core/utils/extensions/flushbar_context_ext.dart';
+import 'package:tasker_app/core/utils/extensions/num_ext.dart';
+import 'package:tasker_app/features/tasks/tasks_routes.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -448,45 +449,169 @@ class _SectionHeader extends StatelessWidget {
 // ACTIVE WORK SECTION
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _ActiveWorkSection extends StatelessWidget {
+class _ActiveWorkSection extends ConsumerWidget {
   const _ActiveWorkSection();
 
   @override
-  Widget build(BuildContext context) {
-    // Mock active tasks
-    final activeTasks = [
-      {
-        'title': 'Plumbing Repair',
-        'address': '123 Main St, Lagos',
-        'time': 'Today, 2:00 PM',
-        'icon': Icons.plumbing_rounded,
-        'color': const Color(0xFF3B82F6),
-      },
-      {
-        'title': 'AC Installation',
-        'address': '45 Victoria Island, Lagos',
-        'time': 'Tomorrow, 10:00 AM',
-        'icon': Icons.ac_unit_rounded,
-        'color': const Color(0xFF10B981),
-      },
-    ];
+  Widget build(BuildContext context, WidgetRef ref) {
+    final assignmentAsync = ref.watch(currentAssignmentProvider(null));
 
+    return assignmentAsync.when(
+      data: (assignment) {
+        if (assignment == null) {
+          return const _NoActiveWorkCard();
+        }
+
+        final title = assignment.task?.title ?? 'Active Task';
+        final address = assignment.provider?.location?.addressLine ??
+            assignment.task?.description ??
+            'Location not specified';
+
+        String timeStr = 'In Progress';
+        if (assignment.startedAt != null) {
+          timeStr = 'Started ${DateFormat.jm().format(assignment.startedAt!)}';
+        } else if (assignment.assignedAt != null) {
+          timeStr =
+              'Assigned ${DateFormat.yMMMd().format(assignment.assignedAt!)}';
+        } else if (assignment.task?.scheduledStartAt != null) {
+          timeStr = DateFormat.yMMMd()
+              .add_jm()
+              .format(assignment.task!.scheduledStartAt!);
+        }
+
+        final priceStr = assignment.acceptedPrice != null
+            ? assignment.acceptedPrice!.toNaira()
+            : (assignment.task?.providerPayout != null
+                ? assignment.task!.providerPayout!.toNaira()
+                : null);
+
+        final statusStr =
+            (assignment.status ?? 'assigned').replaceAll('_', ' ').toUpperCase();
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _SectionHeader(
+              title: "Active Work",
+              onAction: () {},
+            ),
+            _ActiveWorkCard(
+              title: title,
+              address: address,
+              time: timeStr,
+              price: priceStr,
+              status: statusStr,
+              icon: Icons.work_history_rounded,
+              color: AppColors.primary,
+              onTap: () {
+                if (assignment.taskId != null &&
+                    assignment.taskId!.isNotEmpty) {
+                  context.pushNamed(
+                    TasksRoutes.taskDetailRoute,
+                    pathParameters: {'taskId': assignment.taskId!},
+                  );
+                }
+              },
+            ),
+          ],
+        );
+      },
+      loading: () => const _ActiveWorkSkeleton(),
+      error: (e, st) => const SizedBox.shrink(),
+    );
+  }
+}
+
+class _NoActiveWorkCard extends StatelessWidget {
+  const _NoActiveWorkCard();
+
+  @override
+  Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _SectionHeader(
           title: "Active Work",
-          actionText: "See All",
           onAction: () {},
         ),
-        ...activeTasks.map(
-          (task) => _ActiveWorkCard(
-            title: task['title'] as String,
-            address: task['address'] as String,
-            time: task['time'] as String,
-            icon: task['icon'] as IconData,
-            color: task['color'] as Color,
-            onTap: () {},
+        Container(
+          width: double.infinity,
+          padding: EdgeInsets.symmetric(vertical: 24.h, horizontal: 20.w),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface,
+            borderRadius: AppDecorations.radiusLg,
+            border: Border.all(color: AppColors.border, width: 1.r),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.03),
+                blurRadius: 10.r,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Column(
+            children: [
+              Container(
+                padding: EdgeInsets.all(16.r),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.08),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.assignment_turned_in_outlined,
+                  color: AppColors.primary,
+                  size: 32.r,
+                ),
+              ),
+              SizedBox(height: 12.h),
+              Text(
+                "No Active Work",
+                style: AppTextStyles.subtitle.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              SizedBox(height: 6.h),
+              Text(
+                "You don't have any active assignment right now. Check available jobs to start earning!",
+                textAlign: TextAlign.center,
+                style: AppTextStyles.bodyMedium.copyWith(
+                  color: AppColors.textMuted,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ActiveWorkSkeleton extends StatelessWidget {
+  const _ActiveWorkSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _SectionHeader(
+          title: "Active Work",
+          onAction: () {},
+        ),
+        Container(
+          height: 90.h,
+          width: double.infinity,
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface,
+            borderRadius: AppDecorations.radiusMd,
+            border: Border.all(color: AppColors.border, width: 1.r),
+          ),
+          child: Center(
+            child: SizedBox(
+              width: 24.r,
+              height: 24.r,
+              child: const CircularProgressIndicator(strokeWidth: 2),
+            ),
           ),
         ),
       ],
@@ -498,6 +623,8 @@ class _ActiveWorkCard extends StatelessWidget {
   final String title;
   final String address;
   final String time;
+  final String? price;
+  final String? status;
   final IconData icon;
   final Color color;
   final VoidCallback onTap;
@@ -506,6 +633,8 @@ class _ActiveWorkCard extends StatelessWidget {
     required this.title,
     required this.address,
     required this.time,
+    this.price,
+    this.status,
     required this.icon,
     required this.color,
     required this.onTap,
@@ -545,11 +674,40 @@ class _ActiveWorkCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    title,
-                    style: AppTextStyles.bodyLarge.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          title,
+                          style: AppTextStyles.bodyLarge.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      if (status != null) ...[
+                        SizedBox(width: 8.w),
+                        Container(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 8.w,
+                            vertical: 2.h,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppColors.primary.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(12.r),
+                          ),
+                          child: Text(
+                            status!,
+                            style: AppTextStyles.bodySmall.copyWith(
+                              color: AppColors.primary,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 10.sp,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
                   SizedBox(height: 4.h),
                   Row(
@@ -580,11 +738,22 @@ class _ActiveWorkCard extends StatelessWidget {
                       ),
                       SizedBox(width: 4.w),
                       Text(time, style: AppTextStyles.bodySmall),
+                      if (price != null) ...[
+                        const Spacer(),
+                        Text(
+                          price!,
+                          style: AppTextStyles.bodyMedium.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.primary,
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ],
               ),
             ),
+            SizedBox(width: 8.w),
             Icon(
               Icons.arrow_forward_ios_rounded,
               color: AppColors.textMuted,

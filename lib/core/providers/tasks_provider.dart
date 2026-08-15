@@ -294,3 +294,18 @@ final dispatchPingProvider =
     NotifierProvider.autoDispose<DispatchPingNotifier, AsyncValue<void>>(
       DispatchPingNotifier.new,
     );
+
+/// Future family provider to retrieve the provider's current active assignment.
+final currentAssignmentProvider =
+    FutureProvider.family<Assignment?, String?>((ref, providerId) async {
+  final client = ref.watch(tasksClientProvider);
+  final response = await client.getCurrentAssignment();
+  if (response.data == null) {
+    if (response.isError) {
+      throw Exception(response.detail ?? 'Failed to load current assignment');
+    }
+    return null;
+  }
+  return response.data;
+});
+

@@ -18,11 +18,11 @@ apk-debug:
 
 ## Build release APK
 apk:
-	flutter build apk --release
+	flutter build apk --release -v
 
 ## Build release App Bundle (AAB)
 appbundle:
-	flutter build appbundle --release
+	flutter build appbundle --release -v
 
 ## Install debug APK on connected device
 install-debug:
