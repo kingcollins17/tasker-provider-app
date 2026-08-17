@@ -4,7 +4,6 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:shimmer/shimmer.dart';
 
 import 'package:tasker_app/core/providers/providers.dart';
-import 'package:tasker_app/core/utils/debug_logger.dart';
 import 'package:tasker_app/core/utils/extensions/loading_context_ext.dart';
 
 import '../../../core/ui/designs/colors.dart';
@@ -26,13 +25,15 @@ class HomeScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     ref.watch(syncUserLocationProvider);
     ref.watch(userAddressProvider);
-    final regionAsync = ref.watch(currentRegionProvider);
-    debugLog(regionAsync);
+    ref.watch(currentRegionProvider);
+
     ref.watch(deviceTrayNotificationProvider);
     ref.watch(offerPingListenerProvider);
+    ref.watch(currentDispatchListenerProvider);
     final user = ref.watch(userProvider);
     ref.watch(syncUserLocationProvider);
     ref.watch(userAddressProvider);
+    ref.watch(syncCloudMessagingTokenProvider);
 
     final firstName = user.value?.providerProfile?.firstName ?? '';
 
@@ -48,6 +49,8 @@ class HomeScreen extends ConsumerWidget {
                 ref.invalidate(isOnlineProvider);
                 ref.invalidate(notificationsProvider);
                 ref.invalidate(selectedEarningsProvider);
+                ref.invalidate(currentAssignmentProvider);
+                ref.invalidate(earningsDurationProvider);
                 try {
                   await Future.wait([
                     ref.read(userProvider.future),
@@ -358,7 +361,7 @@ class _ActiveWorkSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final assignmentAsync = ref.watch(currentAssignmentProvider(null));
+    final assignmentAsync = ref.watch(currentAssignmentProvider);
 
     return assignmentAsync.when(
       data: (assignment) {

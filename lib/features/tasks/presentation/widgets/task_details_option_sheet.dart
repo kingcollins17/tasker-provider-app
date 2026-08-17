@@ -7,10 +7,9 @@ import 'package:tasker_app/core/router/navigator_keys.dart';
 import 'package:tasker_app/core/ui/designs/colors.dart';
 import 'package:tasker_app/core/ui/designs/text_styles.dart';
 import 'package:tasker_app/core/utils/debug_logger.dart';
-import 'package:tasker_app/core/utils/extensions/flushbar_context_ext.dart';
-import 'package:tasker_app/core/utils/extensions/loading_context_ext.dart';
 import 'pin_display_sheet.dart';
-import 'pin_entry_sheet.dart';
+import 'package:go_router/go_router.dart';
+import 'package:tasker_app/features/tasks/tasks_routes.dart';
 
 enum TaskOptionAction { startTask, completeTask, getPin, call, report }
 
@@ -83,62 +82,12 @@ class TaskDetailsOptionSheet extends ConsumerWidget {
                         NavigatorKeys.rootNavigatorKey.currentContext;
                     if (rootContext == null) return;
 
-                    await PinEntryAndPaymentModeSheet.show(
-                      rootContext,
-                      title: 'Enter Completion PIN',
-                      subtitle:
-                          'Please enter the 4-digit PIN provided by the customer and select the payment mode.',
-                      confirmButtonText: 'Complete Task',
-                      icon: Icons.check_circle_rounded,
-                      showPaymentMode: true,
-                      onConfirm: (ref, pin, isCash) async {
-                        final paymentMode = isCash ? 'cash' : 'online';
-                        final activeContext =
-                            NavigatorKeys.rootNavigatorKey.currentContext;
-                        if (activeContext != null) activeContext.showLoading();
-
-                        bool success = false;
-                        String? error;
-                        try {
-                          await ref
-                              .read(taskManagementProvider.notifier)
-                              .completeTask(
-                                taskId,
-                                pin: pin,
-                                paymentMode: paymentMode,
-                                onSuccess: () {
-                                  success = true;
-                                  ref.invalidate(taskDetailProvider(taskId));
-                                  ref.invalidate(
-                                    taskAssignmentProvider(taskId),
-                                  );
-                                },
-                                onError: (errorMsg) {
-                                  success = false;
-                                  error = errorMsg;
-                                },
-                              );
-                        } catch (e) {
-                          error = e.toString();
-                        } finally {
-                          final ctx =
-                              NavigatorKeys.rootNavigatorKey.currentContext;
-                          ctx?.hideLoading();
-                        }
-
-                        if (!success && error != null) {
-                          final ctx =
-                              NavigatorKeys.rootNavigatorKey.currentContext;
-                          ctx?.showError(error ?? 'Something went wrong');
-                        } else if (success) {
-                          WidgetsBinding.instance.addPostFrameCallback((_) {
-                            final ctx =
-                                NavigatorKeys.rootNavigatorKey.currentContext;
-                            ctx?.showMessage('Task completed successfully!');
-                          });
-                        }
-
-                        return success;
+                    await rootContext.pushNamed(
+                      TasksRoutes.pinEntryRoute,
+                      pathParameters: {'taskId': taskId},
+                      queryParameters: {
+                        'mode': 'completePin',
+                        'isInitialCash': 'true',
                       },
                     );
                   } catch (e, st) {
@@ -158,60 +107,12 @@ class TaskDetailsOptionSheet extends ConsumerWidget {
                         NavigatorKeys.rootNavigatorKey.currentContext;
                     if (rootContext == null) return;
 
-                    await PinEntryAndPaymentModeSheet.show(
-                      rootContext,
-                      title: 'Enter Start PIN',
-                      subtitle:
-                          'Please enter the 4-digit PIN provided by the customer to start this task.',
-                      confirmButtonText: 'Start Task',
-                      icon: Icons.play_circle_fill_rounded,
-                      showPaymentMode: false,
-                      onConfirm: (ref, pin, isCash) async {
-                        final activeContext =
-                            NavigatorKeys.rootNavigatorKey.currentContext;
-                        if (activeContext != null) activeContext.showLoading();
-
-                        bool success = false;
-                        String? error;
-                        try {
-                          await ref
-                              .read(taskManagementProvider.notifier)
-                              .startTask(
-                                taskId,
-                                pin: pin,
-                                onSuccess: () {
-                                  success = true;
-                                  ref.invalidate(taskDetailProvider(taskId));
-                                  ref.invalidate(
-                                    taskAssignmentProvider(taskId),
-                                  );
-                                },
-                                onError: (errorMsg) {
-                                  success = false;
-                                  error = errorMsg;
-                                },
-                              );
-                        } catch (e) {
-                          error = e.toString();
-                        } finally {
-                          final ctx =
-                              NavigatorKeys.rootNavigatorKey.currentContext;
-                          ctx?.hideLoading();
-                        }
-
-                        if (!success && error != null) {
-                          final ctx =
-                              NavigatorKeys.rootNavigatorKey.currentContext;
-                          ctx?.showError(error ?? 'Something went wrong');
-                        } else if (success) {
-                          WidgetsBinding.instance.addPostFrameCallback((_) {
-                            final ctx =
-                                NavigatorKeys.rootNavigatorKey.currentContext;
-                            ctx?.showMessage('Task started successfully!');
-                          });
-                        }
-
-                        return success;
+                    await rootContext.pushNamed(
+                      TasksRoutes.pinEntryRoute,
+                      pathParameters: {'taskId': taskId},
+                      queryParameters: {
+                        'mode': 'startPin',
+                        'isInitialCash': 'true',
                       },
                     );
                   } catch (e, st) {

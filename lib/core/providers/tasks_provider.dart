@@ -1,6 +1,7 @@
 import 'dart:async';
-import 'dart:ui';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:tasker_app/features/tasks/presentation/widgets/offer_ping_bottom_sheet.dart';
 import '../utils/app_exception_handler.dart';
 import '../utils/extensions/error_ext.dart';
 import '../models/models.dart';
@@ -277,10 +278,15 @@ class DispatchPingNotifier extends Notifier<AsyncValue<void>> {
   }) async {
     try {
       final client = ref.read(tasksClientProvider);
-      await client.respondToDispatchPing(
+      final response = await client.respondToDispatchPing(
         taskId,
-        DispatchRespondRequest(status: status),
+        DispatchRespondRequest(
+          status: status.toUpperCase(),
+        ), // must be capitalized,
       );
+      if (response.isError) {
+        throw Exception(response.detail ?? 'Failed to respond to dispatch');
+      }
 
       onSuccess?.call();
     } catch (e, st) {
@@ -292,7 +298,7 @@ class DispatchPingNotifier extends Notifier<AsyncValue<void>> {
 }
 
 final dispatchPingProvider =
-    NotifierProvider.autoDispose<DispatchPingNotifier, AsyncValue<void>>(
+    NotifierProvider<DispatchPingNotifier, AsyncValue<void>>(
       DispatchPingNotifier.new,
     );
 
@@ -373,10 +379,7 @@ final taskManagementProvider =
     );
 
 /// Future family provider to retrieve the provider's current active assignment.
-final currentAssignmentProvider = FutureProvider.family<Assignment?, String?>((
-  ref,
-  providerId,
-) async {
+final currentAssignmentProvider = FutureProvider<Assignment?>((ref) async {
   final client = ref.watch(tasksClientProvider);
   final response = await client.getCurrentAssignment();
   if (response.data == null) {
@@ -425,4 +428,44 @@ final isUserAssignedToTaskProvider = FutureProvider.family<bool, String>((
   } catch (_) {
     return false;
   }
+});
+
+/// Future provider to retrieve the provider's current pending dispatch attempt.
+final currentDispatchProvider = FutureProvider.autoDispose<Dispatch?>((
+  ref,
+) async {
+  final client = ref.watch(tasksClientProvider);
+  try {
+    final response = await client.getCurrentDispatch();
+    if (response.data == null) {
+      if (response.isError) {
+        throw Exception(response.detail ?? 'Failed to load current dispatch');
+      }
+      return null;
+    }
+    return response.data;
+  } catch (e) {
+    // Return null if there's no active dispatch or if request fails (e.g. 404)
+    return null;
+  }
+}, retry: (retryCount, error) => null);
+
+/// Provider that watches currentDispatchProvider and shows the OfferPingBottomSheet if the dispatch is PENDING and has not expired.
+final currentDispatchListenerProvider = Provider<void>((ref) {
+  ref.listen<AsyncValue<Dispatch?>>(currentDispatchProvider, (previous, next) {
+    if (next.hasValue && next.value != null) {
+      final dispatch = next.value!;
+      if (dispatch.status == 'PENDING' &&
+          dispatch.expiresAt != null &&
+          dispatch.expiresAt!.isAfter(DateTime.now()) &&
+          dispatch.taskId != null) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          OfferPingBottomSheet.show(
+            dispatch.taskId!,
+            expiresAt: dispatch.expiresAt,
+          );
+        });
+      }
+    }
+  }, fireImmediately: true);
 });

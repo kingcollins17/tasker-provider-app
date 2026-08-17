@@ -274,11 +274,12 @@ class UserNotifier extends AsyncNotifier<User> {
 
 final userProvider = AsyncNotifierProvider<UserNotifier, User>(
   () => UserNotifier(),
+  retry: (retryCount, error) => retryCount >= 3 ? null : Duration(seconds: 1),
 );
 
 final syncCloudMessagingTokenProvider = FutureProvider<void>((ref) async {
   try {
-    debugLog('[updateCloudMessagingTokenProvider] Updating FCM token...');
+    debugLog('[syncCloudMessagingTokenProvider] Updating FCM token...');
     final token = const Uuid().v4();
     final platform = defaultTargetPlatform == TargetPlatform.iOS
         ? 'ios'
@@ -289,11 +290,11 @@ final syncCloudMessagingTokenProvider = FutureProvider<void>((ref) async {
     );
     if (!response.isSuccessful) throw response.detail ?? 'Something went wrong';
     debugLog(
-      '[updateCloudMessagingTokenProvider] FCM token updated successfully',
+      '[syncCloudMessagingTokenProvider] FCM token updated successfully',
     );
   } catch (e, st) {
     debugLog(
-      '[updateCloudMessagingTokenProvider] Error updating FCM token: $e',
+      '[syncCloudMessagingTokenProvider] Error updating FCM token: $e',
       level: DebugLevel.error,
     );
     AppExceptionHandler.instance.handleError(e, st);

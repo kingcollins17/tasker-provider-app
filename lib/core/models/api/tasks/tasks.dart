@@ -4,3 +4,4 @@ export 'complete_task_request.dart';
 export 'task_lite.dart';
 export 'task.dart';
 export 'assignment.dart';
+export 'dispatch.dart';

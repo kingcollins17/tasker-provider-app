@@ -65,6 +65,9 @@ abstract class TasksClient {
   @GET("assignments/current")
   Future<BaseApiResponse<Assignment>> getCurrentAssignment();
 
+  @GET("dispatches/current")
+  Future<BaseApiResponse<Dispatch>> getCurrentDispatch();
+
   @GET("tasks/{taskId}/assignment")
   Future<BaseApiResponse<Assignment>> getTaskAssignment(
     @Path("taskId") String taskId,

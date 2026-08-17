@@ -2,7 +2,9 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:go_router/go_router.dart';
 import 'package:tasker_app/core/models/models.dart';
+import 'package:tasker_app/core/providers/providers.dart';
 import 'package:tasker_app/core/providers/tasks_provider.dart';
 import 'package:tasker_app/core/router/navigator_keys.dart';
 import 'package:tasker_app/core/ui/designs/decorations.dart';
@@ -12,6 +14,7 @@ import 'package:tasker_app/core/utils/extensions/loading_context_ext.dart';
 import 'package:tasker_app/core/utils/extensions/num_ext.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:tasker_app/core/providers/services_provider.dart';
+import 'package:tasker_app/features/tasks/tasks_routes.dart' show TasksRoutes;
 
 /// A premium bottom sheet that presents an incoming dispatch ping for a task,
 /// allowing the provider to accept or decline within a 30-second window.
@@ -35,7 +38,8 @@ class OfferPingBottomSheet extends ConsumerStatefulWidget {
       enableDrag: false,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => OfferPingBottomSheet(taskId: taskId, expiresAt: expiresAt),
+      builder: (_) =>
+          OfferPingBottomSheet(taskId: taskId, expiresAt: expiresAt),
     );
   }
 
@@ -65,20 +69,15 @@ class _OfferPingBottomSheetState extends ConsumerState<OfferPingBottomSheet>
 
     final duration = _timeoutDuration;
 
-    _countdownController = AnimationController(
-      vsync: this,
-      duration: duration,
-    )..forward();
+    _countdownController = AnimationController(vsync: this, duration: duration)
+      ..forward();
 
     _entranceController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 600),
     )..forward();
 
-    _autoDeclineTimer = Timer(
-      duration,
-      _onTimeout,
-    );
+    _autoDeclineTimer = Timer(duration, _onTimeout);
   }
 
   @override
@@ -106,16 +105,34 @@ class _OfferPingBottomSheetState extends ConsumerState<OfferPingBottomSheet>
           widget.taskId,
           status: status,
           onSuccess: () {
+            ref.invalidate(currentDispatchProvider);
+            ref.invalidate(currentAssignmentProvider);
+            ref.invalidate(userProvider);
+
             context.hideLoading();
             if (mounted) {
               Navigator.of(context).pop(status == 'accepted');
+
+              Future.delayed(const Duration(milliseconds: 400), () {
+                NavigatorKeys.rootNavigatorKey.currentContext?.pushNamed(
+                  TasksRoutes.taskDetailRoute,
+                  pathParameters: {'taskId': widget.taskId},
+                );
+              });
             }
           },
           onError: (err) {
             context.hideLoading();
             if (mounted) {
               setState(() => _isResponding = false);
-              context.showError(err);
+              // If already assigned, close  the sheet
+              final msg = err.toLowerCase();
+              const kwds = ['already', 'assigned'];
+              if (kwds.every((k) => msg.contains(k))) {
+                Navigator.of(context).pop(status == 'accepted');
+              } else {
+                context.showError(err);
+              }
             }
           },
         );

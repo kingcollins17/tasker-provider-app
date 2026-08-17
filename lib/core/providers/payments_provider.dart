@@ -83,7 +83,7 @@ enum EarningsDuration {
 
 /// Future family provider for fetching earnings stats for a given date range.
 final providerEarningsStatsProvider =
-    FutureProvider.family<Earnings, EarningsDateRangeParam>((
+    FutureProvider.family<Earnings, EarningsDateRangeParam?>((
       ref,
       dateRange,
     ) async {
