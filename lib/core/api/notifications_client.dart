@@ -23,13 +23,6 @@ abstract class NotificationsClient {
   @POST("notifications/mark-read")
   Future<BaseApiResponse> markAsRead(@Body() MarkReadRequest body);
 
-  @GET("notifications/preferences/")
-  Future<BaseApiResponse<List<NotificationPreference>>> getPreferences();
-
-  @PUT("notifications/preferences/")
-  Future<BaseApiResponse<List<NotificationPreference>>> updatePreferences(
-    @Body() UpdatePreferencesRequest body,
-  );
 }
 
 /// Provider exposing the [NotificationsClient] dependency.

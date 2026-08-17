@@ -18,19 +18,15 @@ class NotificationsNotifier extends AsyncNotifier<NotificationsState> {
     final results = await Future.wait([
       client.getNotifications(page: 1, perPage: 20),
       client.getCounts(),
-      client.getPreferences(),
     ]);
 
     final notificationsRes =
         results[0] as BaseApiResponse<PaginatedData<NotificationItem>>;
     final countsRes = results[1] as BaseApiResponse<NotificationCounts>;
-    final prefsRes =
-        results[2] as BaseApiResponse<List<NotificationPreference>>;
 
     return NotificationsState(
       paginatedData: notificationsRes.data,
       counts: countsRes.data,
-      preferences: prefsRes.data,
     );
   }
 
@@ -106,27 +102,6 @@ class NotificationsNotifier extends AsyncNotifier<NotificationsState> {
     }
   }
 
-  Future<void> updatePreferences(
-    List<NotificationPreference> preferences, {
-    VoidCallback? onSuccess,
-    void Function(String)? onError,
-  }) async {
-    try {
-      final client = ref.read(notificationsClientProvider);
-      await client.updatePreferences(
-        UpdatePreferencesRequest(preferences: preferences),
-      );
-
-      // Refresh state
-      ref.invalidateSelf();
-      await future;
-
-      onSuccess?.call();
-    } catch (e, st) {
-      AppExceptionHandler.instance.handleError(e, st);
-      onError?.call(e.toFriendlyString());
-    }
-  }
 }
 
 final notificationsProvider =

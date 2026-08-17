@@ -14,7 +14,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$NotificationsState {
 
- PaginatedData<NotificationItem>? get paginatedData; NotificationCounts? get counts; List<NotificationPreference>? get preferences; bool get isLoadingMore;
+ PaginatedData<NotificationItem>? get paginatedData; NotificationCounts? get counts; bool get isLoadingMore;
 /// Create a copy of NotificationsState
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -25,16 +25,16 @@ $NotificationsStateCopyWith<NotificationsState> get copyWith => _$NotificationsS
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is NotificationsState&&(identical(other.paginatedData, paginatedData) || other.paginatedData == paginatedData)&&(identical(other.counts, counts) || other.counts == counts)&&const DeepCollectionEquality().equals(other.preferences, preferences)&&(identical(other.isLoadingMore, isLoadingMore) || other.isLoadingMore == isLoadingMore));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is NotificationsState&&(identical(other.paginatedData, paginatedData) || other.paginatedData == paginatedData)&&(identical(other.counts, counts) || other.counts == counts)&&(identical(other.isLoadingMore, isLoadingMore) || other.isLoadingMore == isLoadingMore));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,paginatedData,counts,const DeepCollectionEquality().hash(preferences),isLoadingMore);
+int get hashCode => Object.hash(runtimeType,paginatedData,counts,isLoadingMore);
 
 @override
 String toString() {
-  return 'NotificationsState(paginatedData: $paginatedData, counts: $counts, preferences: $preferences, isLoadingMore: $isLoadingMore)';
+  return 'NotificationsState(paginatedData: $paginatedData, counts: $counts, isLoadingMore: $isLoadingMore)';
 }
 
 
@@ -45,7 +45,7 @@ abstract mixin class $NotificationsStateCopyWith<$Res>  {
   factory $NotificationsStateCopyWith(NotificationsState value, $Res Function(NotificationsState) _then) = _$NotificationsStateCopyWithImpl;
 @useResult
 $Res call({
- PaginatedData<NotificationItem>? paginatedData, NotificationCounts? counts, List<NotificationPreference>? preferences, bool isLoadingMore
+ PaginatedData<NotificationItem>? paginatedData, NotificationCounts? counts, bool isLoadingMore
 });
 
 
@@ -62,12 +62,11 @@ class _$NotificationsStateCopyWithImpl<$Res>
 
 /// Create a copy of NotificationsState
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? paginatedData = freezed,Object? counts = freezed,Object? preferences = freezed,Object? isLoadingMore = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? paginatedData = freezed,Object? counts = freezed,Object? isLoadingMore = null,}) {
   return _then(_self.copyWith(
 paginatedData: freezed == paginatedData ? _self.paginatedData : paginatedData // ignore: cast_nullable_to_non_nullable
 as PaginatedData<NotificationItem>?,counts: freezed == counts ? _self.counts : counts // ignore: cast_nullable_to_non_nullable
-as NotificationCounts?,preferences: freezed == preferences ? _self.preferences : preferences // ignore: cast_nullable_to_non_nullable
-as List<NotificationPreference>?,isLoadingMore: null == isLoadingMore ? _self.isLoadingMore : isLoadingMore // ignore: cast_nullable_to_non_nullable
+as NotificationCounts?,isLoadingMore: null == isLoadingMore ? _self.isLoadingMore : isLoadingMore // ignore: cast_nullable_to_non_nullable
 as bool,
   ));
 }
@@ -153,10 +152,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( PaginatedData<NotificationItem>? paginatedData,  NotificationCounts? counts,  List<NotificationPreference>? preferences,  bool isLoadingMore)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( PaginatedData<NotificationItem>? paginatedData,  NotificationCounts? counts,  bool isLoadingMore)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _NotificationsState() when $default != null:
-return $default(_that.paginatedData,_that.counts,_that.preferences,_that.isLoadingMore);case _:
+return $default(_that.paginatedData,_that.counts,_that.isLoadingMore);case _:
   return orElse();
 
 }
@@ -174,10 +173,10 @@ return $default(_that.paginatedData,_that.counts,_that.preferences,_that.isLoadi
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( PaginatedData<NotificationItem>? paginatedData,  NotificationCounts? counts,  List<NotificationPreference>? preferences,  bool isLoadingMore)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( PaginatedData<NotificationItem>? paginatedData,  NotificationCounts? counts,  bool isLoadingMore)  $default,) {final _that = this;
 switch (_that) {
 case _NotificationsState():
-return $default(_that.paginatedData,_that.counts,_that.preferences,_that.isLoadingMore);case _:
+return $default(_that.paginatedData,_that.counts,_that.isLoadingMore);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -194,10 +193,10 @@ return $default(_that.paginatedData,_that.counts,_that.preferences,_that.isLoadi
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( PaginatedData<NotificationItem>? paginatedData,  NotificationCounts? counts,  List<NotificationPreference>? preferences,  bool isLoadingMore)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( PaginatedData<NotificationItem>? paginatedData,  NotificationCounts? counts,  bool isLoadingMore)?  $default,) {final _that = this;
 switch (_that) {
 case _NotificationsState() when $default != null:
-return $default(_that.paginatedData,_that.counts,_that.preferences,_that.isLoadingMore);case _:
+return $default(_that.paginatedData,_that.counts,_that.isLoadingMore);case _:
   return null;
 
 }
@@ -209,20 +208,11 @@ return $default(_that.paginatedData,_that.counts,_that.preferences,_that.isLoadi
 
 
 class _NotificationsState implements NotificationsState {
-  const _NotificationsState({this.paginatedData = null, this.counts = null, final  List<NotificationPreference>? preferences = null, this.isLoadingMore = false}): _preferences = preferences;
+  const _NotificationsState({this.paginatedData = null, this.counts = null, this.isLoadingMore = false});
   
 
 @override@JsonKey() final  PaginatedData<NotificationItem>? paginatedData;
 @override@JsonKey() final  NotificationCounts? counts;
- final  List<NotificationPreference>? _preferences;
-@override@JsonKey() List<NotificationPreference>? get preferences {
-  final value = _preferences;
-  if (value == null) return null;
-  if (_preferences is EqualUnmodifiableListView) return _preferences;
-  // ignore: implicit_dynamic_type
-  return EqualUnmodifiableListView(value);
-}
-
 @override@JsonKey() final  bool isLoadingMore;
 
 /// Create a copy of NotificationsState
@@ -235,16 +225,16 @@ _$NotificationsStateCopyWith<_NotificationsState> get copyWith => __$Notificatio
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _NotificationsState&&(identical(other.paginatedData, paginatedData) || other.paginatedData == paginatedData)&&(identical(other.counts, counts) || other.counts == counts)&&const DeepCollectionEquality().equals(other._preferences, _preferences)&&(identical(other.isLoadingMore, isLoadingMore) || other.isLoadingMore == isLoadingMore));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _NotificationsState&&(identical(other.paginatedData, paginatedData) || other.paginatedData == paginatedData)&&(identical(other.counts, counts) || other.counts == counts)&&(identical(other.isLoadingMore, isLoadingMore) || other.isLoadingMore == isLoadingMore));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,paginatedData,counts,const DeepCollectionEquality().hash(_preferences),isLoadingMore);
+int get hashCode => Object.hash(runtimeType,paginatedData,counts,isLoadingMore);
 
 @override
 String toString() {
-  return 'NotificationsState(paginatedData: $paginatedData, counts: $counts, preferences: $preferences, isLoadingMore: $isLoadingMore)';
+  return 'NotificationsState(paginatedData: $paginatedData, counts: $counts, isLoadingMore: $isLoadingMore)';
 }
 
 
@@ -255,7 +245,7 @@ abstract mixin class _$NotificationsStateCopyWith<$Res> implements $Notification
   factory _$NotificationsStateCopyWith(_NotificationsState value, $Res Function(_NotificationsState) _then) = __$NotificationsStateCopyWithImpl;
 @override @useResult
 $Res call({
- PaginatedData<NotificationItem>? paginatedData, NotificationCounts? counts, List<NotificationPreference>? preferences, bool isLoadingMore
+ PaginatedData<NotificationItem>? paginatedData, NotificationCounts? counts, bool isLoadingMore
 });
 
 
@@ -272,12 +262,11 @@ class __$NotificationsStateCopyWithImpl<$Res>
 
 /// Create a copy of NotificationsState
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? paginatedData = freezed,Object? counts = freezed,Object? preferences = freezed,Object? isLoadingMore = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? paginatedData = freezed,Object? counts = freezed,Object? isLoadingMore = null,}) {
   return _then(_NotificationsState(
 paginatedData: freezed == paginatedData ? _self.paginatedData : paginatedData // ignore: cast_nullable_to_non_nullable
 as PaginatedData<NotificationItem>?,counts: freezed == counts ? _self.counts : counts // ignore: cast_nullable_to_non_nullable
-as NotificationCounts?,preferences: freezed == preferences ? _self._preferences : preferences // ignore: cast_nullable_to_non_nullable
-as List<NotificationPreference>?,isLoadingMore: null == isLoadingMore ? _self.isLoadingMore : isLoadingMore // ignore: cast_nullable_to_non_nullable
+as NotificationCounts?,isLoadingMore: null == isLoadingMore ? _self.isLoadingMore : isLoadingMore // ignore: cast_nullable_to_non_nullable
 as bool,
   ));
 }
