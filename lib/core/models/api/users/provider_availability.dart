@@ -9,6 +9,7 @@ class ProviderAvailability {
   final int? dayOfWeek;
   final String? startTime;
   final String? endTime;
+  final bool? isActive;
   final String? id;
   final String? providerId;
 
@@ -16,6 +17,7 @@ class ProviderAvailability {
     this.dayOfWeek,
     this.startTime,
     this.endTime,
+    this.isActive,
     this.id,
     this.providerId,
   });

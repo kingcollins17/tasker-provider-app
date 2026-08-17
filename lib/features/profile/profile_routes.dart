@@ -1,5 +1,6 @@
 import 'package:go_router/go_router.dart';
 import 'package:tasker_app/core/router/navigator_keys.dart';
+import 'presentation/payouts_screen.dart';
 import 'presentation/profile_screen.dart';
 import 'presentation/profile_update_screen.dart';
 import 'presentation/update_availability_screen.dart';
@@ -10,6 +11,7 @@ import 'presentation/edit_services_screen.dart';
 class ProfileRoutes {
   static const String profileRoute = 'profile';
   static const String updateProfileRoute = 'update-profile';
+  static const String payoutsRoute = 'payouts';
   static const String viewPayoutAccountRoute = 'view-payout-account';
   static const String updatePayoutAccountRoute = 'update-payout-account';
   static const String updateAvailabilityRoute = 'update-availability';
@@ -21,6 +23,13 @@ class ProfileRoutes {
       name: profileRoute,
       builder: (context, state) => const ProfileScreen(),
       routes: [
+        GoRoute(
+          parentNavigatorKey: NavigatorKeys.rootNavigatorKey,
+          path: 'payouts',
+          name: payoutsRoute,
+          builder: (context, state) => const PayoutsScreen(),
+        ),
+
         GoRoute(
           parentNavigatorKey: NavigatorKeys.rootNavigatorKey,
           path: 'update',

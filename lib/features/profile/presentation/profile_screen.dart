@@ -531,8 +531,7 @@ class _PreferencesSection extends ConsumerWidget {
           iconColor: AppColors.success,
           title: 'Payouts',
           subtitle: 'View your earnings history',
-          onTap: () =>
-              context.showToast('Payouts history feature coming soon!'),
+          onTap: () => context.pushNamed(ProfileRoutes.payoutsRoute),
         ),
         AppSpacing.hSm,
 

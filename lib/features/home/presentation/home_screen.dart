@@ -728,11 +728,21 @@ class _ActiveWorkCard extends StatelessWidget {
 // PERFORMANCE SNAPSHOT
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _PerformanceSnapshotCard extends StatelessWidget {
+class _PerformanceSnapshotCard extends ConsumerWidget {
   const _PerformanceSnapshotCard();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final user = ref.watch(userProvider).value;
+
+    final avgRating = user?.averageRatings != null
+        ? user!.averageRatings!.toDouble().toStringAsFixed(1)
+        : '0.0';
+    final totalJobs = user?.providerProfile?.totalTasksCompleted ?? 0;
+    final credibility = user?.credibilityScore != null
+        ? '${user!.credibilityScore}%'
+        : '0%';
+
     return Container(
       padding: EdgeInsets.all(20.r),
       decoration: BoxDecoration(
@@ -771,14 +781,14 @@ class _PerformanceSnapshotCard extends StatelessWidget {
             children: [
               _PerformanceStat(
                 icon: Icons.star_rounded,
-                value: "4.9",
+                value: avgRating,
                 label: "Rating",
                 color: const Color(0xFFF59E0B),
               ),
               _statDivider(),
               _PerformanceStat(
                 icon: Icons.work_rounded,
-                value: "18",
+                value: "$totalJobs",
                 label: "Jobs",
                 color: const Color(0xFF3B82F6),
               ),
@@ -792,7 +802,7 @@ class _PerformanceSnapshotCard extends StatelessWidget {
               _statDivider(),
               _PerformanceStat(
                 icon: Icons.check_circle_rounded,
-                value: "98%",
+                value: credibility,
                 label: "Done",
                 color: AppColors.primary,
               ),

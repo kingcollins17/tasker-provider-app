@@ -10,6 +10,7 @@ TaskLite _$TaskLiteFromJson(Map<String, dynamic> json) => TaskLite(
   id: json['id'] as String?,
   customerId: json['customer_id'] as String?,
   title: json['title'] as String?,
+  description: json['description'] as String?,
   categoryId: json['category_id'] as String?,
   serviceId: json['service_id'] as String?,
   basePrice: (json['base_price'] as num?)?.toDouble(),
@@ -25,6 +26,9 @@ TaskLite _$TaskLiteFromJson(Map<String, dynamic> json) => TaskLite(
   createdAt: json['created_at'] == null
       ? null
       : DateTime.parse(json['created_at'] as String),
+  updatedAt: json['updated_at'] == null
+      ? null
+      : DateTime.parse(json['updated_at'] as String),
   scheduledStartAt: json['scheduled_start_at'] == null
       ? null
       : DateTime.parse(json['scheduled_start_at'] as String),
@@ -38,6 +42,7 @@ Map<String, dynamic> _$TaskLiteToJson(TaskLite instance) => <String, dynamic>{
   'id': instance.id,
   'customer_id': instance.customerId,
   'title': instance.title,
+  'description': instance.description,
   'category_id': instance.categoryId,
   'service_id': instance.serviceId,
   'base_price': instance.basePrice,
@@ -51,6 +56,7 @@ Map<String, dynamic> _$TaskLiteToJson(TaskLite instance) => <String, dynamic>{
   'provider_payout': instance.providerPayout,
   'status': instance.status,
   'created_at': instance.createdAt?.toIso8601String(),
+  'updated_at': instance.updatedAt?.toIso8601String(),
   'scheduled_start_at': instance.scheduledStartAt?.toIso8601String(),
   'distance_km': instance.distanceKm,
   'category': instance.category,

@@ -8,6 +8,7 @@ class TaskLite {
   final String? id;
   final String? customerId;
   final String? title;
+  final String? description;
   final String? categoryId;
   final String? serviceId;
   final double? basePrice;
@@ -21,6 +22,7 @@ class TaskLite {
   final double? providerPayout;
   final String? status;
   final DateTime? createdAt;
+  final DateTime? updatedAt;
   final DateTime? scheduledStartAt;
   final double? distanceKm;
   final Category? category;
@@ -29,6 +31,7 @@ class TaskLite {
     this.id,
     this.customerId,
     this.title,
+    this.description,
     this.categoryId,
     this.serviceId,
     this.basePrice,
@@ -42,6 +45,7 @@ class TaskLite {
     this.providerPayout,
     this.status,
     this.createdAt,
+    this.updatedAt,
     this.scheduledStartAt,
     this.distanceKm,
     this.category,

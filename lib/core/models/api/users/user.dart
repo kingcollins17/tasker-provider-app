@@ -19,6 +19,10 @@ class User {
   final bool? emailVerified;
   @JsonKey(name: 'phone_verified')
   final bool? phoneVerified;
+  @JsonKey(name: 'credibility_score')
+  final num? credibilityScore;
+  @JsonKey(name: 'average_ratings')
+  final num? averageRatings;
   @JsonKey(name: 'created_at')
   final DateTime? createdAt;
   @JsonKey(name: 'updated_at')
@@ -42,6 +46,8 @@ class User {
     this.isActive,
     this.emailVerified,
     this.phoneVerified,
+    this.credibilityScore,
+    this.averageRatings,
     this.createdAt,
     this.updatedAt,
     this.regionId,

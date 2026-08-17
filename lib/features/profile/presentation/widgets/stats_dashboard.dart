@@ -1,37 +1,52 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
+import '../../../../core/models/api/users/user.dart';
+import '../../../../core/providers/user_provider.dart';
 import '../../../../core/ui/designs/designs.dart';
 
 /// A dashboard-style stats grid showing key platform metrics.
 ///
 /// Displays the remaining stats (Total Tasks, Avg Rating, Credibility)
 /// in a grid layout.
-class StatsDashboard extends StatelessWidget {
-  const StatsDashboard({super.key});
+class StatsDashboard extends ConsumerWidget {
+  const StatsDashboard({super.key, this.user});
+
+  final User? user;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+
+    final currentUser = user ?? ref.watch(userProvider).value;
+
+    final totalTasks = currentUser?.providerProfile?.totalTasksCompleted ?? 0;
+    final avgRating = currentUser?.averageRatings != null
+        ? currentUser!.averageRatings!.toDouble().toStringAsFixed(1)
+        : '0.0';
+    final credibility = currentUser?.credibilityScore != null
+        ? '${currentUser!.credibilityScore}%'
+        : '0%';
 
     final stats = [
       _StatItem(
         icon: Icons.task_alt_rounded,
         color: AppColors.primaryLight,
-        value: '148',
+        value: '$totalTasks',
         label: 'Total Tasks',
       ),
       _StatItem(
         icon: Icons.star_rounded,
         color: AppColors.warning,
-        value: '4.9',
+        value: avgRating,
         label: 'Avg Rating',
       ),
       _StatItem(
         icon: Icons.shield_outlined,
         color: AppColors.primary,
-        value: '98%',
+        value: credibility,
         label: 'Credibility',
       ),
     ];

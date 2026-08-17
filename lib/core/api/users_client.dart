@@ -99,10 +99,14 @@ abstract class UsersClient {
   @GET("users/provider/availability")
   Future<BaseApiResponse<List<ProviderAvailability>>> getProviderAvailability();
 
-  @PUT("users/provider/availability")
-  Future<BaseApiResponse<List<ProviderAvailability>>> updateProviderAvailability(
+  @PUT("users/provider/availability/{availability_id}")
+  Future<BaseApiResponse> updateProviderAvailability(
+    @Path("availability_id") String availabilityId,
     @Body() UpdateAvailabilityRequest body,
   );
+
+  @POST("users/provider/availability/default")
+  Future<BaseApiResponse<List<ProviderAvailability>>> createDefaultProviderAvailability();
 }
 
 /// Provider exposing the [UsersClient] dependency.

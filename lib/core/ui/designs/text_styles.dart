@@ -33,6 +33,12 @@ class AppTextStyles {
     height: 1.3,
   ).copyWith(fontFamilyFallback: _fallbackFonts);
 
+  static TextStyle get h4 => GoogleFonts.poppins(
+    fontSize: 28.sp,
+    fontWeight: FontWeight.w600,
+    height: 1.3,
+  );
+
   /// Subtitle (e.g., Section Descriptors/Feature subheaders)
   static TextStyle get subtitle => GoogleFonts.poppins(
     fontSize: 16.sp,
