@@ -98,7 +98,7 @@ final providerEarningsStatsProvider =
         );
       }
       return response.data!;
-    });
+    }, retry: (_, __) => null);
 
 /// Notifier to manage the currently selected earnings duration.
 class EarningsDurationNotifier extends Notifier<EarningsDuration> {

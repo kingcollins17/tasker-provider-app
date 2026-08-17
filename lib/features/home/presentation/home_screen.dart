@@ -4,6 +4,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:shimmer/shimmer.dart';
 
 import 'package:tasker_app/core/providers/providers.dart';
+import 'package:tasker_app/core/utils/debug_logger.dart';
 import 'package:tasker_app/core/utils/extensions/loading_context_ext.dart';
 
 import '../../../core/ui/designs/colors.dart';
@@ -25,7 +26,8 @@ class HomeScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     ref.watch(syncUserLocationProvider);
     ref.watch(userAddressProvider);
-    ref.watch(currentRegionProvider);
+    final regionAsync = ref.watch(currentRegionProvider);
+    debugLog(regionAsync);
     ref.watch(deviceTrayNotificationProvider);
     ref.watch(offerPingListenerProvider);
     final user = ref.watch(userProvider);
@@ -995,24 +997,24 @@ class _AccountIssuesSection extends ConsumerWidget {
     }
 
     final kycStatus = kycStatusAsync.value;
-    if (kycStatus == KycStatus.pending ||
-        kycStatus == KycStatus.rejected ||
-        kycStatus == null) {
-      issues.add(
-        _AccountIssueCard(
-          title: kycStatus == KycStatus.rejected
-              ? 'KYC Rejected'
-              : 'Complete KYC',
-          description: kycStatus == KycStatus.rejected
-              ? 'Your identity verification was rejected. Please try again.'
-              : 'Verify your identity to start receiving tasks.',
-          icon: Icons.verified_user_outlined,
-          isError: kycStatus == KycStatus.rejected,
-          onTap: () {
-            context.go('/profile');
-          },
-        ),
-      );
+    if (user != null && kycStatus != null) {
+      if (kycStatus == KycStatus.pending || kycStatus == KycStatus.rejected) {
+        issues.add(
+          _AccountIssueCard(
+            title: kycStatus == KycStatus.rejected
+                ? 'KYC Rejected'
+                : 'Complete KYC',
+            description: kycStatus == KycStatus.rejected
+                ? 'Your identity verification was rejected. Please try again.'
+                : 'Verify your identity to start receiving tasks.',
+            icon: Icons.verified_user_outlined,
+            isError: kycStatus == KycStatus.rejected,
+            onTap: () {
+              context.go('/profile');
+            },
+          ),
+        );
+      }
     }
 
     if (issues.isEmpty) {

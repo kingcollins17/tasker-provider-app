@@ -123,6 +123,7 @@ class ProfileScreen extends ConsumerWidget {
           email: user.email ?? '',
           isActive: user.isActive ?? false,
           selfieUrl: user.providerProfile?.selfieUrl,
+          dutyStatus: user.providerProfile?.dutyStatus,
         );
       },
       orElse: () => const SizedBox.shrink(),

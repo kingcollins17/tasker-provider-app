@@ -1,5 +1,4 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:geocoding/geocoding.dart' hide Location;
 import '../api/api.dart';
 import '../models/models.dart';
 import 'location_provider.dart';
@@ -12,23 +11,11 @@ import 'location_provider.dart';
 /// or no matching region is found.
 final currentRegionProvider = FutureProvider<Region?>((ref) async {
   try {
-    // 1. Get the user's current coordinates from the location provider.
-    final coordinates = await ref.watch(userCoordinatesProvider.future);
-    if (coordinates.latitude == null || coordinates.longitude == null) {
-      return null;
-    }
-
-    // 2. Reverse-geocode the coordinates to get an address.
-    final placemarks = await placemarkFromCoordinates(
-      coordinates.latitude!,
-      coordinates.longitude!,
-    );
-
-    if (placemarks.isEmpty) return null;
-
-    final placemark = placemarks.first;
-    final userState = placemark.administrativeArea?.toLowerCase().trim();
-    final userLocality = placemark.locality?.toLowerCase().trim();
+    // 1. Get the user's current address from the location provider.
+    final address = await ref.watch(userAddressProvider.future);
+    
+    final userState = address.administrativeArea?.toLowerCase().trim();
+    final userLocality = address.locality?.toLowerCase().trim();
 
     if (userState == null && userLocality == null) return null;
 

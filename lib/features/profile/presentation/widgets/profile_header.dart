@@ -14,12 +14,52 @@ class ProfileHeader extends StatelessWidget {
     required this.email,
     required this.isActive,
     this.selfieUrl,
+    this.dutyStatus,
   });
 
   final String fullName;
   final String email;
   final bool isActive;
   final String? selfieUrl;
+  final String? dutyStatus;
+
+  Color _getDutyStatusColor(String status) {
+    switch (status.toLowerCase()) {
+      case 'online_available':
+        return AppColors.success;
+      case 'on_task':
+        return AppColors.warning;
+      case 'on_dispatch':
+        return AppColors.secondaryLight;
+      case 'offline':
+        return AppColors.textMuted;
+      default:
+        return AppColors.warning;
+    }
+  }
+
+  String _formatDutyStatus(String status) {
+    switch (status.toLowerCase()) {
+      case 'online_available':
+        return 'Online Available';
+      case 'on_task':
+        return 'On Task';
+      case 'on_dispatch':
+        return 'On Dispatch';
+      case 'offline':
+        return 'Offline';
+      default:
+        return status
+            .replaceAll('_', ' ')
+            .split(' ')
+            .map(
+              (word) => word.isNotEmpty
+                  ? '${word[0].toUpperCase()}${word.substring(1).toLowerCase()}'
+                  : '',
+            )
+            .join(' ');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -57,7 +97,29 @@ class ProfileHeader extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                    if (isActive) ...[
+                    if (dutyStatus != null && dutyStatus!.isNotEmpty) ...[
+                      SizedBox(width: 8.w),
+                      Container(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 8.w,
+                          vertical: 2.h,
+                        ),
+                        decoration: BoxDecoration(
+                          color: _getDutyStatusColor(
+                            dutyStatus!,
+                          ).withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(20.r),
+                        ),
+                        child: Text(
+                          _formatDutyStatus(dutyStatus!),
+                          style: AppTextStyles.label.copyWith(
+                            color: _getDutyStatusColor(dutyStatus!),
+                            fontWeight: FontWeight.bold,
+                            fontSize: 10.sp,
+                          ),
+                        ),
+                      ),
+                    ] else if (isActive) ...[
                       SizedBox(width: 8.w),
                       Container(
                         padding: EdgeInsets.symmetric(
