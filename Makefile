@@ -4,7 +4,7 @@
 
 ## Code generation (build_runner)
 gen:
-	flutter pub run build_runner build --delete-conflicting-outputs
+	dart run build_runner build --delete-conflicting-outputs
 
 icon:
 	dart run flutter_launcher_icons

@@ -551,6 +551,7 @@ class _PreferencesSection extends ConsumerWidget {
         ),
         AppSpacing.hSm,
 
+        /* 
         // Working Availability
         OptionTile(
           icon: Icons.access_time_rounded,
@@ -560,6 +561,7 @@ class _PreferencesSection extends ConsumerWidget {
           onTap: () => context.pushNamed(ProfileRoutes.updateAvailabilityRoute),
         ),
         AppSpacing.hSm,
+        */
 
         // Customer Support
         OptionTile(

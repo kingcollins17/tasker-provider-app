@@ -24,6 +24,8 @@ abstract class UsersClient {
     @Field("scope") String? scope,
     @Field("client_id") String? clientId,
     @Field("client_secret") String? clientSecret,
+    @Query("user_type")
+    String? userType = 'provider', // only allowed type for sign-in for this app
   });
 
   @POST("users/request-email-otp")
@@ -51,13 +53,17 @@ abstract class UsersClient {
   Future<BaseApiResponse> updateLocation(@Body() UpdateLocationRequest body);
 
   @PUT("users/update-provider-profile")
-  Future<BaseApiResponse> updateProviderProfile(@Body() UpdateProviderProfileRequest body);
+  Future<BaseApiResponse> updateProviderProfile(
+    @Body() UpdateProviderProfileRequest body,
+  );
 
   @PUT("users/region")
   Future<BaseApiResponse> updateRegion(@Body() UpdateRegionRequest body);
 
   @PUT("users/online-status")
-  Future<BaseApiResponse> updateOnlineStatus(@Body() UpdateOnlineStatusRequest body);
+  Future<BaseApiResponse> updateOnlineStatus(
+    @Body() UpdateOnlineStatusRequest body,
+  );
 
   @PUT("users/cloud-messaging-token")
   Future<BaseApiResponse> updateCloudMessagingToken(

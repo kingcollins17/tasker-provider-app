@@ -67,6 +67,8 @@ class OptionTile extends StatelessWidget {
                   children: [
                     Text(
                       title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: AppTextStyles.bodyMedium.copyWith(
                         fontWeight: FontWeight.w600,
                         color: titleColor,
@@ -76,6 +78,8 @@ class OptionTile extends StatelessWidget {
                       SizedBox(height: 2.h),
                       Text(
                         subtitle!,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: AppTextStyles.bodySmall.copyWith(
                           color: AppColors.textMuted,
                           fontSize: 11.sp,

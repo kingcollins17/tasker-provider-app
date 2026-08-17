@@ -13,8 +13,8 @@ CompleteTaskRequest _$CompleteTaskRequestFromJson(Map<String, dynamic> json) =>
     );
 
 Map<String, dynamic> _$CompleteTaskRequestToJson(
-        CompleteTaskRequest instance) =>
-    <String, dynamic>{
-      'pin': instance.pin,
-      'payment_mode': instance.paymentMode,
-    };
+  CompleteTaskRequest instance,
+) => <String, dynamic>{
+  'pin': instance.pin,
+  'payment_mode': instance.paymentMode,
+};

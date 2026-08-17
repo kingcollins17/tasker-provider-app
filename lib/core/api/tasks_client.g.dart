@@ -368,7 +368,7 @@ class _TasksClient implements TasksClient {
     try {
       _value = BaseApiResponse<dynamic>.fromJson(
         _result.data!,
-        (json) => json,
+        (json) => json as dynamic,
       );
     } on Object catch (e, s) {
       errorLogger?.logError(e, s, _options, _result);
@@ -402,7 +402,7 @@ class _TasksClient implements TasksClient {
     try {
       _value = BaseApiResponse<dynamic>.fromJson(
         _result.data!,
-        (json) => json,
+        (json) => json as dynamic,
       );
     } on Object catch (e, s) {
       errorLogger?.logError(e, s, _options, _result);

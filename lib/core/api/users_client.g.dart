@@ -60,9 +60,10 @@ class _UsersClient implements UsersClient {
     String? scope,
     String? clientId,
     String? clientSecret,
+    String? userType = 'provider',
   }) async {
     final _extra = <String, dynamic>{};
-    final queryParameters = <String, dynamic>{};
+    final queryParameters = <String, dynamic>{r'user_type': userType};
     queryParameters.removeWhere((k, v) => v == null);
     final _headers = <String, dynamic>{};
     final _data = {

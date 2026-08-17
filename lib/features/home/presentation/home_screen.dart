@@ -62,9 +62,7 @@ class HomeScreen extends ConsumerWidget {
                   SliverPadding(
                     padding: AppSpacing.pHorsMd,
                     sliver: SliverToBoxAdapter(
-                      child: _HomeAppBar(
-                        firstName: firstName,
-                      ),
+                      child: _HomeAppBar(firstName: firstName),
                     ),
                   ),
 
@@ -73,12 +71,18 @@ class HomeScreen extends ConsumerWidget {
                   // ─── EARNINGS CARD ───
                   SliverPadding(
                     padding: AppSpacing.pHorsMd,
-                    sliver: const SliverToBoxAdapter(
-                      child: EarningsCard(),
-                    ),
+                    sliver: const SliverToBoxAdapter(child: EarningsCard()),
                   ),
 
                   SliverToBoxAdapter(child: AppSpacing.hLg),
+
+                  // ─── ACCOUNT ISSUES ───
+                  SliverPadding(
+                    padding: AppSpacing.pHorsMd,
+                    sliver: const SliverToBoxAdapter(
+                      child: _AccountIssuesSection(),
+                    ),
+                  ),
 
                   // ─── ACTIVE WORK ───
                   SliverPadding(
@@ -325,7 +329,7 @@ class _SectionHeader extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(title, style: AppTextStyles.h3.copyWith(fontSize: 18.sp)),
+          Text(title, style: AppTextStyles.h3.copyWith(fontSize: 14.sp)),
           if (actionText != null)
             GestureDetector(
               onTap: onAction,
@@ -361,7 +365,8 @@ class _ActiveWorkSection extends ConsumerWidget {
         }
 
         final title = assignment.task?.title ?? 'Active Task';
-        final address = assignment.provider?.location?.addressLine ??
+        final address =
+            assignment.provider?.location?.addressLine ??
             assignment.task?.description ??
             'Location not specified';
 
@@ -372,27 +377,25 @@ class _ActiveWorkSection extends ConsumerWidget {
           timeStr =
               'Assigned ${DateFormat.yMMMd().format(assignment.assignedAt!)}';
         } else if (assignment.task?.scheduledStartAt != null) {
-          timeStr = DateFormat.yMMMd()
-              .add_jm()
-              .format(assignment.task!.scheduledStartAt!);
+          timeStr = DateFormat.yMMMd().add_jm().format(
+            assignment.task!.scheduledStartAt!,
+          );
         }
 
         final priceStr = assignment.acceptedPrice != null
             ? assignment.acceptedPrice!.toNaira()
             : (assignment.task?.providerPayout != null
-                ? assignment.task!.providerPayout!.toNaira()
-                : null);
+                  ? assignment.task!.providerPayout!.toNaira()
+                  : null);
 
-        final statusStr =
-            (assignment.status ?? 'assigned').replaceAll('_', ' ').toUpperCase();
+        final statusStr = (assignment.status ?? 'assigned')
+            .replaceAll('_', ' ')
+            .toUpperCase();
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _SectionHeader(
-              title: "Active Work",
-              onAction: () {},
-            ),
+            _SectionHeader(title: "Active Work", onAction: () {}),
             _ActiveWorkCard(
               title: title,
               address: address,
@@ -428,10 +431,7 @@ class _NoActiveWorkCard extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _SectionHeader(
-          title: "Active Work",
-          onAction: () {},
-        ),
+        _SectionHeader(title: "Active Work", onAction: () {}),
         Container(
           width: double.infinity,
           padding: EdgeInsets.symmetric(vertical: 24.h, horizontal: 20.w),
@@ -497,9 +497,7 @@ class _ActiveWorkSkeleton extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const _SectionHeader(
-          title: "Active Work",
-        ),
+        const _SectionHeader(title: "Active Work"),
         Shimmer.fromColors(
           baseColor: baseColor,
           highlightColor: highlightColor,
@@ -862,10 +860,7 @@ class _FloatingOnlineToggle extends StatelessWidget {
   final bool isOnline;
   final VoidCallback onToggle;
 
-  const _FloatingOnlineToggle({
-    required this.isOnline,
-    required this.onToggle,
-  });
+  const _FloatingOnlineToggle({required this.isOnline, required this.onToggle});
 
   @override
   Widget build(BuildContext context) {
@@ -944,6 +939,173 @@ class _FloatingOnlineToggle extends StatelessWidget {
                   fontSize: 13.sp,
                 ),
               ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ACCOUNT ISSUES SECTION
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _AccountIssuesSection extends ConsumerWidget {
+  const _AccountIssuesSection();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final userAsync = ref.watch(userProvider);
+    final kycStatusAsync = ref.watch(kycStatusProvider);
+    final user = userAsync.value;
+
+    final issues = <Widget>[];
+
+    if (user != null) {
+      if (!(user.phoneVerified ?? false) ||
+          user.phoneNumber == null ||
+          user.phoneNumber!.isEmpty) {
+        issues.add(
+          _AccountIssueCard(
+            title: 'Verify Phone Number',
+            description: 'Required to receive tasks and secure your account.',
+            icon: Icons.phone_android_rounded,
+            onTap: () {
+              context.go('/profile');
+            },
+          ),
+        );
+      }
+
+      if (!(user.emailVerified ?? false) &&
+          user.email != null &&
+          user.email!.isNotEmpty) {
+        issues.add(
+          _AccountIssueCard(
+            title: 'Verify Email Address',
+            description: 'Required for account recovery and notifications.',
+            icon: Icons.email_outlined,
+            onTap: () {
+              context.go('/profile');
+            },
+          ),
+        );
+      }
+    }
+
+    final kycStatus = kycStatusAsync.value;
+    if (kycStatus == KycStatus.pending ||
+        kycStatus == KycStatus.rejected ||
+        kycStatus == null) {
+      issues.add(
+        _AccountIssueCard(
+          title: kycStatus == KycStatus.rejected
+              ? 'KYC Rejected'
+              : 'Complete KYC',
+          description: kycStatus == KycStatus.rejected
+              ? 'Your identity verification was rejected. Please try again.'
+              : 'Verify your identity to start receiving tasks.',
+          icon: Icons.verified_user_outlined,
+          isError: kycStatus == KycStatus.rejected,
+          onTap: () {
+            context.go('/profile');
+          },
+        ),
+      );
+    }
+
+    if (issues.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const _SectionHeader(title: "Account Issues"),
+        ...issues,
+        SizedBox(height: 8.h),
+      ],
+    );
+  }
+}
+
+class _AccountIssueCard extends StatelessWidget {
+  final String title;
+  final String description;
+  final IconData icon;
+  final VoidCallback onTap;
+  final bool isError;
+
+  const _AccountIssueCard({
+    required this.title,
+    required this.description,
+    required this.icon,
+    required this.onTap,
+    this.isError = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final color = isError ? AppColors.error : AppColors.warning;
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        margin: EdgeInsets.only(bottom: 8.h),
+        padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 10.h),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          borderRadius: AppDecorations.radiusMd,
+          border: Border.all(color: AppColors.border, width: 1.r),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 10.r,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: EdgeInsets.all(8.r),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.12),
+                borderRadius: AppDecorations.radiusSm,
+              ),
+              child: Icon(icon, color: color, size: 20.r),
+            ),
+            SizedBox(width: 14.w),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTextStyles.bodyMedium.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  SizedBox(height: 2.h),
+                  Text(
+                    description,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTextStyles.bodySmall.copyWith(
+                      color: AppColors.textMuted,
+                      fontSize: 11.sp,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            SizedBox(width: 8.w),
+            Icon(
+              Icons.arrow_forward_ios_rounded,
+              color: AppColors.textMuted,
+              size: 14.r,
             ),
           ],
         ),
