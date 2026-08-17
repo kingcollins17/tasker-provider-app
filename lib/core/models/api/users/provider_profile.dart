@@ -1,4 +1,5 @@
 import 'package:json_annotation/json_annotation.dart';
+import '../services/service.dart';
 
 part 'provider_profile.g.dart';
 
@@ -37,7 +38,7 @@ class ProviderProfile {
   final String? lastHeartbeatAt;
   @JsonKey(name: 'total_tasks_completed')
   final int? totalTasksCompleted;
-  final List<dynamic>? services;
+  final List<Service>? services;
 
   ProviderProfile({
     this.id,

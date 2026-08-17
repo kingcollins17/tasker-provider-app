@@ -61,6 +61,26 @@ abstract class TasksClient {
     @Path("taskId") String taskId,
     @Body() DispatchRespondRequest request,
   );
+
+  @GET("assignments/current")
+  Future<BaseApiResponse<Assignment>> getCurrentAssignment();
+
+  @GET("tasks/{taskId}/assignment")
+  Future<BaseApiResponse<Assignment>> getTaskAssignment(
+    @Path("taskId") String taskId,
+  );
+
+  @POST("tasks/{taskId}/start")
+  Future<BaseApiResponse<dynamic>> startTask(
+    @Path("taskId") String taskId,
+    @Body() StartTaskRequest request,
+  );
+
+  @POST("tasks/{taskId}/complete")
+  Future<BaseApiResponse<dynamic>> completeTask(
+    @Path("taskId") String taskId,
+    @Body() CompleteTaskRequest request,
+  );
 }
 
 /// Provider exposing the [TasksClient] dependency.

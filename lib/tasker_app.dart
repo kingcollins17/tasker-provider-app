@@ -23,7 +23,7 @@ class TaskerApp extends ConsumerWidget {
 
         return MaterialApp.router(
           debugShowCheckedModeBanner: false,
-          title: 'Tasker',
+          title: 'Taska Provider',
           routerConfig: AppRoutes.router,
           locale: DevicePreview.locale(context),
           builder: DevicePreview.appBuilder,

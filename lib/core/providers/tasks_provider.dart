@@ -6,6 +6,7 @@ import '../utils/extensions/error_ext.dart';
 import '../models/models.dart';
 import '../api/tasks_client.dart';
 import 'location_provider.dart';
+import 'user_provider.dart';
 
 import 'package:freezed_annotation/freezed_annotation.dart';
 
@@ -294,3 +295,134 @@ final dispatchPingProvider =
     NotifierProvider.autoDispose<DispatchPingNotifier, AsyncValue<void>>(
       DispatchPingNotifier.new,
     );
+
+/// Notifier for task management operations (start, complete, etc.).
+class TaskManagementNotifier extends Notifier<AsyncValue<void>> {
+  @override
+  AsyncValue<void> build() => const AsyncData(null);
+
+  /// Starts the task [taskId] using the customer's [pin].
+  Future<void> startTask(
+    String taskId, {
+    required String pin,
+    VoidCallback? onSuccess,
+    void Function(String)? onError,
+  }) async {
+    state = const AsyncLoading();
+    try {
+      final client = ref.read(tasksClientProvider);
+      final response = await client.startTask(
+        taskId,
+        StartTaskRequest(pin: pin),
+      );
+
+      if (response.isError) {
+        throw Exception(response.detail ?? 'Failed to start task');
+      }
+
+      ref.invalidate(taskDetailProvider(taskId));
+      ref.invalidate(taskAssignmentProvider(taskId));
+      ref.invalidate(isUserAssignedToTaskProvider(taskId));
+
+      state = const AsyncData(null);
+      onSuccess?.call();
+    } catch (e, st) {
+      state = AsyncError(e, st);
+      AppExceptionHandler.instance.handleError(e, st);
+      onError?.call(e.toFriendlyString());
+    }
+  }
+
+  /// Completes the task [taskId] using the customer's [pin] and [paymentMode].
+  Future<void> completeTask(
+    String taskId, {
+    required String pin,
+    String paymentMode = 'cash',
+    VoidCallback? onSuccess,
+    void Function(String)? onError,
+  }) async {
+    state = const AsyncLoading();
+    try {
+      final client = ref.read(tasksClientProvider);
+      final response = await client.completeTask(
+        taskId,
+        CompleteTaskRequest(pin: pin, paymentMode: paymentMode),
+      );
+
+      if (response.isError) {
+        throw Exception(response.detail ?? 'Failed to complete task');
+      }
+
+      ref.invalidate(taskDetailProvider(taskId));
+      ref.invalidate(taskAssignmentProvider(taskId));
+      ref.invalidate(isUserAssignedToTaskProvider(taskId));
+
+      state = const AsyncData(null);
+      onSuccess?.call();
+    } catch (e, st) {
+      state = AsyncError(e, st);
+      AppExceptionHandler.instance.handleError(e, st);
+      onError?.call(e.toFriendlyString());
+    }
+  }
+}
+
+final taskManagementProvider =
+    NotifierProvider<TaskManagementNotifier, AsyncValue<void>>(
+      TaskManagementNotifier.new,
+    );
+
+/// Future family provider to retrieve the provider's current active assignment.
+final currentAssignmentProvider = FutureProvider.family<Assignment?, String?>((
+  ref,
+  providerId,
+) async {
+  final client = ref.watch(tasksClientProvider);
+  final response = await client.getCurrentAssignment();
+  if (response.data == null) {
+    if (response.isError) {
+      throw Exception(response.detail ?? 'Failed to load current assignment');
+    }
+    return null;
+  }
+  return response.data;
+}, retry: (retryCount, error) => null);
+
+/// Future family provider to retrieve the assignment for a specific task if available.
+final taskAssignmentProvider = FutureProvider.family<Assignment?, String>((
+  ref,
+  taskId,
+) async {
+  final client = ref.watch(tasksClientProvider);
+  final response = await client.getTaskAssignment(taskId);
+  if (response.data == null) {
+    if (response.isError) {
+      throw Exception(response.detail ?? 'Failed to load task assignment');
+    }
+    return null;
+  }
+  return response.data;
+}, retry: (retryCount, error) => null);
+
+/// Provider that checks if the current authenticated user is the assigned provider for the given [taskId].
+final isUserAssignedToTaskProvider = FutureProvider.family<bool, String>((
+  ref,
+  taskId,
+) async {
+  final userAsync = ref.watch(userProvider);
+  final user = userAsync.value;
+  if (user == null) return false;
+
+  final currentProviderId = user.id;
+  if (currentProviderId == null || currentProviderId.isEmpty) return false;
+
+  try {
+    final assignment = await ref.watch(taskAssignmentProvider(taskId).future);
+    if (assignment == null) return false;
+
+    final assignedProviderId = assignment.providerId ?? assignment.provider?.id;
+    return assignedProviderId == currentProviderId;
+  } catch (_) {
+    return false;
+  }
+});

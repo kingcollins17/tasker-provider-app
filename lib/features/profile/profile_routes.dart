@@ -6,6 +6,7 @@ import 'presentation/profile_update_screen.dart';
 import 'presentation/update_availability_screen.dart';
 import 'presentation/update_payout_account_screen.dart';
 import 'presentation/view_payout_account_screen.dart';
+import 'presentation/edit_services_screen.dart';
 
 class ProfileRoutes {
   static const String profileRoute = 'profile';
@@ -14,6 +15,7 @@ class ProfileRoutes {
   static const String viewPayoutAccountRoute = 'view-payout-account';
   static const String updatePayoutAccountRoute = 'update-payout-account';
   static const String updateAvailabilityRoute = 'update-availability';
+  static const String editServicesRoute = 'edit-services';
 
   static final routes = [
     GoRoute(
@@ -71,6 +73,13 @@ class ProfileRoutes {
           path: 'update-availability',
           name: updateAvailabilityRoute,
           builder: (context, state) => const UpdateAvailabilityScreen(),
+        ),
+
+        GoRoute(
+          parentNavigatorKey: NavigatorKeys.rootNavigatorKey,
+          path: 'edit-services',
+          name: editServicesRoute,
+          builder: (context, state) => const EditServicesScreen(),
         ),
       ],
     ),

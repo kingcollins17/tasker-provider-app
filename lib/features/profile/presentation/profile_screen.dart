@@ -1,7 +1,9 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:shimmer/shimmer.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:tasker_app/core/router/navigator_keys.dart';
@@ -15,7 +17,7 @@ import '../../../core/utils/extensions/loading_context_ext.dart';
 import '../../../core/ui/widgets/confirmation_dialog.dart';
 import '../../../core/ui/widgets/debug_view_page.dart';
 import '../../../core/ui/pages/verify_otp_page.dart';
-import '../../../core/models/api/users/users.dart';
+import '../../../core/models/models.dart';
 import '../profile_routes.dart';
 import 'widgets/phone_number_sheet.dart';
 import 'widgets/profile_header.dart';
@@ -24,7 +26,6 @@ import 'widgets/earnings_card.dart';
 import 'widgets/option_tile.dart';
 import 'widgets/kyc_badge.dart';
 import '../../../core/ui/widgets/current_location.dart';
-import 'dart:async';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
@@ -34,25 +35,27 @@ class ProfileScreen extends ConsumerWidget {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final userAsync = ref.watch(userProvider);
-    final kycStatusAsync = ref.watch(kycStatusProvider);
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
         child: RefreshIndicator(
+          color: AppColors.primary,
           onRefresh: () async {
             ref.invalidate(userProvider);
+            ref.invalidate(userServicesProvider);
+            ref.invalidate(kycStatusProvider);
             ref.invalidate(selectedEarningsProvider);
             try {
               await Future.wait([
-                ref.refresh(userProvider.future),
-                ref.refresh(selectedEarningsProvider.future),
+                ref.read(userProvider.future),
+                ref.read(selectedEarningsProvider.future),
               ]);
             } catch (_) {}
           },
           child: SingleChildScrollView(
-            physics: const BouncingScrollPhysics(
-              parent: AlwaysScrollableScrollPhysics(),
+            physics: const AlwaysScrollableScrollPhysics(
+              parent: BouncingScrollPhysics(),
             ),
             child: Padding(
               padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 16.h),
@@ -83,22 +86,20 @@ class ProfileScreen extends ConsumerWidget {
                   _buildProfileSection(userAsync, isDark),
                   SizedBox(height: 20.h),
 
+                  // ── My Services ──────────────────────────────────
+                  const _ServicesSection(),
+                  SizedBox(height: 20.h),
+
                   // ── Stats Dashboard ─────────────────────────────
-                  _SectionLabel(label: 'DASHBOARD'),
+                  const _SectionLabel(label: 'DASHBOARD'),
                   AppSpacing.hSm,
-                  StatsDashboard(user: userAsync.value),
+                  const StatsDashboard(),
                   SizedBox(height: 20.h),
 
                   // ── Account & Preferences ───────────────────────
-                  _SectionLabel(label: 'ACCOUNT & PREFERENCES'),
+                  const _SectionLabel(label: 'ACCOUNT & PREFERENCES'),
                   AppSpacing.hSm,
-                  _buildPreferences(
-                    context,
-                    ref,
-                    isDark,
-                    kycStatusAsync,
-                    userAsync.value,
-                  ),
+                  const _PreferencesSection(),
                   SizedBox(height: 24.h),
                 ],
               ),
@@ -127,18 +128,270 @@ class ProfileScreen extends ConsumerWidget {
       orElse: () => const SizedBox.shrink(),
     );
   }
+}
 
-  // ── Preferences List ────────────────────────────────────────────
+// ── My Services Section ─────────────────────────────────────────────
 
-  Widget _buildPreferences(
-    BuildContext context,
-    WidgetRef ref,
-    bool isDark,
-    AsyncValue<KycStatus> kycStatusAsync,
-    User? user,
-  ) {
+class _ServicesSection extends ConsumerWidget {
+  const _ServicesSection();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final userServicesAsync = ref.watch(userServicesProvider);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // ── Header row: label + count badge + edit icon ──
+        Row(
+          children: [
+            const _SectionLabel(label: 'MY SERVICES'),
+            SizedBox(width: 8.w),
+            // Service count badge
+            userServicesAsync.maybeWhen(
+              data: (services) => services.isNotEmpty
+                  ? Container(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 7.w,
+                        vertical: 2.h,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(10.r),
+                      ),
+                      child: Text(
+                        '${services.length}',
+                        style: AppTextStyles.label.copyWith(
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 11.sp,
+                        ),
+                      ),
+                    )
+                  : const SizedBox.shrink(),
+              orElse: () => const SizedBox.shrink(),
+            ),
+            const Spacer(),
+            Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: () => context.pushNamed(ProfileRoutes.editServicesRoute),
+                borderRadius: BorderRadius.circular(16.r),
+                child: Padding(
+                  padding: EdgeInsets.all(4.r),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.edit_rounded,
+                        size: 14.r,
+                        color: AppColors.primary,
+                      ),
+                      SizedBox(width: 4.w),
+                      Text(
+                        'Edit',
+                        style: AppTextStyles.label.copyWith(
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 12.sp,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+        SizedBox(height: 8.h),
+
+        // ── Service chips / states ──
+        userServicesAsync.when(
+          loading: () {
+            final baseColor = isDark
+                ? theme.colorScheme.surface
+                : Colors.grey[200]!;
+            final highlightColor = isDark
+                ? AppColors.border
+                : Colors.grey[100]!;
+
+            return Shimmer.fromColors(
+              baseColor: baseColor,
+              highlightColor: highlightColor,
+              child: SizedBox(
+                height: 30.h,
+                child: Row(
+                  children: [
+                    Container(
+                      width: 90.w,
+                      height: 30.h,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(14.r),
+                      ),
+                    ),
+                    SizedBox(width: 6.w),
+                    Container(
+                      width: 110.w,
+                      height: 30.h,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(14.r),
+                      ),
+                    ),
+                    SizedBox(width: 6.w),
+                    Container(
+                      width: 80.w,
+                      height: 30.h,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(14.r),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+          error: (err, _) => GestureDetector(
+            onTap: () => ref.invalidate(userServicesProvider),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.error_outline_rounded,
+                  color: AppColors.error,
+                  size: 14.r,
+                ),
+                SizedBox(width: 6.w),
+                Text(
+                  'Failed to load',
+                  style: AppTextStyles.bodySmall.copyWith(
+                    color: AppColors.error,
+                    fontSize: 11.sp,
+                  ),
+                ),
+                SizedBox(width: 4.w),
+                Text(
+                  '· Tap to retry',
+                  style: AppTextStyles.bodySmall.copyWith(
+                    color: AppColors.textMuted,
+                    fontSize: 11.sp,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          data: (services) {
+            if (services.isEmpty) {
+              return GestureDetector(
+                onTap: () => context.pushNamed(ProfileRoutes.editServicesRoute),
+                child: Container(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: 12.w,
+                    vertical: 10.h,
+                  ),
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? theme.colorScheme.surface
+                        : AppColors.warning.withValues(alpha: 0.06),
+                    borderRadius: AppDecorations.radiusMd,
+                    border: Border.all(
+                      color: AppColors.warning.withValues(alpha: 0.3),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.add_circle_outline_rounded,
+                        color: AppColors.warning,
+                        size: 16.r,
+                      ),
+                      SizedBox(width: 8.w),
+                      Text(
+                        'Add services to start receiving tasks',
+                        style: AppTextStyles.bodySmall.copyWith(
+                          color: AppColors.textMuted,
+                          fontSize: 12.sp,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }
+
+            // ── Horizontal scrollable pill chips ──
+            return SizedBox(
+              height: 30.h,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                physics: const BouncingScrollPhysics(),
+                itemCount: services.length,
+                separatorBuilder: (_, _) => SizedBox(width: 6.w),
+                itemBuilder: (context, index) {
+                  final s = services[index];
+                  return Container(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: 10.w,
+                      vertical: 4.h,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(14.r),
+                    ),
+                    child: Center(
+                      child: Text(
+                        s.name ?? 'Service',
+                        style: AppTextStyles.label.copyWith(
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 11.sp,
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            );
+          },
+        ),
+      ],
+    );
+  }
+}
+
+// ── Preferences Section ─────────────────────────────────────────────
+
+class _PreferencesSection extends ConsumerWidget {
+  const _PreferencesSection();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final kycStatusAsync = ref.watch(kycStatusProvider);
+    final userServicesAsync = ref.watch(userServicesProvider);
+    final userAsync = ref.watch(userProvider);
+    final user = userAsync.value;
+
     return Column(
       children: [
+        // My Services Option Tile
+        OptionTile(
+          icon: Icons.miscellaneous_services_rounded,
+          iconColor: AppColors.primary,
+          title: 'My Services',
+          subtitle: userServicesAsync.maybeWhen(
+            data: (services) => services.isEmpty
+                ? 'No services configured'
+                : '${services.length} active service${services.length == 1 ? '' : 's'}',
+            orElse: () => 'Manage the services you offer',
+          ),
+          onTap: () => context.pushNamed(ProfileRoutes.editServicesRoute),
+        ),
+        AppSpacing.hSm,
+
         // Phone Verification — only if not yet verified
         if (user != null &&
             (!(user.phoneVerified ?? false) ||
@@ -213,7 +466,7 @@ class ProfileScreen extends ConsumerWidget {
               subtitle: isDarkMode ? 'Currently on' : 'Currently off',
               trailing: Switch.adaptive(
                 value: isDarkMode,
-                activeThumbColor: AppColors.primary,
+                activeTrackColor: AppColors.primary,
                 onChanged: ref.read(themeProvider.notifier).toggleTheme,
               ),
             );

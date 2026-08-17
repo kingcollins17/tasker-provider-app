@@ -2,12 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:tasker_app/core/models/api/tasks/task.dart';
-import 'package:tasker_app/core/providers/bid_providers.dart';
+import 'package:tasker_app/core/providers/tasks_provider.dart';
+import 'package:tasker_app/core/router/navigator_keys.dart';
 import 'package:tasker_app/core/ui/designs/colors.dart';
 import 'package:tasker_app/core/ui/designs/text_styles.dart';
-import 'package:tasker_app/core/ui/widgets/confirmation_dialog.dart';
+import 'package:tasker_app/core/utils/debug_logger.dart';
+import 'package:tasker_app/core/utils/extensions/flushbar_context_ext.dart';
+import 'package:tasker_app/core/utils/extensions/loading_context_ext.dart';
+import 'pin_display_sheet.dart';
+import 'pin_entry_sheet.dart';
 
-enum TaskOptionAction { bid, chat, cancelBid, report }
+enum TaskOptionAction { startTask, completeTask, getPin, call, report }
 
 class TaskDetailsOptionSheet extends ConsumerWidget {
   final Task task;
@@ -30,27 +35,14 @@ class TaskDetailsOptionSheet extends ConsumerWidget {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
-    final myBidAsync = ref.watch(myBidProvider(task.id ?? ''));
-    final myBid = myBidAsync.value;
+    final taskId = task.id ?? '';
+    final isAssignedAsync = ref.watch(isUserAssignedToTaskProvider(taskId));
+    final isAssigned = isAssignedAsync.value ?? false;
 
-    final canBid = switch (task.status?.toLowerCase()) {
-      'open' || 'bidding' => true,
-      _ => false,
-    };
+    final assignmentAsync = ref.watch(taskAssignmentProvider(taskId));
+    final assignment = assignmentAsync.value;
 
-    final isBidPending = switch (myBid?.status?.toLowerCase()) {
-      'pending' => true,
-      _ => false,
-    };
-
-    final showBidButton =
-        canBid &&
-        switch (myBid?.status?.toLowerCase()) {
-          'cancelled' || 'rejected' || 'withdrawn' => false,
-          _ => true,
-        };
-
-    final showCancelButton = isBidPending;
+    final isInProgress = task.status?.toLowerCase() == 'in_progress';
 
     return Container(
       decoration: BoxDecoration(
@@ -77,40 +69,174 @@ class TaskDetailsOptionSheet extends ConsumerWidget {
             ),
           ),
           SizedBox(height: 24.h),
-          if (showBidButton)
+
+          // If current user is assigned provider
+          if (isAssigned) ...[
+            if (isInProgress)
+              _OptionTile(
+                icon: Icons.check_circle_outline_rounded,
+                title: 'Complete Task',
+                onTap: () async {
+                  try {
+                    Navigator.of(context).pop(TaskOptionAction.completeTask);
+                    final rootContext =
+                        NavigatorKeys.rootNavigatorKey.currentContext;
+                    if (rootContext == null) return;
+
+                    await PinEntryAndPaymentModeSheet.show(
+                      rootContext,
+                      title: 'Enter Completion PIN',
+                      subtitle:
+                          'Please enter the 4-digit PIN provided by the customer and select the payment mode.',
+                      confirmButtonText: 'Complete Task',
+                      icon: Icons.check_circle_rounded,
+                      showPaymentMode: true,
+                      onConfirm: (ref, pin, isCash) async {
+                        final paymentMode = isCash ? 'cash' : 'online';
+                        final activeContext =
+                            NavigatorKeys.rootNavigatorKey.currentContext;
+                        if (activeContext != null) activeContext.showLoading();
+
+                        bool success = false;
+                        String? error;
+                        try {
+                          await ref
+                              .read(taskManagementProvider.notifier)
+                              .completeTask(
+                                taskId,
+                                pin: pin,
+                                paymentMode: paymentMode,
+                                onSuccess: () {
+                                  success = true;
+                                },
+                                onError: (errorMsg) {
+                                  success = false;
+                                  error = errorMsg;
+                                },
+                              );
+                        } catch (e) {
+                          error = e.toString();
+                        } finally {
+                          final ctx =
+                              NavigatorKeys.rootNavigatorKey.currentContext;
+                          ctx?.hideLoading();
+                        }
+
+                        if (!success && error != null) {
+                          final ctx =
+                              NavigatorKeys.rootNavigatorKey.currentContext;
+                          ctx?.showError(error ?? 'Something went wrong');
+                        } else if (success) {
+                          WidgetsBinding.instance.addPostFrameCallback((_) {
+                            final ctx =
+                                NavigatorKeys.rootNavigatorKey.currentContext;
+                            ctx?.showMessage('Task completed successfully!');
+                          });
+                        }
+
+                        return success;
+                      },
+                    );
+                  } catch (e, st) {
+                    debugLog('Error in completeTask handler: $e\n$st');
+                  }
+                },
+                isDark: isDark,
+              )
+            else
+              _OptionTile(
+                icon: Icons.play_circle_outline_rounded,
+                title: 'Start Task',
+                onTap: () async {
+                  try {
+                    Navigator.of(context).pop(TaskOptionAction.startTask);
+                    final rootContext =
+                        NavigatorKeys.rootNavigatorKey.currentContext;
+                    if (rootContext == null) return;
+
+                    await PinEntryAndPaymentModeSheet.show(
+                      rootContext,
+                      title: 'Enter Start PIN',
+                      subtitle:
+                          'Please enter the 4-digit PIN provided by the customer to start this task.',
+                      confirmButtonText: 'Start Task',
+                      icon: Icons.play_circle_fill_rounded,
+                      showPaymentMode: false,
+                      onConfirm: (ref, pin, isCash) async {
+                        final activeContext =
+                            NavigatorKeys.rootNavigatorKey.currentContext;
+                        if (activeContext != null) activeContext.showLoading();
+
+                        bool success = false;
+                        String? error;
+                        try {
+                          await ref
+                              .read(taskManagementProvider.notifier)
+                              .startTask(
+                                taskId,
+                                pin: pin,
+                                onSuccess: () {
+                                  success = true;
+                                },
+                                onError: (errorMsg) {
+                                  success = false;
+                                  error = errorMsg;
+                                },
+                              );
+                        } catch (e) {
+                          error = e.toString();
+                        } finally {
+                          final ctx =
+                              NavigatorKeys.rootNavigatorKey.currentContext;
+                          ctx?.hideLoading();
+                        }
+
+                        if (!success && error != null) {
+                          final ctx =
+                              NavigatorKeys.rootNavigatorKey.currentContext;
+                          ctx?.showError(error ?? 'Something went wrong');
+                        } else if (success) {
+                          WidgetsBinding.instance.addPostFrameCallback((_) {
+                            final ctx =
+                                NavigatorKeys.rootNavigatorKey.currentContext;
+                            ctx?.showMessage('Task started successfully!');
+                          });
+                        }
+
+                        return success;
+                      },
+                    );
+                  } catch (e, st) {
+                    debugLog('Error in startTask handler: $e\n$st');
+                  }
+                },
+                isDark: isDark,
+              ),
+          ],
+
+          // If taskAssignmentProvider has value
+          if (assignment != null)
             _OptionTile(
-              icon: Icons.gavel_rounded,
-              title: isBidPending ? 'Update Bid' : 'Send a Bid',
-              onTap: () => Navigator.of(context).pop(TaskOptionAction.bid),
-              isDark: isDark,
-            ),
-          _OptionTile(
-            icon: Icons.chat_bubble_outline_rounded,
-            title: 'Chat with Customer',
-            onTap: () => Navigator.of(context).pop(TaskOptionAction.chat),
-            isDark: isDark,
-          ),
-          if (showCancelButton)
-            _OptionTile(
-              icon: Icons.cancel_outlined,
-              title: 'Cancel Bid',
-              onTap: () async {
-                final confirm = await ConfirmationDialog.show(
-                  context,
-                  title: 'Cancel Bid',
-                  message:
-                      'Are you sure you want to cancel your bid? This action cannot be undone.',
-                  confirmText: 'Cancel Bid',
-                  cancelText: 'Keep Bid',
-                  isDestructive: true,
-                  icon: Icons.warning_amber_rounded,
-                );
-                if (confirm && context.mounted) {
-                  Navigator.of(context).pop(TaskOptionAction.cancelBid);
+              icon: Icons.pin_outlined,
+              title: 'Get Identity PIN',
+              onTap: () {
+                Navigator.of(context).pop(TaskOptionAction.getPin);
+                final rootContext =
+                    NavigatorKeys.rootNavigatorKey.currentContext;
+                if (rootContext != null) {
+                  PinDisplaySheet.show(rootContext, pin: assignment.pin);
                 }
               },
               isDark: isDark,
-              isDestructive: true,
+            ),
+
+          // If current user is assigned provider, show Call option
+          if (isAssigned)
+            _OptionTile(
+              icon: Icons.phone_outlined,
+              title: 'Call Customer',
+              onTap: () => Navigator.of(context).pop(TaskOptionAction.call),
+              isDark: isDark,
             ),
           _OptionTile(
             icon: Icons.report_problem_outlined,

@@ -6,17 +6,23 @@
 gen:
 	flutter pub run build_runner build --delete-conflicting-outputs
 
+icon:
+	dart run flutter_launcher_icons
+
+splash:
+	dart run flutter_native_splash:create
+
 ## Build debug APK
 apk-debug:
 	flutter build apk --debug
 
 ## Build release APK
 apk:
-	flutter build apk --release
+	flutter build apk --release -v
 
 ## Build release App Bundle (AAB)
 appbundle:
-	flutter build appbundle --release
+	flutter build appbundle --release -v
 
 ## Install debug APK on connected device
 install-debug:
