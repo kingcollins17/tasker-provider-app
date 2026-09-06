@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:intl/intl.dart';
 
+import '../../../../features/tasks/presentation/widgets/offer_ping_bottom_sheet.dart';
 import '../../../../core/models/api/notifications/notification_item.dart';
 import '../../../../core/ui/designs/designs.dart';
 
@@ -71,6 +72,21 @@ class NotificationDetailBottomSheet extends StatelessWidget {
     final isDark = theme.brightness == Brightness.dark;
     final iconData = _getIcon(item.title);
     final iconColor = _getIconColor(item.title);
+
+    final action = item.notificationAction;
+    final isPing = action?.type == NotificationActionType.ping;
+    final taskId = item.data?['task_id']?.toString();
+
+    DateTime? expiresAt;
+    final expiresAtRaw = item.data?['expires_at'];
+    if (expiresAtRaw is String) {
+      expiresAt = DateTime.tryParse(expiresAtRaw);
+    } else if (expiresAtRaw is DateTime) {
+      expiresAt = expiresAtRaw;
+    }
+
+    final isExpired = expiresAt != null && expiresAt.isBefore(DateTime.now());
+    final canOpenOffer = isPing && taskId != null && !isExpired;
 
     return Container(
       decoration: BoxDecoration(
@@ -186,11 +202,16 @@ class NotificationDetailBottomSheet extends StatelessWidget {
 
               SizedBox(height: 24.h),
 
-              // Close / Done button
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: () => Navigator.of(context).pop(),
+                  onPressed: () {
+                    if (canOpenOffer) {
+                      OfferPingBottomSheet.show(taskId, expiresAt: expiresAt);
+                    } else {
+                      Navigator.of(context).pop();
+                    }
+                  },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
                     foregroundColor: Colors.white,
@@ -200,43 +221,17 @@ class NotificationDetailBottomSheet extends StatelessWidget {
                     ),
                   ),
                   child: Text(
-                    'Close',
+                    canOpenOffer ? 'Open Offer' : 'Close',
                     style: AppTextStyles.buttonMedium.copyWith(
                       color: Colors.white,
                     ),
                   ),
                 ),
               ),
+
               SizedBox(height: 8.h),
             ],
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _MetaChip extends StatelessWidget {
-  final String label;
-  final Color color;
-
-  const _MetaChip({required this.label, required this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(12.r),
-        border: Border.all(color: color.withValues(alpha: 0.3)),
-      ),
-      child: Text(
-        label,
-        style: AppTextStyles.label.copyWith(
-          color: color,
-          fontWeight: FontWeight.w600,
-          fontSize: 11.sp,
         ),
       ),
     );

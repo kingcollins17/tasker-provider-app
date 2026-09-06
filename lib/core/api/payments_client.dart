@@ -24,6 +24,9 @@ abstract class PaymentsClient {
     @Query("sort_desc") bool? sortDesc,
     @Query("status") String? status,
   });
+
+  @GET("payments/debts/summary")
+  Future<BaseApiResponse<Debt>> getDebtSummary();
 }
 
 /// Provider exposing the [PaymentsClient] dependency.

@@ -1810,19 +1810,14 @@ class _StatusInfo {
 
 class _StatusHelper {
   static _StatusInfo resolve(String? status) {
-    switch (status?.toLowerCase()) {
-      case 'open':
+    switch (status?.toLowerCase().trim()) {
+      case 'open' || 'searching':
         return const _StatusInfo(
           label: 'Accepting Offers',
           color: Color(0xFF10B981),
           icon: Icons.radio_button_checked_rounded,
         );
-      case 'bidding':
-        return const _StatusInfo(
-          label: 'Accepting Offers',
-          color: Color(0xFF3B82F6),
-          icon: Icons.gavel_rounded,
-        );
+     
       case 'assigned':
         return const _StatusInfo(
           label: 'Assigned',

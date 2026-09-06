@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -49,7 +50,7 @@ class _DebugViewPageState extends State<DebugViewPage> {
   }
 
   List<DebugData> _filterLogs(List<DebugData> allLogs) {
-    return allLogs.where((log) {
+    final filtered = allLogs.where((log) {
       // Level filter
       if (_selectedFilter == _FilterLevel.info &&
           log.level != DebugLevel.info) {
@@ -74,6 +75,9 @@ class _DebugViewPageState extends State<DebugViewPage> {
 
       return true;
     }).toList();
+
+    filtered.sort((a, b) => b.timestamp.compareTo(a.timestamp));
+    return filtered;
   }
 
   @override
@@ -226,8 +230,7 @@ class _DebugViewPageState extends State<DebugViewPage> {
                   ),
                   itemCount: filteredLogs.length,
                   itemBuilder: (context, index) {
-                    // Display newest logs first or chronological order (newest first is great for debugging)
-                    final log = filteredLogs[filteredLogs.length - 1 - index];
+                    final log = filteredLogs[index];
                     return _LogCard(log: log, isDark: isDark);
                   },
                 );
@@ -340,28 +343,260 @@ class _LogCard extends StatelessWidget {
           ),
           SizedBox(height: 8.h),
 
-          // Code Content Block
+          // Code Content / Interactive JSON Viewer Block
+          _buildContent(context),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildContent(BuildContext context) {
+    dynamic jsonObject;
+    final trimmed = log.data.trim();
+    if ((trimmed.startsWith('{') && trimmed.endsWith('}')) ||
+        (trimmed.startsWith('[') && trimmed.endsWith(']'))) {
+      try {
+        jsonObject = jsonDecode(trimmed);
+      } catch (_) {
+        jsonObject = null;
+      }
+    }
+
+    if (jsonObject != null && (jsonObject is Map || jsonObject is List)) {
+      return _JsonViewer(
+        data: jsonObject,
+        rawJson: log.data,
+        isDark: isDark,
+      );
+    }
+
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(10.r),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(8.r),
+        border: Border.all(
+          color: isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0),
+        ),
+      ),
+      child: SelectableText(
+        log.data,
+        style: TextStyle(
+          fontFamily: 'monospace',
+          fontSize: 11.sp,
+          color: isDark ? const Color(0xFFE2E8F0) : const Color(0xFF1E293B),
+          height: 1.4,
+        ),
+      ),
+    );
+  }
+}
+
+class _JsonTheme {
+  final bool isDark;
+
+  const _JsonTheme(this.isDark);
+
+  Color get keyColor => isDark ? const Color(0xFF9CDCFE) : const Color(0xFF0451A5);
+  Color get stringColor => isDark ? const Color(0xFFCE9178) : const Color(0xFFA31515);
+  Color get numberColor => isDark ? const Color(0xFFB5CEA8) : const Color(0xFF098658);
+  Color get boolColor => isDark ? const Color(0xFF569CD6) : const Color(0xFF0000FF);
+  Color get nullColor => isDark ? const Color(0xFF808080) : const Color(0xFF757575);
+  Color get punctuationColor => isDark ? const Color(0xFFD4D4D4) : const Color(0xFF333333);
+  Color get arrowColor => isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+  Color get indentLineColor =>
+      isDark ? const Color(0xFF334155).withValues(alpha: 0.6) : const Color(0xFFCBD5E1);
+  Color get previewColor => isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8);
+}
+
+class _JsonViewer extends StatefulWidget {
+  final dynamic data;
+  final String rawJson;
+  final bool isDark;
+
+  const _JsonViewer({
+    required this.data,
+    required this.rawJson,
+    required this.isDark,
+  });
+
+  @override
+  State<_JsonViewer> createState() => _JsonViewerState();
+}
+
+class _JsonViewerState extends State<_JsonViewer> {
+  late final ValueNotifier<bool?> _expandNotifier;
+
+  @override
+  void initState() {
+    super.initState();
+    _expandNotifier = ValueNotifier<bool?>(null);
+  }
+
+  @override
+  void dispose() {
+    _expandNotifier.dispose();
+    super.dispose();
+  }
+
+  void _expandAll() {
+    _expandNotifier.value = true;
+  }
+
+  void _collapseAll() {
+    _expandNotifier.value = false;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = _JsonTheme(widget.isDark);
+
+    return Container(
+      decoration: BoxDecoration(
+        color: widget.isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(8.r),
+        border: Border.all(
+          color: widget.isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header Bar
           Container(
-            width: double.infinity,
-            padding: EdgeInsets.all(10.r),
+            padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
             decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
-              borderRadius: BorderRadius.circular(8.r),
-              border: Border.all(
-                color: isDark
-                    ? const Color(0xFF1E293B)
-                    : const Color(0xFFE2E8F0),
+              color: widget.isDark
+                  ? const Color(0xFF1E293B).withValues(alpha: 0.5)
+                  : const Color(0xFFF1F5F9),
+              borderRadius: BorderRadius.only(
+                topLeft: Radius.circular(7.r),
+                topRight: Radius.circular(7.r),
+              ),
+              border: Border(
+                bottom: BorderSide(
+                  color: widget.isDark
+                      ? const Color(0xFF334155)
+                      : const Color(0xFFE2E8F0),
+                ),
               ),
             ),
-            child: SelectableText(
-              log.data,
-              style: TextStyle(
-                fontFamily: 'monospace',
-                fontSize: 11.sp,
-                color: isDark
-                    ? const Color(0xFFE2E8F0)
-                    : const Color(0xFF1E293B),
-                height: 1.4,
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              physics: const BouncingScrollPhysics(),
+              child: Row(
+                children: [
+                  Container(
+                    padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 2.h),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(4.r),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.data_object_rounded,
+                          size: 12.r,
+                          color: AppColors.primary,
+                        ),
+                        SizedBox(width: 4.w),
+                        Text(
+                          'JSON',
+                          style: AppTextStyles.labelUppercase.copyWith(
+                            fontSize: 9.sp,
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  SizedBox(width: 8.w),
+                  Text(
+                    widget.data is Map
+                        ? '{ ${(widget.data as Map).length} keys }'
+                        : '[ ${(widget.data as List).length} items ]',
+                    style: AppTextStyles.bodySmall.copyWith(
+                      fontSize: 10.sp,
+                      fontFamily: 'monospace',
+                      color: widget.isDark
+                          ? AppColors.textMuted
+                          : const Color(0xFF64748B),
+                    ),
+                  ),
+                  SizedBox(width: 16.w),
+                  InkWell(
+                    onTap: _expandAll,
+                    borderRadius: BorderRadius.circular(4.r),
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 2.h),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.unfold_more_rounded,
+                            size: 14.r,
+                            color: theme.arrowColor,
+                          ),
+                          SizedBox(width: 2.w),
+                          Text(
+                            'Expand All',
+                            style: TextStyle(
+                              fontSize: 10.sp,
+                              color: theme.arrowColor,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  SizedBox(width: 4.w),
+                  InkWell(
+                    onTap: _collapseAll,
+                    borderRadius: BorderRadius.circular(4.r),
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 2.h),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.unfold_less_rounded,
+                            size: 14.r,
+                            color: theme.arrowColor,
+                          ),
+                          SizedBox(width: 2.w),
+                          Text(
+                            'Collapse All',
+                            style: TextStyle(
+                              fontSize: 10.sp,
+                              color: theme.arrowColor,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          // JSON Interactive Tree
+          Padding(
+            padding: EdgeInsets.all(10.r),
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: _JsonNodeWidget(
+                keyName: null,
+                value: widget.data,
+                jsonTheme: theme,
+                depth: 0,
+                isLast: true,
+                expandNotifier: _expandNotifier,
               ),
             ),
           ),
@@ -370,3 +605,412 @@ class _LogCard extends StatelessWidget {
     );
   }
 }
+
+class _JsonNodeWidget extends StatefulWidget {
+  final String? keyName;
+  final dynamic value;
+  final _JsonTheme jsonTheme;
+  final int depth;
+  final bool isLast;
+  final ValueNotifier<bool?> expandNotifier;
+
+  const _JsonNodeWidget({
+    super.key,
+    required this.keyName,
+    required this.value,
+    required this.jsonTheme,
+    required this.depth,
+    required this.isLast,
+    required this.expandNotifier,
+  });
+
+  @override
+  State<_JsonNodeWidget> createState() => _JsonNodeWidgetState();
+}
+
+class _JsonNodeWidgetState extends State<_JsonNodeWidget> {
+  late bool _isExpanded;
+
+  @override
+  void initState() {
+    super.initState();
+    // Expand root & top levels by default
+    _isExpanded = widget.depth < 2;
+    widget.expandNotifier.addListener(_onExpandNotifierChanged);
+  }
+
+  @override
+  void didUpdateWidget(covariant _JsonNodeWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.expandNotifier != widget.expandNotifier) {
+      oldWidget.expandNotifier.removeListener(_onExpandNotifierChanged);
+      widget.expandNotifier.addListener(_onExpandNotifierChanged);
+    }
+  }
+
+  @override
+  void dispose() {
+    widget.expandNotifier.removeListener(_onExpandNotifierChanged);
+    super.dispose();
+  }
+
+  void _onExpandNotifierChanged() {
+    final notifierValue = widget.expandNotifier.value;
+    if (notifierValue != null && mounted) {
+      setState(() {
+        _isExpanded = notifierValue;
+      });
+    }
+  }
+
+  void _toggleExpand() {
+    setState(() {
+      _isExpanded = !_isExpanded;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final value = widget.value;
+    final comma = widget.isLast ? '' : ',';
+    final theme = widget.jsonTheme;
+
+    if (value is Map) {
+      return _buildObjectNode(value, comma, theme);
+    } else if (value is List) {
+      return _buildArrayNode(value, comma, theme);
+    } else {
+      return _buildPrimitiveNode(value, comma, theme);
+    }
+  }
+
+  Widget _buildKeyPrefix(_JsonTheme theme) {
+    if (widget.keyName == null) return const SizedBox.shrink();
+    return Text.rich(
+      TextSpan(
+        children: [
+          TextSpan(
+            text: '"${widget.keyName}"',
+            style: TextStyle(
+              color: theme.keyColor,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          TextSpan(
+            text: ': ',
+            style: TextStyle(color: theme.punctuationColor),
+          ),
+        ],
+      ),
+      style: TextStyle(
+        fontFamily: 'monospace',
+        fontSize: 11.sp,
+        height: 1.4,
+      ),
+    );
+  }
+
+  Widget _buildObjectNode(Map mapValue, String comma, _JsonTheme theme) {
+    if (mapValue.isEmpty) {
+      return Padding(
+        padding: EdgeInsets.symmetric(vertical: 1.h),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(width: 16.w),
+            _buildKeyPrefix(theme),
+            Text(
+              '{}$comma',
+              style: TextStyle(
+                fontFamily: 'monospace',
+                fontSize: 11.sp,
+                color: theme.punctuationColor,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    final entries = mapValue.entries.toList();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        GestureDetector(
+          onTap: _toggleExpand,
+          behavior: HitTestBehavior.opaque,
+          child: Padding(
+            padding: EdgeInsets.symmetric(vertical: 1.h),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  _isExpanded
+                      ? Icons.arrow_drop_down_rounded
+                      : Icons.arrow_right_rounded,
+                  size: 16.r,
+                  color: theme.arrowColor,
+                ),
+                _buildKeyPrefix(theme),
+                Text(
+                  '{',
+                  style: TextStyle(
+                    fontFamily: 'monospace',
+                    fontSize: 11.sp,
+                    color: theme.punctuationColor,
+                  ),
+                ),
+                if (!_isExpanded) ...[
+                  SizedBox(width: 4.w),
+                  Text(
+                    _buildInlineMapPreview(mapValue),
+                    style: TextStyle(
+                      fontFamily: 'monospace',
+                      fontSize: 10.sp,
+                      color: theme.previewColor,
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                  SizedBox(width: 4.w),
+                  Text(
+                    '}$comma',
+                    style: TextStyle(
+                      fontFamily: 'monospace',
+                      fontSize: 11.sp,
+                      color: theme.punctuationColor,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+        if (_isExpanded) ...[
+          Container(
+            margin: EdgeInsets.only(left: 7.w),
+            padding: EdgeInsets.only(left: 9.w),
+            decoration: BoxDecoration(
+              border: Border(
+                left: BorderSide(
+                  color: theme.indentLineColor,
+                  width: 1.5,
+                ),
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: List.generate(entries.length, (index) {
+                final entry = entries[index];
+                return _JsonNodeWidget(
+                  key: ValueKey('${widget.keyName}_${entry.key}_$index'),
+                  keyName: entry.key.toString(),
+                  value: entry.value,
+                  jsonTheme: theme,
+                  depth: widget.depth + 1,
+                  isLast: index == entries.length - 1,
+                  expandNotifier: widget.expandNotifier,
+                );
+              }),
+            ),
+          ),
+          Padding(
+            padding: EdgeInsets.only(left: 16.w, top: 1.h, bottom: 1.h),
+            child: Text(
+              '}$comma',
+              style: TextStyle(
+                fontFamily: 'monospace',
+                fontSize: 11.sp,
+                color: theme.punctuationColor,
+              ),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildArrayNode(List listValue, String comma, _JsonTheme theme) {
+    if (listValue.isEmpty) {
+      return Padding(
+        padding: EdgeInsets.symmetric(vertical: 1.h),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(width: 16.w),
+            _buildKeyPrefix(theme),
+            Text(
+              '[]$comma',
+              style: TextStyle(
+                fontFamily: 'monospace',
+                fontSize: 11.sp,
+                color: theme.punctuationColor,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        GestureDetector(
+          onTap: _toggleExpand,
+          behavior: HitTestBehavior.opaque,
+          child: Padding(
+            padding: EdgeInsets.symmetric(vertical: 1.h),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  _isExpanded
+                      ? Icons.arrow_drop_down_rounded
+                      : Icons.arrow_right_rounded,
+                  size: 16.r,
+                  color: theme.arrowColor,
+                ),
+                _buildKeyPrefix(theme),
+                Text(
+                  '[',
+                  style: TextStyle(
+                    fontFamily: 'monospace',
+                    fontSize: 11.sp,
+                    color: theme.punctuationColor,
+                  ),
+                ),
+                if (!_isExpanded) ...[
+                  SizedBox(width: 4.w),
+                  Text(
+                    '${listValue.length} ${listValue.length == 1 ? 'item' : 'items'}',
+                    style: TextStyle(
+                      fontFamily: 'monospace',
+                      fontSize: 10.sp,
+                      color: theme.previewColor,
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                  SizedBox(width: 4.w),
+                  Text(
+                    ']$comma',
+                    style: TextStyle(
+                      fontFamily: 'monospace',
+                      fontSize: 11.sp,
+                      color: theme.punctuationColor,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+        if (_isExpanded) ...[
+          Container(
+            margin: EdgeInsets.only(left: 7.w),
+            padding: EdgeInsets.only(left: 9.w),
+            decoration: BoxDecoration(
+              border: Border(
+                left: BorderSide(
+                  color: theme.indentLineColor,
+                  width: 1.5,
+                ),
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: List.generate(listValue.length, (index) {
+                return _JsonNodeWidget(
+                  key: ValueKey('${widget.keyName}_$index'),
+                  keyName: null,
+                  value: listValue[index],
+                  jsonTheme: theme,
+                  depth: widget.depth + 1,
+                  isLast: index == listValue.length - 1,
+                  expandNotifier: widget.expandNotifier,
+                );
+              }),
+            ),
+          ),
+          Padding(
+            padding: EdgeInsets.only(left: 16.w, top: 1.h, bottom: 1.h),
+            child: Text(
+              ']$comma',
+              style: TextStyle(
+                fontFamily: 'monospace',
+                fontSize: 11.sp,
+                color: theme.punctuationColor,
+              ),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildPrimitiveNode(dynamic val, String comma, _JsonTheme theme) {
+    Color valColor;
+    String displayStr;
+    FontWeight fontWeight = FontWeight.normal;
+    FontStyle fontStyle = FontStyle.normal;
+
+    if (val == null) {
+      valColor = theme.nullColor;
+      displayStr = 'null';
+      fontStyle = FontStyle.italic;
+    } else if (val is bool) {
+      valColor = theme.boolColor;
+      displayStr = val.toString();
+      fontWeight = FontWeight.w600;
+    } else if (val is num) {
+      valColor = theme.numberColor;
+      displayStr = val.toString();
+    } else if (val is String) {
+      valColor = theme.stringColor;
+      final escaped = val
+          .replaceAll('\\', '\\\\')
+          .replaceAll('"', '\\"')
+          .replaceAll('\n', '\\n')
+          .replaceAll('\r', '\\r')
+          .replaceAll('\t', '\\t');
+      displayStr = '"$escaped"';
+    } else {
+      valColor = theme.punctuationColor;
+      displayStr = val.toString();
+    }
+
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: 1.h),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SizedBox(width: 16.w),
+          _buildKeyPrefix(theme),
+          Text(
+            '$displayStr$comma',
+            style: TextStyle(
+              fontFamily: 'monospace',
+              fontSize: 11.sp,
+              color: valColor,
+              fontWeight: fontWeight,
+              fontStyle: fontStyle,
+              height: 1.4,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _buildInlineMapPreview(Map map) {
+    if (map.isEmpty) return '';
+    final keys = map.keys.take(3).join(', ');
+    final more = map.length > 3 ? '...' : '';
+    final keysStr = more.isNotEmpty ? '$keys, $more' : keys;
+    return '{ $keysStr } (${map.length} ${map.length == 1 ? 'key' : 'keys'})';
+  }
+}
+

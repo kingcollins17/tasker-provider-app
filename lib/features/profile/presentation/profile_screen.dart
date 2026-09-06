@@ -35,6 +35,7 @@ class ProfileScreen extends ConsumerWidget {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final userAsync = ref.watch(userProvider);
+     ref.watch(currentDispatchListenerProvider);
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
@@ -576,7 +577,7 @@ class _PreferencesSection extends ConsumerWidget {
         AppSpacing.hSm,
 
         // Debug Logs Console (Debug Mode Only)
-        if (kDebugMode) ...[
+        // if (kDebugMode) ...[
           OptionTile(
             icon: Icons.bug_report_outlined,
             iconColor: AppColors.warning,
@@ -585,7 +586,7 @@ class _PreferencesSection extends ConsumerWidget {
             onTap: () => DebugViewPage.show(),
           ),
           AppSpacing.hSm,
-        ],
+        // ],
         SizedBox(height: 16.h),
 
         // Logout — separated with extra space for visual distinction

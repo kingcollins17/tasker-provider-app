@@ -10,6 +10,7 @@ class Assignment {
   final String? acceptedDispatchAttemptId;
   final double? acceptedPrice;
   final String? pin;
+  final String? cancellationPin;
   final DateTime? assignedAt;
   final DateTime? startedAt;
   final DateTime? completedAt;
@@ -26,6 +27,7 @@ class Assignment {
     this.assignedAt,
     this.startedAt,
     this.pin,
+    this.cancellationPin,
     this.completedAt,
     this.status,
     this.task,

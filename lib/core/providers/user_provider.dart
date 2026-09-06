@@ -31,6 +31,7 @@ class UserNotifier extends AsyncNotifier<User> {
     }
 
     debugLog('[UserNotifier] User profile loaded successfully');
+    debugLog(response.data);
     return response.data!;
   }
 

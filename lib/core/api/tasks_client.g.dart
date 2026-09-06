@@ -284,6 +284,54 @@ class _TasksClient implements TasksClient {
   }
 
   @override
+  Future<BaseApiResponse<PaginatedData<Assignment>>> getAssignments({
+    int page = 1,
+    int perPage = 20,
+    String? status,
+    String? taskId,
+    String? sortBy = "assigned_at",
+    bool sortDesc = true,
+  }) async {
+    final _extra = <String, dynamic>{};
+    final queryParameters = <String, dynamic>{
+      r'page': page,
+      r'per_page': perPage,
+      r'status': status,
+      r'task_id': taskId,
+      r'sort_by': sortBy,
+      r'sort_desc': sortDesc,
+    };
+    queryParameters.removeWhere((k, v) => v == null);
+    final _headers = <String, dynamic>{};
+    const Map<String, dynamic>? _data = null;
+    final _options = _setStreamType<BaseApiResponse<PaginatedData<Assignment>>>(
+      Options(method: 'GET', headers: _headers, extra: _extra)
+          .compose(
+            _dio.options,
+            'assignments',
+            queryParameters: queryParameters,
+            data: _data,
+          )
+          .copyWith(baseUrl: _combineBaseUrls(_dio.options.baseUrl, baseUrl)),
+    );
+    final _result = await _dio.fetch<Map<String, dynamic>>(_options);
+    late BaseApiResponse<PaginatedData<Assignment>> _value;
+    try {
+      _value = BaseApiResponse<PaginatedData<Assignment>>.fromJson(
+        _result.data!,
+        (json) => PaginatedData<Assignment>.fromJson(
+          json as Map<String, dynamic>,
+          (json) => Assignment.fromJson(json as Map<String, dynamic>),
+        ),
+      );
+    } on Object catch (e, s) {
+      errorLogger?.logError(e, s, _options, _result);
+      rethrow;
+    }
+    return _value;
+  }
+
+  @override
   Future<BaseApiResponse<Assignment>> getCurrentAssignment() async {
     final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{};

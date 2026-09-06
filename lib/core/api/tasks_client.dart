@@ -62,6 +62,16 @@ abstract class TasksClient {
     @Body() DispatchRespondRequest request,
   );
 
+  @GET("assignments")
+  Future<BaseApiResponse<PaginatedData<Assignment>>> getAssignments({
+    @Query("page") int page = 1,
+    @Query("per_page") int perPage = 20,
+    @Query("status") String? status,
+    @Query("task_id") String? taskId,
+    @Query("sort_by") String? sortBy = "assigned_at",
+    @Query("sort_desc") bool sortDesc = true,
+  });
+
   @GET("assignments/current")
   Future<BaseApiResponse<Assignment>> getCurrentAssignment();
 

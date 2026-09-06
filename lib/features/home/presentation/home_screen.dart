@@ -4,6 +4,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:shimmer/shimmer.dart';
 
 import 'package:tasker_app/core/providers/providers.dart';
+import 'package:tasker_app/core/utils/debug_logger.dart';
 import 'package:tasker_app/core/utils/extensions/loading_context_ext.dart';
 
 import '../../../core/ui/designs/colors.dart';
@@ -34,7 +35,7 @@ class HomeScreen extends ConsumerWidget {
     ref.watch(syncUserLocationProvider);
     ref.watch(userAddressProvider);
     ref.watch(syncCloudMessagingTokenProvider);
-
+    // debugLog(user.value?.toJson());
     final firstName = user.value?.providerProfile?.firstName ?? '';
 
     return Scaffold(

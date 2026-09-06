@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:tasker_app/core/utils/debug_logger.dart';
 import 'package:tasker_app/features/tasks/presentation/widgets/offer_ping_bottom_sheet.dart';
 import '../utils/app_exception_handler.dart';
 import '../utils/extensions/error_ext.dart';
@@ -451,14 +452,16 @@ final currentDispatchProvider = FutureProvider.autoDispose<Dispatch?>((
 }, retry: (retryCount, error) => null);
 
 /// Provider that watches currentDispatchProvider and shows the OfferPingBottomSheet if the dispatch is PENDING and has not expired.
-final currentDispatchListenerProvider = Provider<void>((ref) {
+final currentDispatchListenerProvider = Provider.autoDispose<void>((ref) {
   ref.listen<AsyncValue<Dispatch?>>(currentDispatchProvider, (previous, next) {
     if (next.hasValue && next.value != null) {
       final dispatch = next.value!;
-      if (dispatch.status == 'PENDING' &&
-          dispatch.expiresAt != null &&
-          dispatch.expiresAt!.isAfter(DateTime.now()) &&
-          dispatch.taskId != null) {
+      final isPending = dispatch.status == null ||
+          dispatch.status!.toUpperCase() == 'PENDING';
+      final isNotExpired = dispatch.expiresAt == null ||
+          dispatch.expiresAt!.isAfter(DateTime.now());
+      debugLog(dispatch);
+      if (isPending && isNotExpired && dispatch.taskId != null && dispatch.taskId!.isNotEmpty) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           OfferPingBottomSheet.show(
             dispatch.taskId!,
@@ -469,3 +472,89 @@ final currentDispatchListenerProvider = Provider<void>((ref) {
     }
   }, fireImmediately: true);
 });
+
+/// Notifier to manage paginated list of user assignments.
+class AssignmentsNotifier extends AsyncNotifier<List<Assignment>> {
+  int _page = 1;
+  final int _perPage = 20;
+  bool _hasMore = true;
+
+  final String? status;
+  final String? taskId;
+  final String? sortBy;
+  final bool? sortDesc;
+
+  AssignmentsNotifier({
+    this.status,
+    this.taskId,
+    this.sortBy,
+    this.sortDesc,
+  });
+
+  bool get hasMore => _hasMore;
+  int get currentPage => _page;
+  int get perPage => _perPage;
+
+  @override
+  Future<List<Assignment>> build() async {
+    _page = 1;
+    _hasMore = true;
+    return _fetchPage(1);
+  }
+
+  Future<List<Assignment>> _fetchPage(int page) async {
+    final client = ref.read(tasksClientProvider);
+    final response = await client.getAssignments(
+      page: page,
+      perPage: _perPage,
+      status: status,
+      taskId: taskId,
+      sortBy: sortBy ?? "assigned_at",
+      sortDesc: sortDesc ?? true,
+    );
+
+    if (response.isError || response.data == null) {
+      throw Exception(response.detail ?? 'Failed to fetch assignments');
+    }
+
+    final items = response.data!.items ?? [];
+    if (items.length < _perPage) {
+      _hasMore = false;
+    }
+
+    return items;
+  }
+
+  /// Refreshes the assignments list by re-initializing build().
+  Future<void> refresh() async {
+    state = const AsyncValue.loading();
+    state = await AsyncValue.guard(() => build());
+  }
+
+  /// Loads the next page of assignments and appends them to current state.
+  Future<void> loadMore() async {
+    if (state.isLoading || state.hasError || !_hasMore) return;
+
+    final currentItems = state.value ?? [];
+    state = const AsyncValue.loading();
+
+    state = await AsyncValue.guard(() async {
+      _page++;
+      final nextItems = await _fetchPage(_page);
+      return [...currentItems, ...nextItems];
+    });
+  }
+}
+
+/// Provider exposing paginated list of user assignments filtered by status.
+final myAssignmentsProvider =
+    AsyncNotifierProvider.family<
+      AssignmentsNotifier,
+      List<Assignment>,
+      String?
+    >((status) => AssignmentsNotifier(status: status));
+
+/// Alias for [myAssignmentsProvider].
+final assignmentsProvider = myAssignmentsProvider;
+
+

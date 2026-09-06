@@ -37,7 +37,7 @@ class DebugLogger extends ChangeNotifier {
 
 /// Logs an object to console and appends it to [DebugLogger.instance].
 void debugLog(Object? object, {DebugLevel level = DebugLevel.info}) {
-  if (!kDebugMode) return;
+  // if (!kDebugMode) return;
 
   String output;
   try {

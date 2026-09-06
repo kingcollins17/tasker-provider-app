@@ -210,7 +210,6 @@ final syncUserLocationProvider = FutureProvider<void>((ref) async {
     debugLog(
       '[syncUserLocationProvider] Updating location: lat=${address.coordinates!.latitude}, lng=${address.coordinates!.longitude}, address=${address.formatted}, regionId=${region?.id}',
     );
-
     await client.updateLocation(
       UpdateLocationRequest(
         latitude: address.coordinates!.latitude!,
