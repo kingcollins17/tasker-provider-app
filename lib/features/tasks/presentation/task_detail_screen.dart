@@ -1,19 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:hugeicons/hugeicons.dart';
 import 'package:intl/intl.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:tasker_app/core/models/models.dart';
 import 'package:tasker_app/core/providers/tasks_provider.dart';
 import 'package:tasker_app/core/ui/designs/colors.dart';
-import 'package:tasker_app/core/ui/designs/decorations.dart';
-import 'package:tasker_app/core/ui/designs/spacing.dart';
 import 'package:tasker_app/core/ui/designs/text_styles.dart';
 import 'package:tasker_app/core/ui/widgets/app_error_widget.dart';
 import 'package:tasker_app/core/utils/extensions/flushbar_context_ext.dart';
 import 'package:tasker_app/core/utils/extensions/num_ext.dart';
+import 'package:tasker_app/core/utils/extensions/image_ext.dart';
 import 'package:tasker_app/features/tasks/presentation/widgets/task_details_option_sheet.dart';
 
 class TaskDetailScreen extends ConsumerWidget {
@@ -28,20 +26,50 @@ class TaskDetailScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      body: taskAsync.when(
-        data: (task) => _TaskDetailBody(task: task, distance: distance),
-        loading: () => const _TaskDetailShimmer(),
-        error: (err, st) => SafeArea(
-          child: Column(
-            children: [
-              const _DetailAppBar(title: 'Task Details'),
-              Expanded(
-                child: AppErrorWidget(
-                  message: err.toString(),
-                  onRetry: () => ref.invalidate(taskDetailProvider(taskId)),
+      body: RefreshIndicator(
+        color: AppColors.primary,
+        onRefresh: () async {
+          ref.invalidate(taskDetailProvider(taskId));
+          ref.invalidate(taskAssignmentProvider(taskId));
+          ref.invalidate(isUserAssignedToTaskProvider(taskId));
+          try {
+            await Future.wait([
+              ref.read(taskDetailProvider(taskId).future),
+            ]);
+          } catch (_) {}
+        },
+        child: taskAsync.when(
+          data: (task) => _TaskDetailBody(task: task, distance: distance),
+          loading: () => SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(
+              parent: BouncingScrollPhysics(),
+            ),
+            child: SizedBox(
+              height: MediaQuery.of(context).size.height,
+              child: const _TaskDetailShimmer(),
+            ),
+          ),
+          error: (err, st) => SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(
+              parent: BouncingScrollPhysics(),
+            ),
+            child: SizedBox(
+              height: MediaQuery.of(context).size.height - 100.h,
+              child: SafeArea(
+                child: Column(
+                  children: [
+                    const _DetailAppBar(title: 'Task Details'),
+                    Expanded(
+                      child: AppErrorWidget(
+                        error: err,
+                        onRetry: () =>
+                            ref.invalidate(taskDetailProvider(taskId)),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            ],
+            ),
           ),
         ),
       ),
@@ -50,128 +78,357 @@ class TaskDetailScreen extends ConsumerWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// MAIN BODY (data loaded)
+// MAIN BODY
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _TaskDetailBody extends StatelessWidget {
+class _TaskDetailBody extends ConsumerWidget {
   final Task task;
   final String? distance;
 
   const _TaskDetailBody({required this.task, this.distance});
 
   @override
-  Widget build(BuildContext context) {
-    // 1. First image attachment is used as task cover image
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     final imageAttachments =
         task.attachments
             ?.where((a) => a.mimeType?.startsWith('image/') ?? false)
             .toList() ??
         [];
-    final TaskAttachment? coverImage = imageAttachments.isNotEmpty
-        ? imageAttachments.first
-        : null;
-
-    // 2. All other attachments (remaining images + non-images)
     final otherAttachments =
-        task.attachments?.where((a) => a != coverImage).toList() ?? [];
+        task.attachments
+            ?.where((a) => !(a.mimeType?.startsWith('image/') ?? false))
+            .toList() ??
+        [];
 
-    return CustomScrollView(
-      physics: const BouncingScrollPhysics(),
-      slivers: [
-        // ─── TOP APP BAR ───
-        SliverToBoxAdapter(
-          child: SafeArea(
-            bottom: false,
-            child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const BackButton(),
-                  Text(
-                    'Task Details',
-                    style: AppTextStyles.h3.copyWith(fontSize: 18.sp),
+    final customerName = task.customer?.fullname ?? 'Customer';
+    final formattedDate = task.scheduledStartAt != null
+        ? DateFormat('MMMM d, yyyy').format(task.scheduledStartAt!)
+        : (task.createdAt != null
+            ? DateFormat('MMMM d, yyyy').format(task.createdAt!)
+            : 'Flexible Date');
+
+    final payoutStr = task.providerPayout?.toNaira() ??
+        task.customerTotalPrice?.toNaira() ??
+        'Negotiable';
+
+    final isAssignedAsync = ref.watch(
+      isUserAssignedToTaskProvider(task.id ?? ''),
+    );
+    final isAssigned = isAssignedAsync.value ?? false;
+
+    // Location text
+    String? primaryLocationText;
+    if (task.locations != null && task.locations!.isNotEmpty) {
+      final loc = task.locations!.first;
+      final parts = <String>[];
+      if (loc.city != null && loc.city!.isNotEmpty) parts.add(loc.city!);
+      if (loc.state != null && loc.state!.isNotEmpty) parts.add(loc.state!);
+      if (parts.isNotEmpty) {
+        primaryLocationText = parts.join(', ');
+      }
+    }
+
+    return Scaffold(
+      backgroundColor: theme.scaffoldBackgroundColor,
+      body: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(
+          parent: BouncingScrollPhysics(),
+        ),
+        child: Column(
+          children: [
+            // ─── TOP BANNER CAROUSEL ───
+            _ImageHeaderCarousel(
+              imageAttachments: imageAttachments,
+              onOptionTap: () async {
+                final action = await TaskDetailsOptionSheet.show(
+                  context,
+                  task: task,
+                );
+                if (action != null && context.mounted) {
+                  _handleOptionAction(context, action);
+                }
+              },
+            ),
+
+            // ─── OVERLAPPING CONTENT CARD ───
+            Transform.translate(
+              offset: Offset(0, -24.h),
+              child: Container(
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: theme.scaffoldBackgroundColor,
+                  borderRadius: BorderRadius.vertical(
+                    top: Radius.circular(24.r),
                   ),
-                  _CircleIconButton(
-                    icon: Icons.more_vert_rounded,
-                    onTap: () async {
-                      final action = await TaskDetailsOptionSheet.show(
-                        context,
-                        task: task,
-                      );
-                      if (action != null && context.mounted) {
-                        _handleOptionAction(context, action);
-                      }
-                    },
+                ),
+                padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 20.h),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // ─── TITLE ───
+                    Text(
+                      task.title ?? 'Untitled Task',
+                      style: AppTextStyles.h1.copyWith(
+                        fontSize: 22.sp,
+                        fontWeight: FontWeight.bold,
+                        color: isDark ? AppColors.textPrimary : Colors.black87,
+                        height: 1.25,
+                      ),
+                    ),
+                    SizedBox(height: 10.h),
+
+                    // ─── LOCATION & STATUS ROW ───
+                    Row(
+                      children: [
+                        if (primaryLocationText != null) ...[
+                          Icon(
+                            Icons.location_on_rounded,
+                            size: 16.r,
+                            color: AppColors.primary,
+                          ),
+                          SizedBox(width: 4.w),
+                          Expanded(
+                            child: Text(
+                              primaryLocationText,
+                              style: AppTextStyles.bodyMedium.copyWith(
+                                color: isDark
+                                    ? AppColors.textSecondary
+                                    : Colors.grey[700],
+                                fontSize: 13.sp,
+                                fontWeight: FontWeight.w500,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          SizedBox(width: 8.w),
+                        ],
+                        _StatusDropdownPill(
+                          status: task.status,
+                          isDark: isDark,
+                          onTap: () async {
+                            final action = await TaskDetailsOptionSheet.show(
+                              context,
+                              task: task,
+                            );
+                            if (action != null && context.mounted) {
+                              _handleOptionAction(context, action);
+                            }
+                          },
+                        ),
+                      ],
+                    ),
+
+                    // ─── DESCRIPTION DIRECTLY UNDER TITLE ───
+                    if (task.description != null &&
+                        task.description!.trim().isNotEmpty) ...[
+                      SizedBox(height: 14.h),
+                      Text(
+                        task.description!.trim(),
+                        style: AppTextStyles.bodyMedium.copyWith(
+                          fontSize: 14.sp,
+                          color: isDark
+                              ? AppColors.textSecondary
+                              : Colors.grey[700],
+                          height: 1.5,
+                        ),
+                      ),
+                    ],
+
+                    SizedBox(height: 20.h),
+
+                    // ─── DETAIL PROPERTIES GRID ───
+                    Text(
+                      'Detail Properties',
+                      style: AppTextStyles.h3.copyWith(
+                        fontSize: 15.sp,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    SizedBox(height: 12.h),
+
+                    GridView.count(
+                      crossAxisCount: 2,
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      crossAxisSpacing: 10.w,
+                      mainAxisSpacing: 10.h,
+                      childAspectRatio: 2.5,
+                      children: [
+                        _PropertyTile(
+                          icon: Icons.calendar_today_outlined,
+                          title: 'Scheduled Date',
+                          value: formattedDate,
+                          isDark: isDark,
+                        ),
+                        _PropertyTile(
+                          icon: Icons.person_outline_rounded,
+                          title: 'Customer',
+                          value: customerName,
+                          isDark: isDark,
+                        ),
+                        _PropertyTile(
+                          icon: Icons.payments_outlined,
+                          title: 'Payout',
+                          value: payoutStr,
+                          isDark: isDark,
+                        ),
+                        _PropertyTile(
+                          icon: Icons.near_me_outlined,
+                          title: 'Distance',
+                          value: distance != null ? '$distance km away' : 'Nearby',
+                          isDark: isDark,
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 24.h),
+
+                    // ─── ATTACHMENTS (NON-IMAGE FILES) ───
+                    if (otherAttachments.isNotEmpty) ...[
+                      Text(
+                        'Attachments',
+                        style: AppTextStyles.h3.copyWith(
+                          fontSize: 15.sp,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      SizedBox(height: 12.h),
+                      ...otherAttachments.map(
+                        (att) => Padding(
+                          padding: EdgeInsets.only(bottom: 10.h),
+                          child: _WorkFileCard(
+                            attachment: att,
+                            isDark: isDark,
+                          ),
+                        ),
+                      ),
+                      SizedBox(height: 16.h),
+                    ],
+
+                    // ─── LOCATION SECTION ───
+                    if (task.locations != null && task.locations!.isNotEmpty) ...[
+                      Text(
+                        'Locations',
+                        style: AppTextStyles.h3.copyWith(
+                          fontSize: 15.sp,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      SizedBox(height: 10.h),
+                      ...task.locations!.map(
+                        (loc) => Padding(
+                          padding: EdgeInsets.only(bottom: 8.h),
+                          child: _LocationCard(
+                            location: loc,
+                            distance: distance,
+                            isDark: isDark,
+                          ),
+                        ),
+                      ),
+                      SizedBox(height: 24.h),
+                    ],
+
+                    // ─── ASSIGNMENT CARD ───
+                    if (task.assignment != null) ...[
+                      _AssignmentCard(
+                        assignment: task.assignment!,
+                        isDark: isDark,
+                      ),
+                      SizedBox(height: 24.h),
+                    ],
+
+                    SizedBox(height: 20.h),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+
+      // ─── FIXED BOTTOM BAR (Matching Inspo Layout) ───
+      bottomNavigationBar: Container(
+        padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 14.h),
+        decoration: BoxDecoration(
+          color: isDark ? theme.colorScheme.surface : Colors.white,
+          border: Border(
+            top: BorderSide(
+              color: isDark ? AppColors.border : Colors.grey.withValues(alpha: 0.2),
+              width: 1.r,
+            ),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.05),
+              blurRadius: 10.r,
+              offset: const Offset(0, -4),
+            ),
+          ],
+        ),
+        child: SafeArea(
+          top: false,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Task Payout',
+                    style: AppTextStyles.bodySmall.copyWith(
+                      color: AppColors.textMuted,
+                      fontSize: 11.sp,
+                    ),
+                  ),
+                  SizedBox(height: 2.h),
+                  Text(
+                    payoutStr,
+                    style: AppTextStyles.h2.copyWith(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18.sp,
+                      color: isDark ? AppColors.textPrimary : Colors.black87,
+                    ),
                   ),
                 ],
               ),
-            ),
-          ),
-        ),
-
-        SliverPadding(
-          padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
-          sliver: SliverToBoxAdapter(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // ─── HERO CARD (Cover Image in Background) ───
-                _TaskHeroCard(
-                  task: task,
-                  distance: distance,
-                  coverImage: coverImage,
-                ),
-
-                AppSpacing.hLg,
-
-                // ─── POSTER INFO CARD ("Latest Teleconsult" Style) ───
-                _PosterInfoRow(task: task),
-
-                AppSpacing.hLg,
-
-                // ─── BUDGET CARD ("e-Cards" Style) ───
-                _BudgetCard(task: task),
-
-                AppSpacing.hLg,
-
-                // ─── DESCRIPTION SECTION ───
-                _DescriptionSection(description: task.description),
-
-                AppSpacing.hLg,
-
-                // ─── SCHEDULE & TIMING ───
-                _ScheduleSection(task: task),
-
-                AppSpacing.hLg,
-
-                // ─── LOCATIONS ───
-                if (task.locations != null && task.locations!.isNotEmpty) ...[
-                  _LocationsSection(
-                    locations: task.locations!,
-                    distance: distance,
+              ElevatedButton(
+                onPressed: () async {
+                  final action = await TaskDetailsOptionSheet.show(
+                    context,
+                    task: task,
+                  );
+                  if (action != null && context.mounted) {
+                    _handleOptionAction(context, action);
+                  }
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: isAssigned
+                      ? const Color(0xFFEF4444)
+                      : AppColors.primary,
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 12.h),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(24.r),
                   ),
-                  AppSpacing.hLg,
-                ],
-
-                // ─── OTHER ATTACHMENTS (Bottom Section) ───
-                if (otherAttachments.isNotEmpty) ...[
-                  _AttachmentsSection(attachments: otherAttachments),
-                  AppSpacing.hLg,
-                ],
-
-                // ─── ASSIGNMENT STATUS ───
-                if (task.assignment != null) ...[
-                  _AssignmentCard(assignment: task.assignment!),
-                  AppSpacing.hLg,
-                ],
-
-                SizedBox(height: 32.h),
-              ],
-            ),
+                ),
+                child: Text(
+                  isAssigned ? 'Manage Task' : 'Accept Job',
+                  style: AppTextStyles.buttonMedium.copyWith(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14.sp,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
-      ],
+      ),
     );
   }
 
@@ -192,7 +449,448 @@ class _TaskDetailBody extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// APP BAR (fallback header)
+// TOP HEADER CAROUSEL WIDGET
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _ImageHeaderCarousel extends StatefulWidget {
+  final List<TaskAttachment> imageAttachments;
+  final VoidCallback onOptionTap;
+
+  const _ImageHeaderCarousel({
+    required this.imageAttachments,
+    required this.onOptionTap,
+  });
+
+  @override
+  State<_ImageHeaderCarousel> createState() => _ImageHeaderCarouselState();
+}
+
+class _ImageHeaderCarouselState extends State<_ImageHeaderCarousel> {
+  int _currentIndex = 0;
+  final PageController _pageController = PageController();
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final hasImages = widget.imageAttachments.isNotEmpty;
+
+    return SizedBox(
+      height: 280.h,
+      child: Stack(
+        children: [
+          // Banner Image Carousel / Placeholder
+          Positioned.fill(
+            child: hasImages
+                ? PageView.builder(
+                    controller: _pageController,
+                    itemCount: widget.imageAttachments.length,
+                    onPageChanged: (index) {
+                      setState(() {
+                        _currentIndex = index;
+                      });
+                    },
+                    itemBuilder: (context, index) {
+                      final img = widget.imageAttachments[index];
+                      return GestureDetector(
+                        onTap: () =>
+                            _AttachmentPreviewDialog.show(context, img),
+                        child: img.url.image(
+                          fit: BoxFit.cover,
+                          width: double.infinity,
+                          height: double.infinity,
+                          fallbackIcon: Icons.image_rounded,
+                        ),
+                      );
+                    },
+                  )
+                : Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: isDark
+                            ? [const Color(0xFF1E293B), const Color(0xFF0F172A)]
+                            : [const Color(0xFFE2E8F0), const Color(0xFFCBD5E1)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                    ),
+                    child: Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.landscape_rounded,
+                            size: 56.r,
+                            color: isDark ? Colors.white38 : Colors.black26,
+                          ),
+                          SizedBox(height: 8.h),
+                          Text(
+                            'No Attachment Photos',
+                            style: AppTextStyles.bodyMedium.copyWith(
+                              color: isDark ? Colors.white38 : Colors.black38,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+          ),
+
+          // Bottom Gradient Overlay for Carousel Dots Visibility
+          if (hasImages)
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              height: 70.h,
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      Colors.transparent,
+                      Colors.black.withValues(alpha: 0.5),
+                    ],
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                  ),
+                ),
+              ),
+            ),
+
+          // Carousel Page Indicator Dots
+          if (hasImages && widget.imageAttachments.length > 1)
+            Positioned(
+              bottom: 34.h,
+              left: 0,
+              right: 0,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(
+                  widget.imageAttachments.length,
+                  (index) => AnimatedContainer(
+                    duration: const Duration(milliseconds: 250),
+                    margin: EdgeInsets.symmetric(horizontal: 3.w),
+                    width: _currentIndex == index ? 20.w : 7.w,
+                    height: 7.h,
+                    decoration: BoxDecoration(
+                      color: _currentIndex == index
+                          ? Colors.white
+                          : Colors.white.withValues(alpha: 0.5),
+                      borderRadius: BorderRadius.circular(4.r),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+
+          // Top Action Buttons
+          Positioned(
+            top: 44.h,
+            left: 16.w,
+            right: 16.w,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                _CircleOverlayButton(
+                  onTap: () => Navigator.of(context).maybePop(),
+                  child: const BackButton(color: Colors.white),
+                ),
+                _CircleOverlayButton(
+                  onTap: widget.onOptionTap,
+                  child: const Icon(
+                    Icons.more_horiz_rounded,
+                    color: Colors.white,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CircleOverlayButton extends StatelessWidget {
+  final Widget child;
+  final VoidCallback onTap;
+
+  const _CircleOverlayButton({required this.child, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 40.r,
+        height: 40.r,
+        decoration: BoxDecoration(
+          color: Colors.black.withValues(alpha: 0.38),
+          shape: BoxShape.circle,
+          border: Border.all(
+            color: Colors.white.withValues(alpha: 0.25),
+            width: 1.r,
+          ),
+        ),
+        child: Center(child: child),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// DETAIL PROPERTY TILE WIDGET
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _PropertyTile extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String value;
+  final bool isDark;
+
+  const _PropertyTile({
+    required this.icon,
+    required this.title,
+    required this.value,
+    required this.isDark,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
+      decoration: BoxDecoration(
+        color: isDark
+            ? Theme.of(context).colorScheme.surface
+            : Colors.grey[50],
+        borderRadius: BorderRadius.circular(14.r),
+        border: Border.all(
+          color: isDark ? AppColors.border : Colors.grey.withValues(alpha: 0.2),
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: EdgeInsets.all(8.r),
+            decoration: BoxDecoration(
+              color: AppColors.primary.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(10.r),
+            ),
+            child: Icon(icon, size: 16.r, color: AppColors.primary),
+          ),
+          SizedBox(width: 8.w),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  title,
+                  style: AppTextStyles.label.copyWith(
+                    fontSize: 10.sp,
+                    color: AppColors.textMuted,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                SizedBox(height: 2.h),
+                Text(
+                  value,
+                  style: AppTextStyles.bodySmall.copyWith(
+                    fontSize: 12.sp,
+                    fontWeight: FontWeight.w600,
+                    color: isDark ? AppColors.textPrimary : Colors.black87,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+Future<void> _makePhoneCall(BuildContext context, String? phoneNumber) async {
+  if (phoneNumber == null || phoneNumber.trim().isEmpty) {
+    context.showError('Customer phone number not available');
+    return;
+  }
+  final Uri launchUri = Uri(scheme: 'tel', path: phoneNumber.trim());
+  try {
+    if (await canLaunchUrl(launchUri)) {
+      await launchUrl(launchUri);
+    } else {
+      await launchUrl(launchUri);
+    }
+  } catch (_) {
+    if (context.mounted) {
+      context.showError('Could not launch device dialer');
+    }
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// STATUS DROPDOWN PILL WIDGET
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _StatusDropdownPill extends StatelessWidget {
+  final String? status;
+  final bool isDark;
+  final VoidCallback onTap;
+
+  const _StatusDropdownPill({
+    required this.status,
+    required this.isDark,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final statusInfo = _StatusHelper.resolve(status);
+
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(14.r),
+      child: Container(
+        padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
+        decoration: BoxDecoration(
+          color: statusInfo.color.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(14.r),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              statusInfo.icon,
+              size: 13.r,
+              color: statusInfo.color,
+            ),
+            SizedBox(width: 4.w),
+            Text(
+              statusInfo.label,
+              style: AppTextStyles.label.copyWith(
+                color: statusInfo.color,
+                fontWeight: FontWeight.bold,
+                fontSize: 12.sp,
+              ),
+            ),
+            SizedBox(width: 2.w),
+            Icon(
+              Icons.keyboard_arrow_down_rounded,
+              size: 15.r,
+              color: statusInfo.color,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// WORK FILE CARD WIDGET
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _WorkFileCard extends StatelessWidget {
+  final TaskAttachment attachment;
+  final bool isDark;
+
+  const _WorkFileCard({
+    required this.attachment,
+    required this.isDark,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final title = attachment.fileName ?? 'Task Attachment';
+    final urlStr = attachment.url ?? 'https://tasker-app.internal';
+    final isImage = attachment.mimeType?.startsWith('image/') ?? false;
+
+    return GestureDetector(
+      onTap: () => _AttachmentPreviewDialog.show(context, attachment),
+      child: Container(
+        padding: EdgeInsets.all(12.r),
+        decoration: BoxDecoration(
+          color: isDark ? Theme.of(context).colorScheme.surface : Colors.white,
+          borderRadius: BorderRadius.circular(14.r),
+          border: Border.all(
+            color: isDark
+                ? AppColors.border
+                : Colors.grey.withValues(alpha: 0.2),
+          ),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: EdgeInsets.all(10.r),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(10.r),
+              ),
+              child: Icon(
+                isImage
+                    ? Icons.image_outlined
+                    : Icons.insert_drive_file_outlined,
+                color: AppColors.primary,
+                size: 20.r,
+              ),
+            ),
+            SizedBox(width: 12.w),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: AppTextStyles.subtitle.copyWith(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14.sp,
+                      color: isDark ? AppColors.textPrimary : Colors.black87,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  SizedBox(height: 2.h),
+                  Text(
+                    urlStr,
+                    style: AppTextStyles.bodySmall.copyWith(
+                      fontSize: 12.sp,
+                      color: Colors.blue[600],
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+            SizedBox(width: 8.w),
+            if (attachment.url != null && isImage)
+              attachment.url.image(
+                width: 50.w,
+                height: 38.h,
+                fit: BoxFit.cover,
+                borderRadius: BorderRadius.circular(8.r),
+                errorWidget: (_, _, _) => const SizedBox.shrink(),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// APP BAR (Fallback Header)
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _DetailAppBar extends StatelessWidget {
@@ -222,797 +920,19 @@ class _DetailAppBar extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// HERO CARD (Cover Image background from first attachment image)
+// LOCATION CARD
 // ─────────────────────────────────────────────────────────────────────────────
-
-class _TaskHeroCard extends ConsumerWidget {
-  final Task task;
-  final String? distance;
-  final TaskAttachment? coverImage;
-
-  const _TaskHeroCard({required this.task, this.distance, this.coverImage});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final statusInfo = _StatusHelper.resolve(task.status);
-    final heroImageUrl = coverImage?.url;
-
-    final isAssignedAsync = ref.watch(
-      isUserAssignedToTaskProvider(task.id ?? ''),
-    );
-    final isAssigned = isAssignedAsync.value ?? false;
-
-    final firstLocation = (task.locations != null && task.locations!.isNotEmpty)
-        ? task.locations!.first
-        : null;
-
-    String locationText = 'Location not specified';
-    if (firstLocation != null) {
-      final parts = <String>[];
-      if (firstLocation.city != null) parts.add(firstLocation.city!);
-      if (firstLocation.state != null) parts.add(firstLocation.state!);
-      if (parts.isNotEmpty) locationText = parts.join(', ');
-    }
-    if (distance != null) {
-      locationText += ' ($distance km)';
-    }
-
-    String scheduleText = 'Flexible timing';
-    if (task.scheduledStartAt != null) {
-      scheduleText =
-          'Scheduled • ${DateFormat('MMM d, h:mm a').format(task.scheduledStartAt!)}';
-    } else if (task.createdAt != null) {
-      scheduleText = 'Posted ${_formatTimeAgo(task.createdAt!)}';
-    }
-
-    return Container(
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(24.r),
-        border: Border.all(color: AppColors.border, width: 1.r),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 16.r,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Banner / Cover Photo Header (Tappable to launch full attachment dialog)
-          GestureDetector(
-            onTap: coverImage != null
-                ? () => _AttachmentPreviewDialog.show(context, coverImage!)
-                : null,
-            child: ClipRRect(
-              borderRadius: BorderRadius.vertical(top: Radius.circular(24.r)),
-              child: SizedBox(
-                height: 200.h,
-                width: double.infinity,
-                child: Stack(
-                  children: [
-                    Positioned.fill(
-                      child: heroImageUrl != null
-                          ? Image.network(
-                              heroImageUrl,
-                              fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) =>
-                                  _buildDefaultGradientBanner(statusInfo),
-                            )
-                          : _buildDefaultGradientBanner(statusInfo),
-                    ),
-                    Positioned.fill(
-                      child: Container(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [
-                              Colors.black.withValues(alpha: 0.2),
-                              Colors.transparent,
-                              Colors.black.withValues(alpha: 0.4),
-                            ],
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                          ),
-                        ),
-                      ),
-                    ),
-                    if (coverImage != null)
-                      Positioned(
-                        top: 16.h,
-                        right: 16.w,
-                        child: Container(
-                          padding: EdgeInsets.all(8.r),
-                          decoration: BoxDecoration(
-                            color: Colors.black.withValues(alpha: 0.4),
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: Colors.white.withValues(alpha: 0.2),
-                              width: 1.r,
-                            ),
-                          ),
-                          child: Icon(
-                            Icons.fullscreen_rounded,
-                            color: Colors.white,
-                            size: 18.r,
-                          ),
-                        ),
-                      ),
-                    // Status Pill Tag overlaid on bottom left of media
-                    Positioned(
-                      bottom: 16.h,
-                      left: 16.w,
-                      child: Container(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: 12.w,
-                          vertical: 6.h,
-                        ),
-                        decoration: BoxDecoration(
-                          color: statusInfo.color,
-                          borderRadius: BorderRadius.circular(16.r),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.2),
-                              blurRadius: 8.r,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              statusInfo.icon,
-                              color: Colors.white,
-                              size: 14.r,
-                            ),
-                            SizedBox(width: 6.w),
-                            Text(
-                              statusInfo.label,
-                              style: AppTextStyles.label.copyWith(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 11.sp,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-
-          // Content section inside card
-          Padding(
-            padding: EdgeInsets.all(20.r),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  task.title ?? 'Untitled Task',
-                  style: AppTextStyles.h2.copyWith(fontSize: 20.sp),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-
-                SizedBox(height: 12.h),
-
-                // Location row
-                Row(
-                  children: [
-                    Icon(
-                      Icons.location_on_outlined,
-                      color: AppColors.textMuted,
-                      size: 16.r,
-                    ),
-                    SizedBox(width: 6.w),
-                    Expanded(
-                      child: Text(
-                        locationText,
-                        style: AppTextStyles.bodyMedium.copyWith(
-                          color: AppColors.textMuted,
-                          fontSize: 13.sp,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ),
-
-                SizedBox(height: 6.h),
-
-                // Schedule row
-                Row(
-                  children: [
-                    Icon(
-                      Icons.access_time_rounded,
-                      color: AppColors.textMuted,
-                      size: 16.r,
-                    ),
-                    SizedBox(width: 6.w),
-                    Text(
-                      scheduleText,
-                      style: AppTextStyles.bodyMedium.copyWith(
-                        color: AppColors.textMuted,
-                        fontSize: 13.sp,
-                      ),
-                    ),
-                  ],
-                ),
-
-                SizedBox(height: 20.h),
-
-                // Action Row inside Card Bottom (Direction button + call/more icons matching mockup)
-                Row(
-                  children: [
-                    Expanded(
-                      child: GestureDetector(
-                        onTap: () {
-                          context.showMessage('Opening directions...');
-                        },
-                        child: Container(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: 20.w,
-                            vertical: 14.h,
-                          ),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF1E293B),
-                            borderRadius: BorderRadius.circular(30.r),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.15),
-                                blurRadius: 10.r,
-                                offset: const Offset(0, 4),
-                              ),
-                            ],
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Icons.near_me_rounded,
-                                color: Colors.white,
-                                size: 18.r,
-                              ),
-                              SizedBox(width: 8.w),
-                              Flexible(
-                                child: Text(
-                                  'Direction',
-                                  style: AppTextStyles.buttonMedium.copyWith(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 14.sp,
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                    if (isAssigned) ...[
-                      SizedBox(width: 10.w),
-                      _CircleIconButton(
-                        icon: Icons.phone_outlined,
-                        onTap: () {
-                          _makePhoneCall(context, task.customer?.phoneNumber);
-                        },
-                      ),
-                    ],
-                    SizedBox(width: 8.w),
-                    _CircleIconButton(
-                      icon: Icons.more_horiz_rounded,
-                      onTap: () async {
-                        final action = await TaskDetailsOptionSheet.show(
-                          context,
-                          task: task,
-                        );
-                        if (action != null && context.mounted) {
-                          _handleOptionAction(context, action);
-                        }
-                      },
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDefaultGradientBanner(_StatusInfo statusInfo) {
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            statusInfo.color.withValues(alpha: 0.8),
-            AppColors.primaryDark,
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-      ),
-      child: Center(
-        child: Icon(
-          Icons.work_outline_rounded,
-          color: Colors.white.withValues(alpha: 0.4),
-          size: 64.r,
-        ),
-      ),
-    );
-  }
-
-  void _handleOptionAction(BuildContext context, TaskOptionAction action) {
-    switch (action) {
-      case TaskOptionAction.startTask:
-      case TaskOptionAction.completeTask:
-      case TaskOptionAction.getPin:
-        break;
-      case TaskOptionAction.call:
-        _makePhoneCall(context, task.customer?.phoneNumber);
-        break;
-      case TaskOptionAction.report:
-        context.showMessage('Report task clicked');
-        break;
-    }
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// POSTER INFO ROW ("Latest Teleconsult" style profile card)
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _PosterInfoRow extends ConsumerWidget {
-  final Task task;
-
-  const _PosterInfoRow({required this.task});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final customerName =
-        task.customer?.fullname?.split(' ').first ?? 'Customer';
-    final fullCustomerName = task.customer?.fullname ?? 'Customer';
-    final rating = task.customer?.averageRatings?.toStringAsFixed(1) ?? 'New';
-
-    final isAssignedAsync = ref.watch(
-      isUserAssignedToTaskProvider(task.id ?? ''),
-    );
-    final isAssigned = isAssignedAsync.value ?? false;
-
-    return Container(
-      padding: EdgeInsets.all(16.r),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(24.r),
-        border: Border.all(color: AppColors.border, width: 1.r),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 10.r,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 52.r,
-            height: 52.r,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: const LinearGradient(
-                colors: [AppColors.primary, AppColors.primaryDark],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.primary.withValues(alpha: 0.25),
-                  blurRadius: 8.r,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Center(
-              child: HugeIcon(
-                icon: HugeIcons.strokeRoundedUser,
-                color: Colors.white,
-                size: 26.r,
-              ),
-            ),
-          ),
-          SizedBox(width: 14.w),
-
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  fullCustomerName,
-                  style: AppTextStyles.h3.copyWith(
-                    color: AppColors.textPrimary,
-                    fontSize: 16.sp,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                SizedBox(height: 4.h),
-                Row(
-                  children: [
-                    Container(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: 8.w,
-                        vertical: 3.h,
-                      ),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF59E0B).withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(12.r),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          HugeIcon(
-                            icon: HugeIcons.strokeRoundedStar,
-                            color: const Color(0xFFF59E0B),
-                            size: 12.r,
-                          ),
-                          SizedBox(width: 4.w),
-                          Text(
-                            rating,
-                            style: AppTextStyles.bodySmall.copyWith(
-                              color: const Color(0xFFD97706),
-                              fontWeight: FontWeight.bold,
-                              fontSize: 11.sp,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-
-          if (isAssigned)
-            Material(
-              color: Colors.transparent,
-              child: InkWell(
-                onTap: () {
-                  _makePhoneCall(context, task.customer?.phoneNumber);
-                },
-                borderRadius: BorderRadius.circular(20.r),
-                child: Container(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: 14.w,
-                    vertical: 10.h,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(20.r),
-                    border: Border.all(
-                      color: AppColors.primary.withValues(alpha: 0.2),
-                      width: 1.r,
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      HugeIcon(
-                        icon: HugeIcons.strokeRoundedCall,
-                        color: AppColors.primary,
-                        size: 16.r,
-                      ),
-                      SizedBox(width: 6.w),
-                      Text(
-                        'Call',
-                        style: AppTextStyles.bodySmall.copyWith(
-                          color: AppColors.primary,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-}
-
-Future<void> _makePhoneCall(BuildContext context, String? phoneNumber) async {
-  if (phoneNumber == null || phoneNumber.trim().isEmpty) {
-    context.showError('Customer phone number not available');
-    return;
-  }
-  final Uri launchUri = Uri(scheme: 'tel', path: phoneNumber.trim());
-  try {
-    if (await canLaunchUrl(launchUri)) {
-      await launchUrl(launchUri);
-    } else {
-      await launchUrl(launchUri);
-    }
-  } catch (_) {
-    if (context.mounted) {
-      context.showError('Could not launch device dialer');
-    }
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// BUDGET CARD ("e-Cards" style gradient card)
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _BudgetCard extends StatelessWidget {
-  final Task task;
-
-  const _BudgetCard({required this.task});
-
-  @override
-  Widget build(BuildContext context) {
-    final budgetText = task.providerPayout?.toNaira() ?? 'Negotiable';
-
-    return Container(
-      width: double.infinity,
-      padding: EdgeInsets.all(20.r),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFFEA580C), Color(0xFFF97316)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(24.r),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFFEA580C).withValues(alpha: 0.3),
-            blurRadius: 16.r,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
-      child: Stack(
-        children: [
-          Positioned(
-            right: -20.w,
-            top: -20.h,
-            child: Container(
-              width: 100.r,
-              height: 100.r,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.white.withValues(alpha: 0.1),
-              ),
-            ),
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'PROPOSED PAYOUT',
-                    style: AppTextStyles.label.copyWith(
-                      color: Colors.white.withValues(alpha: 0.8),
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 1.2,
-                      fontSize: 11.sp,
-                    ),
-                  ),
-                  Container(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: 10.w,
-                      vertical: 4.h,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(12.r),
-                    ),
-                    child: Text(
-                      'Fixed Budget',
-                      style: AppTextStyles.label.copyWith(
-                        color: Colors.white,
-                        fontSize: 10.sp,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              SizedBox(height: 16.h),
-              Text(
-                budgetText,
-                style: AppTextStyles.h1.copyWith(
-                  fontSize: 28.sp,
-                  color: Colors.white,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              SizedBox(height: 4.h),
-              Text(
-                'Guaranteed task payment upon completion',
-                style: AppTextStyles.bodySmall.copyWith(
-                  color: Colors.white.withValues(alpha: 0.85),
-                  fontSize: 11.sp,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// DESCRIPTION SECTION
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _DescriptionSection extends StatelessWidget {
-  final String? description;
-
-  const _DescriptionSection({required this.description});
-
-  @override
-  Widget build(BuildContext context) {
-    if (description == null || description!.isEmpty) {
-      return const SizedBox.shrink();
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _SectionTitle(title: 'Description'),
-        SizedBox(height: 8.h),
-        Container(
-          width: double.infinity,
-          padding: EdgeInsets.all(16.r),
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surface,
-            borderRadius: BorderRadius.circular(24.r),
-            border: Border.all(color: AppColors.border, width: 1.r),
-          ),
-          child: Text(
-            description!,
-            style: AppTextStyles.bodyMedium.copyWith(
-              color: AppColors.textSecondary,
-              height: 1.6,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// SCHEDULE SECTION
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _ScheduleSection extends StatelessWidget {
-  final Task task;
-
-  const _ScheduleSection({required this.task});
-
-  @override
-  Widget build(BuildContext context) {
-    // Only consider expiresAt if it is valid (i.e. after createdAt)
-    final bool isExpiresValid =
-        task.expiresAt != null &&
-        (task.createdAt == null || task.expiresAt!.isAfter(task.createdAt!));
-
-    final hasSchedule =
-        task.scheduledStartAt != null ||
-        isExpiresValid ||
-        task.createdAt != null;
-
-    if (!hasSchedule) {
-      return const SizedBox.shrink();
-    }
-
-    final rows = <Widget>[];
-
-    if (task.createdAt != null) {
-      rows.add(
-        _InfoRow(
-          icon: Icons.calendar_today_rounded,
-          label: 'Posted On',
-          value: _formatDate(task.createdAt!),
-          color: AppColors.textMuted,
-        ),
-      );
-    }
-
-    if (task.scheduledStartAt != null) {
-      if (rows.isNotEmpty) rows.add(_InfoDivider());
-      rows.add(
-        _InfoRow(
-          icon: Icons.event_rounded,
-          label: 'Scheduled Start',
-          value: _formatDate(task.scheduledStartAt!),
-          color: const Color(0xFF3B82F6),
-        ),
-      );
-    }
-
-    if (isExpiresValid) {
-      if (rows.isNotEmpty) rows.add(_InfoDivider());
-      rows.add(
-        _InfoRow(
-          icon: Icons.timer_off_rounded,
-          label: 'Expires On',
-          value: _formatDate(task.expiresAt!),
-          color: const Color(0xFFF59E0B),
-        ),
-      );
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _SectionTitle(title: 'Schedule & Timing'),
-        SizedBox(height: 8.h),
-        Container(
-          padding: EdgeInsets.all(16.r),
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surface,
-            borderRadius: BorderRadius.circular(24.r),
-            border: Border.all(color: AppColors.border, width: 1.r),
-          ),
-          child: Column(children: rows),
-        ),
-      ],
-    );
-  }
-
-  String _formatDate(DateTime date) {
-    return DateFormat('MMM d, yyyy • h:mm a').format(date.toLocal());
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// LOCATIONS SECTION
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _LocationsSection extends StatelessWidget {
-  final List<TaskLocation> locations;
-  final String? distance;
-
-  const _LocationsSection({required this.locations, this.distance});
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _SectionTitle(title: 'Location'),
-        SizedBox(height: 8.h),
-        ...locations.map(
-          (loc) => Padding(
-            padding: EdgeInsets.only(bottom: 8.h),
-            child: _LocationCard(location: loc, distance: distance),
-          ),
-        ),
-      ],
-    );
-  }
-}
 
 class _LocationCard extends StatelessWidget {
   final TaskLocation location;
   final String? distance;
+  final bool isDark;
 
-  const _LocationCard({required this.location, this.distance});
+  const _LocationCard({
+    required this.location,
+    this.distance,
+    required this.isDark,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -1027,9 +947,13 @@ class _LocationCard extends StatelessWidget {
     return Container(
       padding: EdgeInsets.all(14.r),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(24.r),
-        border: Border.all(color: AppColors.border, width: 1.r),
+        color: isDark ? Theme.of(context).colorScheme.surface : Colors.white,
+        borderRadius: BorderRadius.circular(16.r),
+        border: Border.all(
+          color: isDark
+              ? AppColors.border
+              : Colors.grey.withValues(alpha: 0.2),
+        ),
       ),
       child: Row(
         children: [
@@ -1053,8 +977,9 @@ class _LocationCard extends StatelessWidget {
                 Text(
                   addressText,
                   style: AppTextStyles.bodyMedium.copyWith(
-                    color: AppColors.textSecondary,
+                    color: isDark ? AppColors.textPrimary : Colors.black87,
                     fontSize: 13.sp,
+                    fontWeight: FontWeight.w600,
                   ),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
@@ -1083,475 +1008,14 @@ class _LocationCard extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// OTHER ATTACHMENTS SECTION (Bottom Section for remaining attachments)
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _AttachmentsSection extends StatelessWidget {
-  final List<TaskAttachment> attachments;
-
-  const _AttachmentsSection({required this.attachments});
-
-  @override
-  Widget build(BuildContext context) {
-    if (attachments.isEmpty) return const SizedBox.shrink();
-
-    final images = attachments
-        .where((a) => a.mimeType?.startsWith('image/') ?? false)
-        .toList();
-    final nonImages = attachments
-        .where((a) => !(a.mimeType?.startsWith('image/') ?? false))
-        .toList();
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _SectionTitle(
-          title: 'Attachments',
-          trailing: Text(
-            '${attachments.length} file${attachments.length > 1 ? 's' : ''}',
-            style: AppTextStyles.label.copyWith(
-              color: AppColors.textMuted,
-              fontSize: 11.sp,
-            ),
-          ),
-        ),
-        SizedBox(height: 8.h),
-        if (images.isNotEmpty) _buildImageGrid(context, images),
-        ...nonImages.map(
-          (a) => Padding(
-            padding: EdgeInsets.only(bottom: 8.h),
-            child: _FileAttachmentItem(attachment: a),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildImageGrid(BuildContext context, List<TaskAttachment> images) {
-    return Padding(
-      padding: EdgeInsets.only(bottom: 8.h),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(24.r),
-        child: SizedBox(
-          height: 180.h,
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            physics: const BouncingScrollPhysics(),
-            itemCount: images.length,
-            separatorBuilder: (context, index) => SizedBox(width: 8.w),
-            itemBuilder: (context, index) {
-              final img = images[index];
-              return GestureDetector(
-                onTap: () => _AttachmentPreviewDialog.show(context, img),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(24.r),
-                  child: Container(
-                    width: 200.w,
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.surface,
-                      border: Border.all(color: AppColors.border, width: 1.r),
-                      borderRadius: BorderRadius.circular(24.r),
-                    ),
-                    child: Stack(
-                      children: [
-                        Positioned.fill(
-                          child: img.url != null
-                              ? Image.network(
-                                  img.url!,
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (context, error, stackTrace) =>
-                                      Center(
-                                        child: Icon(
-                                          Icons.broken_image_rounded,
-                                          color: AppColors.textMuted,
-                                          size: 32.r,
-                                        ),
-                                      ),
-                                )
-                              : Center(
-                                  child: Icon(
-                                    Icons.image_rounded,
-                                    color: AppColors.textMuted,
-                                    size: 32.r,
-                                  ),
-                                ),
-                        ),
-                        Positioned(
-                          top: 10.h,
-                          right: 10.w,
-                          child: Container(
-                            padding: EdgeInsets.all(6.r),
-                            decoration: BoxDecoration(
-                              color: Colors.black.withValues(alpha: 0.4),
-                              shape: BoxShape.circle,
-                            ),
-                            child: Icon(
-                              Icons.fullscreen_rounded,
-                              color: Colors.white,
-                              size: 16.r,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              );
-            },
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _FileAttachmentItem extends StatelessWidget {
-  final TaskAttachment attachment;
-
-  const _FileAttachmentItem({required this.attachment});
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () => _AttachmentPreviewDialog.show(context, attachment),
-      child: Container(
-        padding: EdgeInsets.all(12.r),
-        decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surface,
-          borderRadius: BorderRadius.circular(24.r),
-          border: Border.all(color: AppColors.border, width: 1.r),
-        ),
-        child: Row(
-          children: [
-            Container(
-              padding: EdgeInsets.all(8.r),
-              decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(12.r),
-              ),
-              child: Icon(
-                _getFileIcon(attachment.mimeType),
-                color: AppColors.primary,
-                size: 18.r,
-              ),
-            ),
-            SizedBox(width: 12.w),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    attachment.fileName ?? 'Unknown file',
-                    style: AppTextStyles.bodyMedium.copyWith(
-                      color: AppColors.textPrimary,
-                      fontWeight: FontWeight.w500,
-                      fontSize: 13.sp,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  if (attachment.fileSize != null)
-                    Text(
-                      _formatFileSize(attachment.fileSize!),
-                      style: AppTextStyles.bodySmall.copyWith(
-                        color: AppColors.textMuted,
-                        fontSize: 11.sp,
-                      ),
-                    ),
-                ],
-              ),
-            ),
-            Icon(
-              Icons.visibility_rounded,
-              color: AppColors.textMuted,
-              size: 20.r,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  IconData _getFileIcon(String? mimeType) {
-    if (mimeType == null) return Icons.insert_drive_file_rounded;
-    if (mimeType.contains('pdf')) return Icons.picture_as_pdf_rounded;
-    if (mimeType.contains('video')) return Icons.videocam_rounded;
-    if (mimeType.contains('audio')) return Icons.audiotrack_rounded;
-    return Icons.insert_drive_file_rounded;
-  }
-
-  String _formatFileSize(int bytes) {
-    if (bytes < 1024) return '$bytes B';
-    if (bytes < 1048576) return '${(bytes / 1024).toStringAsFixed(1)} KB';
-    return '${(bytes / 1048576).toStringAsFixed(1)} MB';
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// FULL ATTACHMENT PREVIEW DIALOG
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _AttachmentPreviewDialog extends StatelessWidget {
-  final TaskAttachment attachment;
-
-  const _AttachmentPreviewDialog({required this.attachment});
-
-  static void show(BuildContext context, TaskAttachment attachment) {
-    showDialog(
-      context: context,
-      barrierColor: Colors.black.withValues(alpha: 0.88),
-      builder: (context) => _AttachmentPreviewDialog(attachment: attachment),
-    );
-  }
-
-  bool get isImage => attachment.mimeType?.startsWith('image/') ?? false;
-
-  @override
-  Widget build(BuildContext context) {
-    return Dialog.fullscreen(
-      backgroundColor: Colors.transparent,
-      child: Stack(
-        children: [
-          // Center Preview Area
-          Center(
-            child: isImage
-                ? _buildImageViewer(context)
-                : _buildFilePreview(context),
-          ),
-
-          // Top Header Overlay Bar
-          Positioned(
-            top: 44.h,
-            left: 16.w,
-            right: 16.w,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Container(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: 14.w,
-                    vertical: 8.h,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withValues(alpha: 0.5),
-                    borderRadius: BorderRadius.circular(20.r),
-                    border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.2),
-                      width: 1.r,
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        isImage
-                            ? Icons.image_rounded
-                            : Icons.insert_drive_file_rounded,
-                        color: Colors.white,
-                        size: 16.r,
-                      ),
-                      SizedBox(width: 8.w),
-                      ConstrainedBox(
-                        constraints: BoxConstraints(maxWidth: 180.w),
-                        child: Text(
-                          attachment.fileName ??
-                              (isImage ? 'Task Photo' : 'Attachment'),
-                          style: AppTextStyles.bodyMedium.copyWith(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 13.sp,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                // Close Circular Button
-                GestureDetector(
-                  onTap: () => Navigator.of(context).pop(),
-                  child: Container(
-                    width: 40.r,
-                    height: 40.r,
-                    decoration: BoxDecoration(
-                      color: Colors.black.withValues(alpha: 0.5),
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.2),
-                        width: 1.r,
-                      ),
-                    ),
-                    child: Center(
-                      child: Icon(
-                        Icons.close_rounded,
-                        color: Colors.white,
-                        size: 20.r,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildImageViewer(BuildContext context) {
-    if (attachment.url == null) {
-      return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.broken_image_rounded, color: Colors.white70, size: 64.r),
-            SizedBox(height: 12.h),
-            Text(
-              'Image unavailable',
-              style: AppTextStyles.bodyMedium.copyWith(color: Colors.white70),
-            ),
-          ],
-        ),
-      );
-    }
-
-    return InteractiveViewer(
-      minScale: 0.5,
-      maxScale: 4.0,
-      child: Image.network(
-        attachment.url!,
-        fit: BoxFit.contain,
-        loadingBuilder: (context, child, loadingProgress) {
-          if (loadingProgress == null) return child;
-          return Center(
-            child: CircularProgressIndicator(
-              value: loadingProgress.expectedTotalBytes != null
-                  ? loadingProgress.cumulativeBytesLoaded /
-                        loadingProgress.expectedTotalBytes!
-                  : null,
-              color: Colors.white,
-            ),
-          );
-        },
-        errorBuilder: (context, error, stackTrace) => Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                Icons.broken_image_rounded,
-                color: Colors.white70,
-                size: 64.r,
-              ),
-              SizedBox(height: 12.h),
-              Text(
-                'Failed to load image',
-                style: AppTextStyles.bodyMedium.copyWith(color: Colors.white70),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildFilePreview(BuildContext context) {
-    return Container(
-      width: 0.85.sw,
-      padding: EdgeInsets.all(24.r),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(24.r),
-        border: Border.all(color: AppColors.border, width: 1.r),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.2),
-            blurRadius: 20.r,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            padding: EdgeInsets.all(20.r),
-            decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.12),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              _getFileIcon(attachment.mimeType),
-              color: AppColors.primary,
-              size: 48.r,
-            ),
-          ),
-          SizedBox(height: 16.h),
-          Text(
-            attachment.fileName ?? 'Document Attachment',
-            style: AppTextStyles.h3.copyWith(fontSize: 16.sp),
-            textAlign: TextAlign.center,
-          ),
-          SizedBox(height: 8.h),
-          if (attachment.fileSize != null)
-            Text(
-              _formatFileSize(attachment.fileSize!),
-              style: AppTextStyles.bodyMedium.copyWith(
-                color: AppColors.textMuted,
-              ),
-            ),
-          SizedBox(height: 24.h),
-          Row(
-            children: [
-              Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: () {
-                    context.showMessage('Downloading attachment...');
-                    Navigator.of(context).pop();
-                  },
-                  icon: const Icon(Icons.download_rounded),
-                  label: const Text('Download'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
-                    padding: EdgeInsets.symmetric(vertical: 14.h),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20.r),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  IconData _getFileIcon(String? mimeType) {
-    if (mimeType == null) return Icons.insert_drive_file_rounded;
-    if (mimeType.contains('pdf')) return Icons.picture_as_pdf_rounded;
-    if (mimeType.contains('video')) return Icons.videocam_rounded;
-    if (mimeType.contains('audio')) return Icons.audiotrack_rounded;
-    return Icons.insert_drive_file_rounded;
-  }
-
-  String _formatFileSize(int bytes) {
-    if (bytes < 1024) return '$bytes B';
-    if (bytes < 1048576) return '${(bytes / 1024).toStringAsFixed(1)} KB';
-    return '${(bytes / 1048576).toStringAsFixed(1)} MB';
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
 // ASSIGNMENT CARD
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _AssignmentCard extends StatelessWidget {
   final TaskAssignment assignment;
+  final bool isDark;
 
-  const _AssignmentCard({required this.assignment});
+  const _AssignmentCard({required this.assignment, required this.isDark});
 
   @override
   Widget build(BuildContext context) {
@@ -1560,14 +1024,24 @@ class _AssignmentCard extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _SectionTitle(title: 'Assignment'),
+        Text(
+          'Assignment Details',
+          style: AppTextStyles.h3.copyWith(
+            fontSize: 15.sp,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         SizedBox(height: 8.h),
         Container(
           padding: EdgeInsets.all(16.r),
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surface,
-            borderRadius: BorderRadius.circular(24.r),
-            border: Border.all(color: AppColors.border, width: 1.r),
+            color: isDark ? Theme.of(context).colorScheme.surface : Colors.white,
+            borderRadius: BorderRadius.circular(16.r),
+            border: Border.all(
+              color: isDark
+                  ? AppColors.border
+                  : Colors.grey.withValues(alpha: 0.2),
+            ),
           ),
           child: Column(
             children: [
@@ -1578,7 +1052,7 @@ class _AssignmentCard extends StatelessWidget {
                 color: statusInfo.color,
               ),
               if (assignment.acceptedPrice != null) ...[
-                _InfoDivider(),
+                Divider(color: AppColors.border, height: 1.h, thickness: 1.r),
                 _InfoRow(
                   icon: Icons.payments_rounded,
                   label: 'Accepted Price',
@@ -1587,25 +1061,12 @@ class _AssignmentCard extends StatelessWidget {
                 ),
               ],
               if (assignment.assignedAt != null) ...[
-                _InfoDivider(),
+                Divider(color: AppColors.border, height: 1.h, thickness: 1.r),
                 _InfoRow(
                   icon: Icons.event_available_rounded,
-                  label: 'Assigned',
-                  value: DateFormat(
-                    'MMM d, yyyy • h:mm a',
-                  ).format(assignment.assignedAt!),
+                  label: 'Assigned Date',
+                  value: DateFormat('MMM d, yyyy • h:mm a').format(assignment.assignedAt!),
                   color: const Color(0xFF3B82F6),
-                ),
-              ],
-              if (assignment.completedAt != null) ...[
-                _InfoDivider(),
-                _InfoRow(
-                  icon: Icons.check_circle_rounded,
-                  label: 'Completed',
-                  value: DateFormat(
-                    'MMM d, yyyy • h:mm a',
-                  ).format(assignment.completedAt!),
-                  color: const Color(0xFF10B981),
                 ),
               ],
             ],
@@ -1616,27 +1077,9 @@ class _AssignmentCard extends StatelessWidget {
   }
 }
 
-// ═════════════════════════════════════════════════════════════════════════════
-// REUSABLE INTERNAL WIDGETS
-// ═════════════════════════════════════════════════════════════════════════════
-
-class _SectionTitle extends StatelessWidget {
-  final String title;
-  final Widget? trailing;
-
-  const _SectionTitle({required this.title, this.trailing});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(title, style: AppTextStyles.h3.copyWith(fontSize: 16.sp)),
-        trailing ?? const SizedBox.shrink(),
-      ],
-    );
-  }
-}
+// ─────────────────────────────────────────────────────────────────────────────
+// REUSABLE HELPER WIDGETS
+// ─────────────────────────────────────────────────────────────────────────────
 
 class _InfoRow extends StatelessWidget {
   final IconData icon;
@@ -1695,49 +1138,203 @@ class _InfoRow extends StatelessWidget {
   }
 }
 
-class _InfoDivider extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Divider(color: AppColors.border, height: 1.h, thickness: 1.r);
+// ─────────────────────────────────────────────────────────────────────────────
+// FULL ATTACHMENT PREVIEW DIALOG
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _AttachmentPreviewDialog extends StatelessWidget {
+  final TaskAttachment attachment;
+
+  const _AttachmentPreviewDialog({required this.attachment});
+
+  static void show(BuildContext context, TaskAttachment attachment) {
+    showDialog(
+      context: context,
+      barrierColor: Colors.black.withValues(alpha: 0.88),
+      builder: (context) => _AttachmentPreviewDialog(attachment: attachment),
+    );
   }
-}
 
-class _CircleIconButton extends StatelessWidget {
-  final IconData icon;
-  final VoidCallback onTap;
-
-  const _CircleIconButton({required this.icon, required this.onTap});
+  bool get isImage => attachment.mimeType?.startsWith('image/') ?? false;
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: Container(
-        width: 42.r,
-        height: 42.r,
-        decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surface,
-          shape: BoxShape.circle,
-          border: Border.all(color: AppColors.border, width: 1.r),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.03),
-              blurRadius: 6.r,
-              offset: const Offset(0, 2),
+    return Dialog.fullscreen(
+      backgroundColor: Colors.transparent,
+      child: Stack(
+        children: [
+          Center(
+            child: isImage
+                ? _buildImageViewer(context)
+                : _buildFilePreview(context),
+          ),
+          Positioned(
+            top: 44.h,
+            left: 16.w,
+            right: 16.w,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Container(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: 14.w,
+                    vertical: 8.h,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.5),
+                    borderRadius: BorderRadius.circular(20.r),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.2),
+                      width: 1.r,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        isImage
+                            ? Icons.image_rounded
+                            : Icons.insert_drive_file_rounded,
+                        color: Colors.white,
+                        size: 16.r,
+                      ),
+                      SizedBox(width: 8.w),
+                      ConstrainedBox(
+                        constraints: BoxConstraints(maxWidth: 180.w),
+                        child: Text(
+                          attachment.fileName ??
+                              (isImage ? 'Task Photo' : 'Attachment'),
+                          style: AppTextStyles.bodyMedium.copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 13.sp,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                GestureDetector(
+                  onTap: () => Navigator.of(context).pop(),
+                  child: Container(
+                    width: 40.r,
+                    height: 40.r,
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.5),
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.2),
+                        width: 1.r,
+                      ),
+                    ),
+                    child: Center(
+                      child: Icon(
+                        Icons.close_rounded,
+                        color: Colors.white,
+                        size: 20.r,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildImageViewer(BuildContext context) {
+    if (attachment.url == null) {
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.broken_image_rounded, color: Colors.white70, size: 64.r),
+            SizedBox(height: 12.h),
+            Text(
+              'Image unavailable',
+              style: AppTextStyles.bodyMedium.copyWith(color: Colors.white70),
             ),
           ],
         ),
-        child: Center(
-          child: Icon(icon, color: AppColors.textSecondary, size: 20.r),
+      );
+    }
+
+    return InteractiveViewer(
+      minScale: 0.5,
+      maxScale: 4.0,
+      child: attachment.url.image(
+        fit: BoxFit.contain,
+        fallbackIcon: Icons.broken_image_rounded,
+        errorWidget: (context, error, stackTrace) => Center(
+          child: Icon(
+            Icons.broken_image_rounded,
+            color: Colors.white70,
+            size: 64.r,
+          ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildFilePreview(BuildContext context) {
+    return Container(
+      width: 0.85.sw,
+      padding: EdgeInsets.all(24.r),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(24.r),
+        border: Border.all(color: AppColors.border, width: 1.r),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            padding: EdgeInsets.all(20.r),
+            decoration: BoxDecoration(
+              color: AppColors.primary.withValues(alpha: 0.12),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.insert_drive_file_rounded,
+              color: AppColors.primary,
+              size: 48.r,
+            ),
+          ),
+          SizedBox(height: 16.h),
+          Text(
+            attachment.fileName ?? 'Document Attachment',
+            style: AppTextStyles.h3.copyWith(fontSize: 16.sp),
+            textAlign: TextAlign.center,
+          ),
+          SizedBox(height: 24.h),
+          ElevatedButton.icon(
+            onPressed: () {
+              context.showMessage('Downloading attachment...');
+              Navigator.of(context).pop();
+            },
+            icon: const Icon(Icons.download_rounded),
+            label: const Text('Download'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              padding: EdgeInsets.symmetric(vertical: 14.h, horizontal: 24.w),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20.r),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// SHIMMER LOADING SKELETON
+// SHIMMER SKELETON
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _TaskDetailShimmer extends StatelessWidget {
@@ -1750,7 +1347,7 @@ class _TaskDetailShimmer extends StatelessWidget {
         baseColor: AppColors.border,
         highlightColor: Theme.of(context).colorScheme.surface,
         child: SingleChildScrollView(
-          padding: AppSpacing.pAllMd,
+          padding: EdgeInsets.all(20.r),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -1762,11 +1359,13 @@ class _TaskDetailShimmer extends StatelessWidget {
                 ],
               ),
               SizedBox(height: 24.h),
-              _shimmerBox(double.infinity, 240.h, radius: 24.r),
-              SizedBox(height: 24.h),
-              _shimmerBox(double.infinity, 80.h, radius: 24.r),
-              SizedBox(height: 24.h),
-              _shimmerBox(double.infinity, 100.h, radius: 24.r),
+              _shimmerBox(220.w, 24.h),
+              SizedBox(height: 12.h),
+              _shimmerBox(120.w, 20.h, radius: 10.r),
+              SizedBox(height: 20.h),
+              _shimmerBox(double.infinity, 44.h, radius: 16.r),
+              SizedBox(height: 20.h),
+              _shimmerBox(double.infinity, 80.h, radius: 16.r),
             ],
           ),
         ),
@@ -1817,7 +1416,6 @@ class _StatusHelper {
           color: Color(0xFF10B981),
           icon: Icons.radio_button_checked_rounded,
         );
-     
       case 'assigned':
         return const _StatusInfo(
           label: 'Assigned',
@@ -1856,17 +1454,4 @@ class _StatusHelper {
         );
     }
   }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// UTIL
-// ─────────────────────────────────────────────────────────────────────────────
-
-String _formatTimeAgo(DateTime date) {
-  final diff = DateTime.now().difference(date);
-  if (diff.inMinutes < 1) return 'just now';
-  if (diff.inMinutes < 60) return '${diff.inMinutes} min ago';
-  if (diff.inHours < 24) return '${diff.inHours} hrs ago';
-  if (diff.inDays < 7) return '${diff.inDays} days ago';
-  return DateFormat('MMM d, yyyy').format(date);
 }

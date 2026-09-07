@@ -1,6 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hive_flutter/hive_flutter.dart';
+import 'package:tasker_app/core/utils/debug_logger.dart';
 import '../api/api.dart';
 import '../models/models.dart';
+import '../services/local_storage_service.dart';
 
 typedef EarningsDateRangeParam = ({String? startDate, String? endDate})?;
 
@@ -102,11 +105,27 @@ final providerEarningsStatsProvider =
 
 /// Notifier to manage the currently selected earnings duration.
 class EarningsDurationNotifier extends Notifier<EarningsDuration> {
+  static const _storageKey = 'earnings_duration';
+
   @override
-  EarningsDuration build() => EarningsDuration.today;
+  EarningsDuration build() {
+    if (!Hive.isBoxOpen(appStorage.filename)) {
+      return EarningsDuration.past1Month;
+    }
+    final box = Hive.box(appStorage.filename);
+    final savedName = box.get(_storageKey) as String?;
+    if (savedName != null) {
+      return EarningsDuration.values.firstWhere(
+        (e) => e.name == savedName,
+        orElse: () => EarningsDuration.past1Month,
+      );
+    }
+    return EarningsDuration.past1Month;
+  }
 
   void setDuration(EarningsDuration duration) {
     state = duration;
+    appStorage.save(_storageKey, duration.name);
   }
 }
 
@@ -122,14 +141,16 @@ String get _tomorrow1201AMIso {
 }
 
 /// Dynamic provider that watches [earningsDurationProvider] and fetches stats based on the selected duration.
-final selectedEarningsProvider = FutureProvider<Earnings>((ref) {
+final selectedEarningsProvider = FutureProvider<Earnings>((ref) async{
   final duration = ref.watch(earningsDurationProvider);
-  final earnings = ref.watch(
+  final earnings = await ref.watch(
     providerEarningsStatsProvider((
       startDate: duration.startDateIso,
       endDate: _tomorrow1201AMIso,
     )).future,
   );
+  debugLog('[selectedEarningsProvider]: Fetched earnings');
+  debugLog(earnings);
   return earnings;
 });
 
@@ -225,7 +246,7 @@ class ProviderPayoutsNotifier extends AsyncNotifier<List<Payout>> {
     if (items.length < _perPage) {
       _hasMore = false;
     }
-
+    debugLog(items.map((i)=> i.toJson()).toList());
     return items;
   }
 
@@ -267,6 +288,8 @@ final debtSummaryProvider = FutureProvider<Debt>((ref) async {
       response.detail ?? 'Failed to fetch debt summary',
     );
   }
+  debugLog('[debtSummaryProvider]: Fetched debt summary');
+  debugLog(response.data!);
   return response.data!;
 }, retry: (_, __) => null);
 

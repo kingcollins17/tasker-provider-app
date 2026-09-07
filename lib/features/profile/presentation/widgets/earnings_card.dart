@@ -65,7 +65,7 @@ class _EarningsCardState extends ConsumerState<EarningsCard>
       builder: (context, child) {
         final angle = _gradientController.value * 2 * math.pi;
         return Container(
-          padding: EdgeInsets.all(16.r),
+          padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 12.h),
           decoration: BoxDecoration(
             borderRadius: AppDecorations.radiusLg,
             gradient: LinearGradient(
@@ -81,9 +81,9 @@ class _EarningsCardState extends ConsumerState<EarningsCard>
             ),
             boxShadow: [
               BoxShadow(
-                color: AppColors.primary.withValues(alpha: 0.4),
-                blurRadius: 24.r,
-                offset: const Offset(0, 12),
+                color: AppColors.primary.withValues(alpha: 0.3),
+                blurRadius: 16.r,
+                offset: const Offset(0, 8),
               ),
             ],
           ),
@@ -100,11 +100,11 @@ class _EarningsCardState extends ConsumerState<EarningsCard>
                 onTap: () => EarningDurationSheet.show(),
                 borderRadius: AppDecorations.radiusSm,
                 child: Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 2.h),
+                  padding: EdgeInsets.symmetric(horizontal: 2.w, vertical: 2.h),
                   child: Row(
                     children: [
                       Container(
-                        padding: EdgeInsets.all(8.r),
+                        padding: EdgeInsets.all(6.r),
                         decoration: BoxDecoration(
                           color: Colors.white.withValues(alpha: 0.15),
                           borderRadius: AppDecorations.radiusSm,
@@ -112,7 +112,7 @@ class _EarningsCardState extends ConsumerState<EarningsCard>
                         child: Icon(
                           Icons.account_balance_wallet_rounded,
                           color: Colors.white,
-                          size: 20.r,
+                          size: 16.r,
                         ),
                       ),
                       AppSpacing.wSm,
@@ -120,15 +120,15 @@ class _EarningsCardState extends ConsumerState<EarningsCard>
                         selectedDuration.label,
                         style: AppTextStyles.subtitle.copyWith(
                           color: Colors.white.withValues(alpha: 0.9),
-                          fontSize: 14.sp,
+                          fontSize: 13.sp,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
-                      SizedBox(width: 4.w),
+                      SizedBox(width: 2.w),
                       Icon(
                         Icons.keyboard_arrow_down_rounded,
                         color: Colors.white.withValues(alpha: 0.9),
-                        size: 20.r,
+                        size: 16.r,
                       ),
                     ],
                   ),
@@ -147,8 +147,8 @@ class _EarningsCardState extends ConsumerState<EarningsCard>
 
                     return Container(
                       padding: EdgeInsets.symmetric(
-                        horizontal: 10.w,
-                        vertical: 4.h,
+                        horizontal: 8.w,
+                        vertical: 3.h,
                       ),
                       decoration: BoxDecoration(
                         color: badgeBgColor,
@@ -168,7 +168,7 @@ class _EarningsCardState extends ConsumerState<EarningsCard>
                                 ? Icons.trending_down_rounded
                                 : Icons.trending_up_rounded,
                             color: badgeTextColor,
-                            size: 14.r,
+                            size: 12.r,
                           ),
                           AppSpacing.wXs,
                           Text(
@@ -176,6 +176,7 @@ class _EarningsCardState extends ConsumerState<EarningsCard>
                             style: AppTextStyles.label.copyWith(
                               color: badgeTextColor,
                               fontWeight: FontWeight.bold,
+                              fontSize: 11.sp,
                             ),
                           ),
                         ],
@@ -186,16 +187,16 @@ class _EarningsCardState extends ConsumerState<EarningsCard>
               ],
             ],
           ),
-          SizedBox(height: 12.h),
+          SizedBox(height: 8.h),
           Text(
             amountDisplay,
             style: AppTextStyles.h1.copyWith(
               color: Colors.white,
-              fontSize: 32.sp,
+              fontSize: 24.sp,
               letterSpacing: -0.5,
             ),
           ),
-          SizedBox(height: 4.h),
+          SizedBox(height: 2.h),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.end,
@@ -203,8 +204,9 @@ class _EarningsCardState extends ConsumerState<EarningsCard>
               Expanded(
                 child: Text(
                   selectedDuration.cardSubtitle,
-                  style: AppTextStyles.bodyMedium.copyWith(
-                    color: Colors.white.withValues(alpha: 0.7),
+                  style: AppTextStyles.bodySmall.copyWith(
+                    color: Colors.white.withValues(alpha: 0.75),
+                    fontSize: 11.sp,
                   ),
                 ),
               ),
@@ -230,7 +232,7 @@ class _EarningsCardState extends ConsumerState<EarningsCard>
             onTap: () => SettleDebtSheet.show(context, debt),
             borderRadius: BorderRadius.circular(16.r),
             child: Container(
-              padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
+              padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 3.h),
               decoration: BoxDecoration(
                 color: AppColors.error.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(16.r),
@@ -245,15 +247,15 @@ class _EarningsCardState extends ConsumerState<EarningsCard>
                   Icon(
                     Icons.account_balance_wallet_outlined,
                     color: const Color(0xFFFF5252),
-                    size: 13.r,
+                    size: 12.r,
                   ),
-                  SizedBox(width: 4.w),
+                  SizedBox(width: 3.w),
                   Text(
                     'Debt: ${totalDebtOwed.toNaira(0)}',
                     style: AppTextStyles.label.copyWith(
                       color: const Color(0xFFFF5252),
                       fontWeight: FontWeight.bold,
-                      fontSize: 11.sp,
+                      fontSize: 10.5.sp,
                     ),
                   ),
                   if (totalDebtOwed > 100) ...[
@@ -261,7 +263,7 @@ class _EarningsCardState extends ConsumerState<EarningsCard>
                     Icon(
                       Icons.chevron_right_rounded,
                       color: const Color(0xFFFF5252),
-                      size: 14.r,
+                      size: 12.r,
                     ),
                   ],
                 ],

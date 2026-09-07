@@ -4,15 +4,17 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:shimmer/shimmer.dart';
 
 import 'package:tasker_app/core/providers/providers.dart';
-import 'package:tasker_app/core/utils/debug_logger.dart';
 import 'package:tasker_app/core/utils/extensions/loading_context_ext.dart';
 
 import '../../../core/ui/designs/colors.dart';
 import '../../../core/ui/designs/text_styles.dart';
 import '../../../core/ui/designs/decorations.dart';
 import '../../../core/ui/designs/spacing.dart';
+import '../../../core/ui/widgets/debug_fab.dart';
+import '../../../core/ui/widgets/floating_online_toggle.dart';
 import '../../notifications/presentation/widgets/notification_icon.dart';
 import '../../profile/presentation/widgets/earnings_card.dart';
+import '../../profile/profile_routes.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:tasker_app/core/utils/extensions/flushbar_context_ext.dart';
@@ -35,27 +37,47 @@ class HomeScreen extends ConsumerWidget {
     ref.watch(syncUserLocationProvider);
     ref.watch(userAddressProvider);
     ref.watch(syncCloudMessagingTokenProvider);
-    // debugLog(user.value?.toJson());
+
     final firstName = user.value?.providerProfile?.firstName ?? '';
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      floatingActionButton: const DebugFab(),
       body: SafeArea(
         child: Stack(
           children: [
             RefreshIndicator(
               color: AppColors.primary,
               onRefresh: () async {
+                ref.invalidate(syncUserLocationProvider);
+                ref.invalidate(userAddressProvider);
+                ref.invalidate(currentRegionProvider);
+                ref.invalidate(syncCloudMessagingTokenProvider);
                 ref.invalidate(userProvider);
                 ref.invalidate(isOnlineProvider);
                 ref.invalidate(notificationsProvider);
                 ref.invalidate(selectedEarningsProvider);
+                ref.invalidate(debtSummaryProvider);
                 ref.invalidate(currentAssignmentProvider);
-                ref.invalidate(earningsDurationProvider);
+                ref.invalidate(kycStatusProvider);
+                ref.invalidate(providerPayoutsProvider(null));
+                ref.invalidate(currentDispatchProvider);
+
                 try {
                   await Future.wait([
+                    ref.read(syncUserLocationProvider.future),
+                    ref.read(userAddressProvider.future),
+                    ref.read(currentRegionProvider.future),
+                    ref.read(syncCloudMessagingTokenProvider.future),
                     ref.read(userProvider.future),
+                    ref.read(isOnlineProvider.future),
+                    ref.read(notificationsProvider.future),
                     ref.read(selectedEarningsProvider.future),
+                    ref.read(debtSummaryProvider.future),
+                    ref.read(currentAssignmentProvider.future),
+                    ref.read(kycStatusProvider.future),
+                    ref.read(providerPayoutsProvider(null).future),
+                    ref.read(currentDispatchProvider.future),
                   ]);
                 } catch (_) {}
               },
@@ -100,6 +122,14 @@ class HomeScreen extends ConsumerWidget {
 
                   SliverToBoxAdapter(child: AppSpacing.hLg),
 
+                  // ─── PAYOUTS OVERVIEW ───
+                  SliverPadding(
+                    padding: AppSpacing.pHorsMd,
+                    sliver: const SliverToBoxAdapter(
+                      child: _PayoutsOverviewSection(),
+                    ),
+                  ),
+
                   // ─── PERFORMANCE SNAPSHOT ───
                   SliverPadding(
                     padding: AppSpacing.pHorsMd,
@@ -123,7 +153,7 @@ class HomeScreen extends ConsumerWidget {
                     return ref
                         .watch(isOnlineProvider)
                         .when(
-                          data: (isOnline) => _FloatingOnlineToggle(
+                          data: (isOnline) => FloatingOnlineToggle(
                             isOnline: isOnline,
                             onToggle: () {
                               context.showLoading();
@@ -858,100 +888,7 @@ class _PerformanceStat extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// FLOATING ONLINE TOGGLE
-// ─────────────────────────────────────────────────────────────────────────────
 
-class _FloatingOnlineToggle extends StatelessWidget {
-  final bool isOnline;
-  final VoidCallback onToggle;
-
-  const _FloatingOnlineToggle({required this.isOnline, required this.onToggle});
-
-  @override
-  Widget build(BuildContext context) {
-    final statusColor = isOnline ? AppColors.success : AppColors.textMuted;
-
-    return GestureDetector(
-      onTap: onToggle,
-      child: Container(
-        width: 1.sw - 32.w,
-        padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 14.h),
-        decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surface,
-          borderRadius: AppDecorations.radiusLg,
-          border: Border.all(
-            color: isOnline
-                ? AppColors.success.withValues(alpha: 0.4)
-                : AppColors.border,
-            width: 1.5.r,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: isOnline
-                  ? AppColors.success.withValues(alpha: 0.15)
-                  : Colors.black.withValues(alpha: 0.2),
-              blurRadius: 20.r,
-              offset: const Offset(0, 8),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            // Status dot
-            Container(
-              width: 12.r,
-              height: 12.r,
-              decoration: BoxDecoration(
-                color: statusColor,
-                shape: BoxShape.circle,
-              ),
-            ),
-            SizedBox(width: 12.w),
-            Expanded(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    isOnline ? "You're Online" : "You're Offline",
-                    style: AppTextStyles.buttonMedium.copyWith(
-                      color: isOnline ? AppColors.success : null,
-                      fontSize: 15.sp,
-                    ),
-                  ),
-                  SizedBox(height: 2.h),
-                  Text(
-                    isOnline
-                        ? "Receiving nearby job requests"
-                        : "Tap to start receiving jobs",
-                    style: AppTextStyles.bodySmall.copyWith(fontSize: 11.sp),
-                  ),
-                ],
-              ),
-            ),
-            Container(
-              padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
-              decoration: BoxDecoration(
-                color: isOnline
-                    ? AppColors.success.withValues(alpha: 0.12)
-                    : AppColors.primary,
-                borderRadius: AppDecorations.radiusSm,
-              ),
-              child: Text(
-                isOnline ? "Go Offline" : "Go Online",
-                style: AppTextStyles.buttonMedium.copyWith(
-                  color: isOnline ? AppColors.success : Colors.white,
-                  fontSize: 13.sp,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ACCOUNT ISSUES SECTION
@@ -1119,3 +1056,211 @@ class _AccountIssueCard extends StatelessWidget {
     );
   }
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PAYOUTS OVERVIEW SECTION
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _PayoutsOverviewSection extends ConsumerWidget {
+  const _PayoutsOverviewSection();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final payoutsAsync = ref.watch(providerPayoutsProvider(null));
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return payoutsAsync.when(
+      data: (payouts) {
+        if (payouts.isEmpty) return const SizedBox.shrink();
+
+        final hasMoreThanFour = payouts.length > 4;
+        final displayList = payouts.take(4).toList();
+
+                return Padding(
+                  padding: EdgeInsets.only(bottom: 24.h),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _SectionHeader(
+                        title: "Payouts",
+                        actionText: hasMoreThanFour ? "See All" : null,
+                        onAction: hasMoreThanFour
+                            ? () => context.pushNamed(ProfileRoutes.payoutsRoute)
+                            : null,
+                      ),
+                      ListView.separated(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        padding: EdgeInsets.zero,
+                        itemCount: displayList.length,
+                        separatorBuilder: (context, index) => Divider(
+                          height: 1,
+                          thickness: 1,
+                          color: isDark
+                              ? AppColors.border
+                              : Colors.grey.withValues(alpha: 0.12),
+                        ),
+                        itemBuilder: (context, index) {
+                          final payout = displayList[index];
+                          final amount = payout.payoutAmount ?? 0.0;
+                          final titleText = payout.task?.title ??
+                              payout.description ??
+                              'Payout #${payout.reference ?? payout.id?.substring(0, 6) ?? ''}';
+                          final dateStr = payout.createdAt != null
+                              ? DateFormat('dd MMM yyyy').format(payout.createdAt!)
+                              : 'Recent';
+
+                          return Padding(
+                            padding: EdgeInsets.symmetric(vertical: 8.h),
+                            child: Row(
+                              children: [
+                                Container(
+                                  padding: EdgeInsets.all(8.r),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.primary.withValues(alpha: 0.1),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Icon(
+                                    Icons.payments_outlined,
+                                    color: AppColors.primary,
+                                    size: 18.r,
+                                  ),
+                                ),
+                                SizedBox(width: 12.w),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        titleText,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: AppTextStyles.bodyMedium.copyWith(
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: 13.sp,
+                                          color: isDark
+                                              ? AppColors.textPrimary
+                                              : const Color(0xFF0F172A),
+                                        ),
+                                      ),
+                                      SizedBox(height: 2.h),
+                                      Text(
+                                        dateStr,
+                                        style: AppTextStyles.bodySmall.copyWith(
+                                          color: AppColors.textMuted,
+                                          fontSize: 11.sp,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                Text(
+                                  '+${amount.toNaira(2)}',
+                                  style: AppTextStyles.subtitle.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 13.sp,
+                                    color: AppColors.primary,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+                );
+              },
+              loading: () => Padding(
+                padding: EdgeInsets.only(bottom: 24.h),
+                child: const _PayoutsOverviewShimmer(),
+              ),
+              error: (error, stackTrace) => const SizedBox.shrink(),
+            );
+  }
+}
+
+class _PayoutsOverviewShimmer extends StatelessWidget {
+  const _PayoutsOverviewShimmer();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final baseColor = isDark ? theme.colorScheme.surface : Colors.grey[200]!;
+    final highlightColor = isDark ? AppColors.border : Colors.grey[100]!;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const _SectionHeader(title: "Payouts Overview"),
+        Shimmer.fromColors(
+          baseColor: baseColor,
+          highlightColor: highlightColor,
+          child: ListView.separated(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            padding: EdgeInsets.zero,
+            itemCount: 3,
+            separatorBuilder: (_, _) => Divider(
+              height: 1,
+              thickness: 1,
+              color: isDark
+                  ? AppColors.border
+                  : Colors.grey.withValues(alpha: 0.12),
+            ),
+            itemBuilder: (_, _) => Padding(
+              padding: EdgeInsets.symmetric(vertical: 8.h),
+              child: Row(
+                children: [
+                  Container(
+                    width: 34.r,
+                    height: 34.r,
+                    decoration: const BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  SizedBox(width: 12.w),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          width: 120.w,
+                          height: 12.h,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(4.r),
+                          ),
+                        ),
+                        SizedBox(height: 4.h),
+                        Container(
+                          width: 60.w,
+                          height: 10.h,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(4.r),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Container(
+                    width: 50.w,
+                    height: 14.h,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(4.r),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+

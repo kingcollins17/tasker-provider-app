@@ -8,16 +8,18 @@ import 'package:tasker_app/core/utils/debug_logger.dart';
 import '../../../core/models/models.dart';
 import '../../../core/providers/tasks_provider.dart';
 import '../../../core/ui/designs/designs.dart';
+import '../../../core/ui/widgets/app_error_widget.dart';
+import '../../../core/ui/widgets/debug_fab.dart';
 import '../../../core/utils/extensions/num_ext.dart';
 import '../tasks_routes.dart';
 
-/// Status Filter option model
+/// Status Filter option model mapping to backend TaskAssignmentStatus values
 enum AssignmentStatusFilter {
   all(label: 'All', value: null),
-  assigned(label: 'Assigned', value: 'assigned'),
-  inProgress(label: 'Active', value: 'in_progress'),
-  completed(label: 'Completed', value: 'completed'),
-  cancelled(label: 'Cancelled', value: 'cancelled');
+  assigned(label: 'Assigned', value: 'ASSIGNED'),
+  inProgress(label: 'Active', value: 'IN_PROGRESS'),
+  completed(label: 'Completed', value: 'COMPLETED'),
+  cancelled(label: 'Cancelled', value: 'CANCELLED');
 
   final String label;
   final String? value;
@@ -33,7 +35,6 @@ class TasksScreen extends ConsumerStatefulWidget {
 }
 
 class _TasksScreenState extends ConsumerState<TasksScreen> {
-  AssignmentStatusFilter _selectedFilter = AssignmentStatusFilter.all;
   final ScrollController _scrollController = ScrollController();
 
   @override
@@ -52,9 +53,25 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
   void _onScroll() {
     if (_scrollController.position.pixels >=
         _scrollController.position.maxScrollExtent - 200) {
-      ref
-          .read(myAssignmentsProvider(_selectedFilter.value).notifier)
-          .loadMore();
+      final filterState = ref.read(assignmentFilterProvider);
+      final filterParam =
+          filterState.statuses.isEmpty ? null : filterState.statuses;
+      ref.read(myAssignmentsProvider(filterParam).notifier).loadMore();
+    }
+  }
+
+  void _toggleFilter(AssignmentStatusFilter filter, Set<String> currentStatuses) {
+    final notifier = ref.read(assignmentFilterProvider.notifier);
+    final current = Set<String>.from(currentStatuses);
+    if (filter == AssignmentStatusFilter.all) {
+      notifier.setStatuses({});
+    } else if (filter.value != null) {
+      if (current.contains(filter.value)) {
+        current.remove(filter.value);
+      } else {
+        current.add(filter.value!);
+      }
+      notifier.setStatuses(current);
     }
   }
 
@@ -63,87 +80,99 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
-    final assignmentsAsync =
-        ref.watch(myAssignmentsProvider(_selectedFilter.value));
-    final notifier =
-        ref.read(myAssignmentsProvider(_selectedFilter.value).notifier);
+    final filterState = ref.watch(assignmentFilterProvider);
+    final filterParam =
+        filterState.statuses.isEmpty ? null : filterState.statuses;
+    final assignmentsAsync = ref.watch(myAssignmentsProvider(filterParam));
+    final notifier = ref.read(myAssignmentsProvider(filterParam).notifier);
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
+      floatingActionButton: const DebugFab(),
       appBar: AppBar(
         backgroundColor: theme.scaffoldBackgroundColor,
         elevation: 0,
         scrolledUnderElevation: 0,
+        leading: context.canPop() ? const BackButton() : null,
         title: Text(
           'My Assignments',
-          style: AppTextStyles.h2.copyWith(
-            fontSize: 22.sp,
+          style: AppTextStyles.h3.copyWith(
+            fontSize: 18.sp,
             fontWeight: FontWeight.bold,
+            color: isDark ? AppColors.textPrimary : Colors.black87,
           ),
         ),
         centerTitle: false,
+        actions: [
+          Stack(
+            alignment: Alignment.center,
+            children: [
+              IconButton(
+                icon: Icon(
+                  Icons.tune_rounded,
+                  color: filterState.hasActiveFilters
+                      ? AppColors.primary
+                      : (isDark ? AppColors.textPrimary : Colors.black87),
+                  size: 22.r,
+                ),
+                onPressed: () => _FilterSheet.show(context),
+              ),
+              if (filterState.hasActiveFilters)
+                Positioned(
+                  top: 10.h,
+                  right: 10.w,
+                  child: Container(
+                    width: 8.r,
+                    height: 8.r,
+                    decoration: const BoxDecoration(
+                      color: AppColors.primary,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ],
       ),
       body: Column(
         children: [
-          // ── Filter Chips Row ──
-          SizedBox(
-            height: 42.h,
-            child: ListView.separated(
-              padding: EdgeInsets.symmetric(horizontal: 20.w),
-              scrollDirection: Axis.horizontal,
-              physics: const BouncingScrollPhysics(),
-              itemCount: AssignmentStatusFilter.values.length,
-              separatorBuilder: (_, _) => SizedBox(width: 8.w),
-              itemBuilder: (context, index) {
-                final filter = AssignmentStatusFilter.values[index];
-                final isSelected = filter == _selectedFilter;
+          // ── Multi-Select Filter Chips Row ──
+          Column(
+            children: [
+              SizedBox(
+                height: 48.h,
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  padding:
+                      EdgeInsets.symmetric(horizontal: 16.w, vertical: 6.h),
+                  physics: const BouncingScrollPhysics(),
+                  itemCount: AssignmentStatusFilter.values.length,
+                  itemBuilder: (context, index) {
+                    final filter = AssignmentStatusFilter.values[index];
+                    final isSelected = filter == AssignmentStatusFilter.all
+                        ? filterState.statuses.isEmpty
+                        : (filter.value != null &&
+                            filterState.statuses.contains(filter.value));
 
-                return ChoiceChip(
-                  label: Text(
-                    filter.label,
-                    style: AppTextStyles.label.copyWith(
-                      color: isSelected
-                          ? Colors.white
-                          : (isDark
-                              ? AppColors.textSecondary
-                              : AppColors.textMuted),
-                      fontWeight:
-                          isSelected ? FontWeight.bold : FontWeight.w500,
-                      fontSize: 13.sp,
-                    ),
-                  ),
-                  selected: isSelected,
-                  selectedColor: AppColors.primary,
-                  backgroundColor: isDark
-                      ? theme.colorScheme.surface
-                      : AppColors.primary.withValues(alpha: 0.08),
-                  showCheckmark: false,
-                  padding: EdgeInsets.symmetric(
-                    horizontal: 12.w,
-                    vertical: 8.h,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20.r),
-                    side: BorderSide(
-                      color: isSelected
-                          ? AppColors.primary
-                          : (isDark
-                              ? AppColors.border
-                              : Colors.transparent),
-                    ),
-                  ),
-                  onSelected: (selected) {
-                    if (selected && filter != _selectedFilter) {
-                      setState(() {
-                        _selectedFilter = filter;
-                      });
-                    }
+                    return _StatusFilterChip(
+                      filter: filter,
+                      isSelected: isSelected,
+                      isDark: isDark,
+                      onTap: () =>
+                          _toggleFilter(filter, filterState.statuses),
+                    );
                   },
-                );
-              },
-            ),
+                ),
+              ),
+              Divider(
+                height: 1,
+                thickness: 1,
+                color: isDark
+                    ? AppColors.border
+                    : Colors.grey.withValues(alpha: 0.15),
+              ),
+            ],
           ),
-          SizedBox(height: 12.h),
 
           // ── Assignments List / States ──
           Expanded(
@@ -153,34 +182,86 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
                 await notifier.refresh();
               },
               child: assignmentsAsync.when(
-                loading: () => _buildShimmerList(isDark, theme),
+                loading: () => _ShimmerList(isDark: isDark, theme: theme),
                 error: (error, st) {
                   debugLog(error);
                   debugLog(st.toString());
-                  return _buildErrorWidget(
-                  context,
-                  error.toString(),
-                  () => notifier.refresh(),
-                );
+                  return _ErrorStateWidget(
+                    error: error.toString(),
+                    onRetry: () => notifier.refresh(),
+                  );
                 },
-                data: (assignments) {
-                  if (assignments.isEmpty) {
-                    return _buildEmptyWidget(context);
+                data: (rawAssignments) {
+                  var assignments = rawAssignments;
+
+                  // Apply client-side filters if active
+                  if (filterState.startDate != null) {
+                    assignments = assignments.where((a) {
+                      final d = a.assignedAt ?? a.task?.createdAt;
+                      return d != null &&
+                          (d.isAfter(filterState.startDate!) ||
+                              d.isAtSameMomentAs(filterState.startDate!));
+                    }).toList();
                   }
 
-                  return ListView.separated(
+                  if (filterState.endDate != null) {
+                    final endOfDay =
+                        filterState.endDate!.add(const Duration(days: 1));
+                    assignments = assignments.where((a) {
+                      final d = a.assignedAt ?? a.task?.createdAt;
+                      return d != null && d.isBefore(endOfDay);
+                    }).toList();
+                  }
+
+                  if (filterState.minAmount != null) {
+                    assignments = assignments.where((a) {
+                      final price = a.acceptedPrice ??
+                          a.task?.providerPayout ??
+                          a.task?.customerTotalPrice ??
+                          0.0;
+                      return price >= filterState.minAmount!;
+                    }).toList();
+                  }
+
+                  if (filterState.maxAmount != null) {
+                    assignments = assignments.where((a) {
+                      final price = a.acceptedPrice ??
+                          a.task?.providerPayout ??
+                          a.task?.customerTotalPrice ??
+                          0.0;
+                      return price <= filterState.maxAmount!;
+                    }).toList();
+                  }
+
+                  if (assignments.isEmpty) {
+                    return const _EmptyStateWidget();
+                  }
+
+                  final totalCount =
+                      assignments.length + (notifier.hasMore ? 1 : 0);
+
+                  return ListView.builder(
                     controller: _scrollController,
                     physics: const AlwaysScrollableScrollPhysics(
                       parent: BouncingScrollPhysics(),
                     ),
-                    padding: EdgeInsets.symmetric(
-                      horizontal: 20.w,
-                      vertical: 8.h,
-                    ),
-                    itemCount: assignments.length + (notifier.hasMore ? 1 : 0),
-                    separatorBuilder: (_, _) => SizedBox(height: 12.h),
+                    padding: EdgeInsets.only(bottom: 20.h),
+                    itemCount: totalCount * 2 - 1,
                     itemBuilder: (context, index) {
-                      if (index == assignments.length) {
+                      if (index.isOdd) {
+                        return Divider(
+                          height: 1,
+                          thickness: 1,
+                          indent: 16.w,
+                          endIndent: 16.w,
+                          color: isDark
+                              ? AppColors.border
+                              : Colors.grey.withValues(alpha: 0.12),
+                        );
+                      }
+
+                      final itemIndex = index ~/ 2;
+                      if (itemIndex == assignments.length) {
                         return Padding(
                           padding: EdgeInsets.symmetric(vertical: 16.h),
                           child: const Center(
@@ -192,9 +273,22 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
                         );
                       }
 
-                      final assignment = assignments[index];
-                      return _buildAssignmentCard(
-                          context, assignment, isDark, theme);
+                      final assignment = assignments[itemIndex];
+                      return _AssignmentTile(
+                        assignment: assignment,
+                        index: itemIndex,
+                        isDark: isDark,
+                        onTap: () {
+                          final taskId =
+                              assignment.taskId ?? assignment.task?.id;
+                          if (taskId != null && taskId.isNotEmpty) {
+                            context.pushNamed(
+                              TasksRoutes.taskDetailRoute,
+                              pathParameters: {'taskId': taskId},
+                            );
+                          }
+                        },
+                      );
                     },
                   );
                 },
@@ -205,223 +299,711 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
       ),
     );
   }
+}
 
-  Widget _buildAssignmentCard(
-    BuildContext context,
-    Assignment assignment,
-    bool isDark,
-    ThemeData theme,
-  ) {
-    final task = assignment.task;
-    final title = task?.title ?? 'Assignment';
-    final description = task?.description ?? '';
-    final price = assignment.acceptedPrice ??
-        task?.providerPayout ??
-        task?.customerTotalPrice ??
-        0.0;
-    final rawStatus = assignment.status ?? task?.status ?? 'ASSIGNED';
-    final (statusLabel, statusColor, statusBgColor) = _getStatusProps(rawStatus);
+// ─────────────────────────────────────────────────────────────────────────────
+// FILTER SHEET BOTTOM SHEET WIDGET
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _FilterSheet extends ConsumerStatefulWidget {
+  const _FilterSheet();
+
+  static Future<void> show(BuildContext context) {
+    return showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => const _FilterSheet(),
+    );
+  }
+
+  @override
+  ConsumerState<_FilterSheet> createState() => _FilterSheetState();
+}
+
+class _FilterSheetState extends ConsumerState<_FilterSheet> {
+  late Set<String> _statuses;
+  DateTime? _startDate;
+  DateTime? _endDate;
+  late TextEditingController _minAmountController;
+  late TextEditingController _maxAmountController;
+
+  @override
+  void initState() {
+    super.initState();
+    final filter = ref.read(assignmentFilterProvider);
+    _statuses = Set<String>.from(filter.statuses);
+    _startDate = filter.startDate;
+    _endDate = filter.endDate;
+    _minAmountController = TextEditingController(
+      text:
+          filter.minAmount != null ? filter.minAmount!.toStringAsFixed(0) : '',
+    );
+    _maxAmountController = TextEditingController(
+      text:
+          filter.maxAmount != null ? filter.maxAmount!.toStringAsFixed(0) : '',
+    );
+  }
+
+  @override
+  void dispose() {
+    _minAmountController.dispose();
+    _maxAmountController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _selectDate(BuildContext context, bool isStart) async {
+    final initialDate = isStart
+        ? (_startDate ?? DateTime.now())
+        : (_endDate ?? DateTime.now());
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: initialDate,
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2030),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: Theme.of(context).colorScheme.copyWith(
+                  primary: AppColors.primary,
+                ),
+          ),
+          child: child!,
+        );
+      },
+    );
+    if (picked != null) {
+      setState(() {
+        if (isStart) {
+          _startDate = picked;
+          if (_endDate != null && _endDate!.isBefore(_startDate!)) {
+            _endDate = _startDate;
+          }
+        } else {
+          _endDate = picked;
+        }
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
     return Container(
+      constraints: BoxConstraints(maxHeight: 0.85.sh),
       decoration: BoxDecoration(
-        color: isDark ? theme.colorScheme.surface : Colors.white,
-        borderRadius: AppDecorations.radiusLg,
-        border: Border.all(
-          color:
-              isDark ? AppColors.border : Colors.grey.withValues(alpha: 0.15),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.04),
-            blurRadius: 10.r,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        color: theme.scaffoldBackgroundColor,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24.r)),
       ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () {
-            final taskId = assignment.taskId ?? task?.id;
-            if (taskId != null && taskId.isNotEmpty) {
-              context.pushNamed(
-                TasksRoutes.taskDetailRoute,
-                pathParameters: {'taskId': taskId},
-              );
-            }
-          },
-          borderRadius: AppDecorations.radiusLg,
-          child: Padding(
-            padding: EdgeInsets.all(16.r),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+      padding: EdgeInsets.only(
+        top: 16.h,
+        left: 20.w,
+        right: 20.w,
+        bottom: MediaQuery.of(context).viewInsets.bottom + 20.h,
+      ),
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Handle bar
+            Center(
+              child: Container(
+                width: 40.w,
+                height: 4.h,
+                decoration: BoxDecoration(
+                  color: isDark ? AppColors.border : Colors.grey[300],
+                  borderRadius: BorderRadius.circular(2.r),
+                ),
+              ),
+            ),
+            SizedBox(height: 16.h),
+
+            // Header row
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                // Header Row: Status Chip + Price
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Container(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: 10.w,
-                        vertical: 4.h,
-                      ),
-                      decoration: BoxDecoration(
-                        color: statusBgColor,
-                        borderRadius: BorderRadius.circular(12.r),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Container(
-                            width: 6.r,
-                            height: 6.r,
-                            decoration: BoxDecoration(
-                              color: statusColor,
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                          SizedBox(width: 6.w),
-                          Text(
-                            statusLabel,
-                            style: AppTextStyles.label.copyWith(
-                              color: statusColor,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 11.sp,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Text(
-                      price.toNaira(2),
-                      style: AppTextStyles.h3.copyWith(
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 18.sp,
-                      ),
-                    ),
-                  ],
-                ),
-                SizedBox(height: 12.h),
-
-                // Title
                 Text(
-                  title,
-                  style: AppTextStyles.subtitle.copyWith(
+                  'Filter Assignments',
+                  style: AppTextStyles.h2.copyWith(
+                    fontSize: 18.sp,
                     fontWeight: FontWeight.bold,
-                    fontSize: 16.sp,
-                    color: isDark ? AppColors.textPrimary : Colors.black87,
                   ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
                 ),
-
-                if (description.isNotEmpty) ...[
-                  SizedBox(height: 4.h),
-                  Text(
-                    description,
-                    style: AppTextStyles.bodySmall.copyWith(
-                      fontSize: 13.sp,
-                      color: AppColors.textMuted,
+                TextButton(
+                  onPressed: () {
+                    setState(() {
+                      _statuses.clear();
+                      _startDate = null;
+                      _endDate = null;
+                      _minAmountController.clear();
+                      _maxAmountController.clear();
+                    });
+                  },
+                  child: Text(
+                    'Reset All',
+                    style: AppTextStyles.label.copyWith(
+                      color: AppColors.error,
+                      fontWeight: FontWeight.w600,
                     ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
                   ),
-                ],
-
-                SizedBox(height: 12.h),
-                Divider(
-                  color: isDark
-                      ? AppColors.border
-                      : Colors.grey.withValues(alpha: 0.15),
-                  height: 1,
-                ),
-                SizedBox(height: 10.h),
-
-                // Footer: Assigned Date & Chevron
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.schedule_rounded,
-                          size: 14.r,
-                          color: AppColors.textMuted,
-                        ),
-                        SizedBox(width: 6.w),
-                        Text(
-                          _formatDate(
-                              assignment.assignedAt ?? task?.createdAt),
-                          style: AppTextStyles.bodySmall.copyWith(
-                            fontSize: 12.sp,
-                            color: AppColors.textMuted,
-                          ),
-                        ),
-                      ],
-                    ),
-                    Row(
-                      children: [
-                        Text(
-                          'View Details',
-                          style: AppTextStyles.label.copyWith(
-                            color: AppColors.primary,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 12.sp,
-                          ),
-                        ),
-                        SizedBox(width: 2.w),
-                        Icon(
-                          Icons.chevron_right_rounded,
-                          size: 18.r,
-                          color: AppColors.primary,
-                        ),
-                      ],
-                    ),
-                  ],
                 ),
               ],
+            ),
+            SizedBox(height: 16.h),
+
+            // Status Section
+            Text(
+              'Assignment Status',
+              style: AppTextStyles.subtitle.copyWith(
+                fontWeight: FontWeight.bold,
+                fontSize: 14.sp,
+              ),
+            ),
+            SizedBox(height: 10.h),
+            Wrap(
+              spacing: 8.w,
+              runSpacing: 8.h,
+              children: AssignmentStatusFilter.values
+                  .where((f) => f != AssignmentStatusFilter.all)
+                  .map((filter) {
+                final isSelected = filter.value != null &&
+                    _statuses.contains(filter.value);
+                return ChoiceChip(
+                  label: Text(filter.label),
+                  selected: isSelected,
+                  selectedColor: AppColors.primary,
+                  backgroundColor: isDark
+                      ? Colors.white.withValues(alpha: 0.08)
+                      : Colors.grey.withValues(alpha: 0.12),
+                  labelStyle: AppTextStyles.label.copyWith(
+                    color: isSelected
+                        ? Colors.white
+                        : (isDark ? AppColors.textPrimary : Colors.black87),
+                    fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                  ),
+                  onSelected: (selected) {
+                    setState(() {
+                      if (selected && filter.value != null) {
+                        _statuses.add(filter.value!);
+                      } else if (filter.value != null) {
+                        _statuses.remove(filter.value!);
+                      }
+                    });
+                  },
+                );
+              }).toList(),
+            ),
+            SizedBox(height: 20.h),
+
+            // Date Range Section
+            Text(
+              'Date Range',
+              style: AppTextStyles.subtitle.copyWith(
+                fontWeight: FontWeight.bold,
+                fontSize: 14.sp,
+              ),
+            ),
+            SizedBox(height: 10.h),
+            Row(
+              children: [
+                Expanded(
+                  child: _DateField(
+                    label: 'Start Date',
+                    date: _startDate,
+                    onTap: () => _selectDate(context, true),
+                    onClear: _startDate != null
+                        ? () => setState(() => _startDate = null)
+                        : null,
+                    isDark: isDark,
+                  ),
+                ),
+                SizedBox(width: 12.w),
+                Expanded(
+                  child: _DateField(
+                    label: 'End Date',
+                    date: _endDate,
+                    onTap: () => _selectDate(context, false),
+                    onClear: _endDate != null
+                        ? () => setState(() => _endDate = null)
+                        : null,
+                    isDark: isDark,
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: 20.h),
+
+            // Amount Range Section
+            Text(
+              'Payout Amount (₦)',
+              style: AppTextStyles.subtitle.copyWith(
+                fontWeight: FontWeight.bold,
+                fontSize: 14.sp,
+              ),
+            ),
+            SizedBox(height: 10.h),
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _minAmountController,
+                    keyboardType: TextInputType.number,
+                    style: AppTextStyles.bodyMedium,
+                    decoration: InputDecoration(
+                      hintText: 'Min (₦)',
+                      isDense: true,
+                      prefixText: '₦ ',
+                      prefixStyle: AppTextStyles.bodyMedium.copyWith(
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12.r),
+                        borderSide: const BorderSide(color: AppColors.border),
+                      ),
+                    ),
+                  ),
+                ),
+                SizedBox(width: 12.w),
+                Expanded(
+                  child: TextField(
+                    controller: _maxAmountController,
+                    keyboardType: TextInputType.number,
+                    style: AppTextStyles.bodyMedium,
+                    decoration: InputDecoration(
+                      hintText: 'Max (₦)',
+                      isDense: true,
+                      prefixText: '₦ ',
+                      prefixStyle: AppTextStyles.bodyMedium.copyWith(
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12.r),
+                        borderSide: const BorderSide(color: AppColors.border),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: 24.h),
+
+            // Apply Button
+            SizedBox(
+              width: double.infinity,
+              height: 48.h,
+              child: ElevatedButton(
+                onPressed: () {
+                  final minVal = double.tryParse(_minAmountController.text);
+                  final maxVal = double.tryParse(_maxAmountController.text);
+
+                  ref.read(assignmentFilterProvider.notifier).updateFilter(
+                        AssignmentFilterState(
+                          statuses: _statuses,
+                          startDate: _startDate,
+                          endDate: _endDate,
+                          minAmount: minVal,
+                          maxAmount: maxVal,
+                        ),
+                      );
+                  Navigator.pop(context);
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(24.r),
+                  ),
+                ),
+                child: Text(
+                  'Apply Filters',
+                  style: AppTextStyles.buttonMedium.copyWith(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 15.sp,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _DateField extends StatelessWidget {
+  final String label;
+  final DateTime? date;
+  final VoidCallback onTap;
+  final VoidCallback? onClear;
+  final bool isDark;
+
+  const _DateField({
+    required this.label,
+    required this.date,
+    required this.onTap,
+    this.onClear,
+    required this.isDark,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final text =
+        date != null ? '${date!.day}/${date!.month}/${date!.year}' : label;
+
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12.r),
+      child: Container(
+        padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
+        decoration: BoxDecoration(
+          color:
+              isDark ? Colors.white.withValues(alpha: 0.05) : Colors.grey[100],
+          borderRadius: BorderRadius.circular(12.r),
+          border: Border.all(
+            color: date != null
+                ? AppColors.primary
+                : (isDark
+                    ? AppColors.border
+                    : Colors.grey.withValues(alpha: 0.3)),
+          ),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              Icons.calendar_today_rounded,
+              size: 16.r,
+              color: date != null ? AppColors.primary : AppColors.textMuted,
+            ),
+            SizedBox(width: 8.w),
+            Expanded(
+              child: Text(
+                text,
+                style: AppTextStyles.bodySmall.copyWith(
+                  color: date != null
+                      ? (isDark ? AppColors.textPrimary : Colors.black87)
+                      : AppColors.textMuted,
+                  fontWeight:
+                      date != null ? FontWeight.w600 : FontWeight.normal,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            if (onClear != null)
+              GestureDetector(
+                onTap: onClear,
+                child: Icon(
+                  Icons.close_rounded,
+                  size: 14.r,
+                  color: AppColors.textMuted,
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// FILTER CHIP WIDGET
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _StatusFilterChip extends StatelessWidget {
+  final AssignmentStatusFilter filter;
+  final bool isSelected;
+  final bool isDark;
+  final VoidCallback onTap;
+
+  const _StatusFilterChip({
+    required this.filter,
+    required this.isSelected,
+    required this.isDark,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isAll = filter == AssignmentStatusFilter.all;
+
+    return Padding(
+      padding: EdgeInsets.only(right: 8.w),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeInOut,
+        decoration: BoxDecoration(
+          color: isSelected
+              ? AppColors.primary
+              : (isDark
+                  ? Colors.white.withValues(alpha: 0.08)
+                  : Colors.grey.withValues(alpha: 0.12)),
+          borderRadius: BorderRadius.circular(20.r),
+          border: Border.all(
+            color: isSelected
+                ? AppColors.primary
+                : (isDark
+                    ? AppColors.border
+                    : Colors.grey.withValues(alpha: 0.2)),
+            width: 1,
+          ),
+        ),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(20.r),
+            child: Padding(
+              padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 6.h),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (isSelected && !isAll) ...[
+                    Icon(
+                      Icons.check_rounded,
+                      size: 14.r,
+                      color: Colors.white,
+                    ),
+                    SizedBox(width: 4.w),
+                  ],
+                  Text(
+                    filter.label,
+                    style: AppTextStyles.label.copyWith(
+                      color: isSelected
+                          ? Colors.white
+                          : (isDark ? AppColors.textPrimary : Colors.black87),
+                      fontWeight:
+                          isSelected ? FontWeight.bold : FontWeight.w500,
+                      fontSize: 13.sp,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
       ),
     );
   }
+}
 
-  (String label, Color textColor, Color bgColor) _getStatusProps(
-      String rawStatus) {
+// ─────────────────────────────────────────────────────────────────────────────
+// ASSIGNMENT TILE WIDGET (Mobile Card Layout)
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _AssignmentTile extends StatelessWidget {
+  final Assignment assignment;
+  final int index;
+  final bool isDark;
+  final VoidCallback onTap;
+
+  const _AssignmentTile({
+    required this.assignment,
+    required this.index,
+    required this.isDark,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final task = assignment.task;
+    final title = task?.title ?? 'Task Assignment';
+    final price = assignment.acceptedPrice ??
+        task?.providerPayout ??
+        task?.customerTotalPrice ??
+        0.0;
+    final rawStatus = assignment.status ?? task?.status ?? 'ASSIGNED';
+    final statusProps = _getStatusProps(rawStatus, isDark);
+    final avatarProps = _getAvatarProps(title);
+
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            // Category / Task Icon Avatar
+            Container(
+              width: 44.r,
+              height: 44.r,
+              decoration: BoxDecoration(
+                color: avatarProps.bgColor,
+                shape: BoxShape.circle,
+              ),
+              child: Center(
+                child: Icon(
+                  avatarProps.icon,
+                  size: 20.r,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+            SizedBox(width: 12.w),
+
+            // Title & DateTime Column
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: AppTextStyles.subtitle.copyWith(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14.sp,
+                      color: isDark ? AppColors.textPrimary : Colors.black87,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  SizedBox(height: 4.h),
+                  Text(
+                    _formatDate(assignment.assignedAt ?? task?.createdAt),
+                    style: AppTextStyles.bodySmall.copyWith(
+                      fontSize: 12.sp,
+                      color: AppColors.textMuted,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            SizedBox(width: 12.w),
+
+            // Price & Status Badge Column
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  price.toNaira(2),
+                  style: AppTextStyles.subtitle.copyWith(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14.sp,
+                    color: isDark ? AppColors.textPrimary : Colors.black87,
+                  ),
+                ),
+                SizedBox(height: 4.h),
+                _StatusBadge(statusProps: statusProps),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  _StatusProps _getStatusProps(String rawStatus, bool isDark) {
     final status = rawStatus.toUpperCase();
     switch (status) {
       case 'IN_PROGRESS':
       case 'STARTED':
       case 'ASSIGNED':
       case 'ACTIVE':
-        return (
-          'Active',
-          AppColors.primary,
-          AppColors.primary.withValues(alpha: 0.12),
+        return _StatusProps(
+          label: 'Active',
+          textColor: const Color(0xFF00B368),
+          chipBgColor: isDark
+              ? const Color(0xFF0A2B1D)
+              : const Color(0xFFE6F9F0),
+          iconCircleBgColor: const Color(0xFF00B368),
+          icon: Icons.north_east_rounded,
         );
       case 'COMPLETED':
-        return (
-          'Completed',
-          AppColors.success,
-          AppColors.success.withValues(alpha: 0.12),
+        return _StatusProps(
+          label: 'Done',
+          textColor: const Color(0xFF00B368),
+          chipBgColor: isDark
+              ? const Color(0xFF0A2B1D)
+              : const Color(0xFFE6F9F0),
+          iconCircleBgColor: const Color(0xFF00B368),
+          icon: Icons.north_east_rounded,
         );
       case 'CANCELLED':
       case 'CANCELED':
       case 'FAILED':
-        return (
-          'Cancelled',
-          AppColors.error,
-          AppColors.error.withValues(alpha: 0.12),
+        return _StatusProps(
+          label: 'Cancel',
+          textColor: const Color(0xFFE53935),
+          chipBgColor: isDark
+              ? const Color(0xFF331515)
+              : const Color(0xFFFFEAEA),
+          iconCircleBgColor: const Color(0xFFE53935),
+          icon: Icons.south_east_rounded,
         );
       default:
-        return (
-          status.replaceAll('_', ' '),
-          AppColors.warning,
-          AppColors.warning.withValues(alpha: 0.12),
+        return _StatusProps(
+          label: status.replaceAll('_', ' '),
+          textColor: const Color(0xFFD97706),
+          chipBgColor: isDark
+              ? const Color(0xFF2E1F0A)
+              : const Color(0xFFFFF7ED),
+          iconCircleBgColor: const Color(0xFFD97706),
+          icon: Icons.east_rounded,
         );
     }
+  }
+
+  _AvatarProps _getAvatarProps(String title) {
+    final lower = title.toLowerCase().trim();
+    if (lower.contains('carpet') || lower.contains('upholstery') || lower.contains('clean')) {
+      return const _AvatarProps(
+        bgColor: Color(0xFF627EEA),
+        iconColor: Colors.white,
+        icon: Icons.cleaning_services_rounded,
+      );
+    } else if (lower.contains('office') || lower.contains('commercial')) {
+      return const _AvatarProps(
+        bgColor: Color(0xFF8B5CF6),
+        iconColor: Colors.white,
+        icon: Icons.business_center_rounded,
+      );
+    } else if (lower.contains('home') || lower.contains('house') || lower.contains('standard')) {
+      return const _AvatarProps(
+        bgColor: Color(0xFF26A17B),
+        iconColor: Colors.white,
+        icon: Icons.home_repair_service_rounded,
+      );
+    } else if (lower.contains('plumb')) {
+      return const _AvatarProps(
+        bgColor: Color(0xFF0EA5E9),
+        iconColor: Colors.white,
+        icon: Icons.plumbing_rounded,
+      );
+    } else if (lower.contains('electric')) {
+      return const _AvatarProps(
+        bgColor: Color(0xFF007D5A),
+        iconColor: Colors.white,
+        icon: Icons.electrical_services_rounded,
+      );
+    } else if (lower.contains('handyman') || lower.contains('fix') || lower.contains('repair')) {
+      return const _AvatarProps(
+        bgColor: Color(0xFFF7931A),
+        iconColor: Colors.white,
+        icon: Icons.build_rounded,
+      );
+    }
+
+    final palette = const [
+      (Color(0xFF627EEA), Icons.cleaning_services_rounded),
+      (Color(0xFF8B5CF6), Icons.business_center_rounded),
+      (Color(0xFF26A17B), Icons.home_repair_service_rounded),
+      (Color(0xFF007D5A), Icons.electrical_services_rounded),
+      (Color(0xFF0EA5E9), Icons.plumbing_rounded),
+      (Color(0xFFF7931A), Icons.build_rounded),
+      (Color(0xFFF3BA2F), Icons.work_rounded),
+    ];
+    final selected = palette[lower.hashCode.abs() % palette.length];
+    return _AvatarProps(
+      bgColor: selected.$1,
+      iconColor: Colors.white,
+      icon: selected.$2,
+    );
   }
 
   String _formatDate(DateTime? dateTime) {
@@ -443,120 +1025,265 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
     ];
     return '${months[local.month - 1]} ${local.day}, ${local.year}';
   }
+}
 
-  Widget _buildShimmerList(bool isDark, ThemeData theme) {
+// ─────────────────────────────────────────────────────────────────────────────
+// STATUS BADGE WIDGET
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _StatusBadge extends StatelessWidget {
+  final _StatusProps statusProps;
+
+  const _StatusBadge({required this.statusProps});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 3.h),
+      decoration: BoxDecoration(
+        color: statusProps.chipBgColor,
+        borderRadius: BorderRadius.circular(12.r),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 14.r,
+            height: 14.r,
+            decoration: BoxDecoration(
+              color: statusProps.iconCircleBgColor,
+              shape: BoxShape.circle,
+            ),
+            child: Center(
+              child: Icon(
+                statusProps.icon,
+                size: 8.r,
+                color: Colors.white,
+              ),
+            ),
+          ),
+          SizedBox(width: 4.w),
+          Text(
+            statusProps.label,
+            style: AppTextStyles.label.copyWith(
+              color: statusProps.textColor,
+              fontWeight: FontWeight.bold,
+              fontSize: 11.sp,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SHIMMER LIST SKELETON
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _ShimmerList extends StatelessWidget {
+  final bool isDark;
+  final ThemeData theme;
+
+  const _ShimmerList({required this.isDark, required this.theme});
+
+  @override
+  Widget build(BuildContext context) {
     final baseColor = isDark ? theme.colorScheme.surface : Colors.grey[200]!;
     final highlightColor = isDark ? AppColors.border : Colors.grey[100]!;
 
     return Shimmer.fromColors(
       baseColor: baseColor,
       highlightColor: highlightColor,
-      child: ListView.separated(
-        padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 8.h),
-        itemCount: 4,
-        separatorBuilder: (_, _) => SizedBox(height: 12.h),
-        itemBuilder: (_, index) => Container(
-          height: 140.h,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: AppDecorations.radiusLg,
+      child: ListView.builder(
+        physics: const AlwaysScrollableScrollPhysics(
+          parent: BouncingScrollPhysics(),
+        ),
+        padding: EdgeInsets.only(bottom: 20.h),
+        itemCount: 8 * 2 - 1,
+        itemBuilder: (_, index) {
+          if (index.isOdd) {
+            return Divider(
+              height: 1,
+              thickness: 1,
+              indent: 16.w,
+              endIndent: 16.w,
+              color: isDark
+                  ? AppColors.border
+                  : Colors.grey.withValues(alpha: 0.12),
+            );
+          }
+          return Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Container(
+                  width: 44.r,
+                  height: 44.r,
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                SizedBox(width: 12.w),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        width: 120.w,
+                        height: 14.h,
+                        color: Colors.white,
+                      ),
+                      SizedBox(height: 6.h),
+                      Container(
+                        width: 70.w,
+                        height: 10.h,
+                        color: Colors.white,
+                      ),
+                    ],
+                  ),
+                ),
+                SizedBox(width: 12.w),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Container(
+                      width: 60.w,
+                      height: 14.h,
+                      color: Colors.white,
+                    ),
+                    SizedBox(height: 6.h),
+                    Container(
+                      width: 50.w,
+                      height: 18.h,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12.r),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// EMPTY STATE WIDGET
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _EmptyStateWidget extends StatelessWidget {
+  const _EmptyStateWidget();
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      physics: const AlwaysScrollableScrollPhysics(
+        parent: BouncingScrollPhysics(),
+      ),
+      child: SizedBox(
+        height: 0.6.sh,
+        child: Center(
+          child: Padding(
+            padding: EdgeInsets.symmetric(horizontal: 32.w),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  padding: EdgeInsets.all(20.r),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.assignment_outlined,
+                    size: 48.r,
+                    color: AppColors.primary,
+                  ),
+                ),
+                SizedBox(height: 16.h),
+                Text(
+                  'No Assignments Found',
+                  style: AppTextStyles.h3.copyWith(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18.sp,
+                  ),
+                ),
+                SizedBox(height: 6.h),
+                Text(
+                  'When tasks are assigned to you, they will appear here.',
+                  textAlign: TextAlign.center,
+                  style: AppTextStyles.bodySmall.copyWith(
+                    fontSize: 13.sp,
+                    color: AppColors.textMuted,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
+}
 
-  Widget _buildEmptyWidget(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: EdgeInsets.symmetric(horizontal: 32.w),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              padding: EdgeInsets.all(20.r),
-              decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.1),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                Icons.assignment_outlined,
-                size: 48.r,
-                color: AppColors.primary,
-              ),
-            ),
-            SizedBox(height: 16.h),
-            Text(
-              'No Assignments Found',
-              style: AppTextStyles.h3.copyWith(
-                fontWeight: FontWeight.bold,
-                fontSize: 18.sp,
-              ),
-            ),
-            SizedBox(height: 6.h),
-            Text(
-              'When tasks are assigned to you, they will appear here.',
-              textAlign: TextAlign.center,
-              style: AppTextStyles.bodySmall.copyWith(
-                fontSize: 13.sp,
-                color: AppColors.textMuted,
-              ),
-            ),
-          ],
+// ─────────────────────────────────────────────────────────────────────────────
+// ERROR STATE WIDGET
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _ErrorStateWidget extends StatelessWidget {
+  final Object error;
+  final VoidCallback onRetry;
+
+  const _ErrorStateWidget({required this.error, required this.onRetry});
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      physics: const AlwaysScrollableScrollPhysics(
+        parent: BouncingScrollPhysics(),
+      ),
+      child: SizedBox(
+        height: 0.6.sh,
+        child: AppErrorWidget(
+          error: error,
+          onRetry: onRetry,
         ),
       ),
     );
   }
+}
 
-  Widget _buildErrorWidget(
-    BuildContext context,
-    String error,
-    VoidCallback onRetry,
-  ) {
-    return Center(
-      child: Padding(
-        padding: EdgeInsets.symmetric(horizontal: 32.w),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.error_outline_rounded,
-              size: 48.r,
-              color: AppColors.error,
-            ),
-            SizedBox(height: 16.h),
-            Text(
-              'Failed to Load Assignments',
-              style: AppTextStyles.h3.copyWith(
-                fontWeight: FontWeight.bold,
-                fontSize: 18.sp,
-              ),
-            ),
-            SizedBox(height: 6.h),
-            Text(
-              error,
-              textAlign: TextAlign.center,
-              style: AppTextStyles.bodySmall.copyWith(
-                fontSize: 13.sp,
-                color: AppColors.textMuted,
-              ),
-            ),
-            SizedBox(height: 20.h),
-            ElevatedButton.icon(
-              onPressed: onRetry,
-              icon: const Icon(Icons.refresh_rounded),
-              label: const Text('Try Again'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: AppDecorations.radiusMd,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+class _StatusProps {
+  final String label;
+  final Color textColor;
+  final Color chipBgColor;
+  final Color iconCircleBgColor;
+  final IconData icon;
+
+  const _StatusProps({
+    required this.label,
+    required this.textColor,
+    required this.chipBgColor,
+    required this.iconCircleBgColor,
+    required this.icon,
+  });
+}
+
+class _AvatarProps {
+  final Color bgColor;
+  final Color iconColor;
+  final IconData icon;
+
+  const _AvatarProps({
+    required this.bgColor,
+    required this.iconColor,
+    required this.icon,
+  });
 }

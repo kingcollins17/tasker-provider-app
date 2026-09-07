@@ -287,7 +287,7 @@ class _TasksClient implements TasksClient {
   Future<BaseApiResponse<PaginatedData<Assignment>>> getAssignments({
     int page = 1,
     int perPage = 20,
-    String? status,
+    List<String>? status,
     String? taskId,
     String? sortBy = "assigned_at",
     bool sortDesc = true,

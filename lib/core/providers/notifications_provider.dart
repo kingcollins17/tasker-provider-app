@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:tasker_app/core/utils/debug_logger.dart';
 import '../api/api.dart';
 import '../models/api/api.dart';
 import '../utils/app_exception_handler.dart';
@@ -23,7 +24,8 @@ class NotificationsNotifier extends AsyncNotifier<NotificationsState> {
     final notificationsRes =
         results[0] as BaseApiResponse<PaginatedData<NotificationItem>>;
     final countsRes = results[1] as BaseApiResponse<NotificationCounts>;
-
+    debugLog(results[0]);
+    debugLog(results[1]);
     return NotificationsState(
       paginatedData: notificationsRes.data,
       counts: countsRes.data,
@@ -71,6 +73,7 @@ class NotificationsNotifier extends AsyncNotifier<NotificationsState> {
             isLoadingMore: false,
           ),
         );
+        debugLog(newPaginatedData);
       } else {
         state = AsyncData(state.value!.copyWith(isLoadingMore: false));
       }
