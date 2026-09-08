@@ -11,6 +11,8 @@ class UserLocation {
   final String? regionId;
   @JsonKey(name: 'address_line')
   final String? addressLine;
+  final double? latitude;
+  final double? longitude;
   @JsonKey(name: 'created_at')
   final DateTime? createdAt;
   @JsonKey(name: 'updated_at')
@@ -21,6 +23,8 @@ class UserLocation {
     this.userId,
     this.regionId,
     this.addressLine,
+    this.latitude,
+    this.longitude,
     this.createdAt,
     this.updatedAt,
   });

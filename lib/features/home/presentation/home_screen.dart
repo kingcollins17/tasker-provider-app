@@ -4,6 +4,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:shimmer/shimmer.dart';
 
 import 'package:tasker_app/core/providers/providers.dart';
+import 'package:tasker_app/core/ui/widgets/submit_review_sheet.dart';
 import 'package:tasker_app/core/utils/extensions/loading_context_ext.dart';
 
 import '../../../core/ui/designs/colors.dart';
@@ -37,9 +38,10 @@ class HomeScreen extends ConsumerWidget {
     ref.watch(syncUserLocationProvider);
     ref.watch(userAddressProvider);
     ref.watch(syncCloudMessagingTokenProvider);
+    ref.watch(pendingProviderReviewsProvider);
 
     final firstName = user.value?.providerProfile?.firstName ?? '';
-
+    
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       floatingActionButton: const DebugFab(),
@@ -62,6 +64,7 @@ class HomeScreen extends ConsumerWidget {
                 ref.invalidate(kycStatusProvider);
                 ref.invalidate(providerPayoutsProvider(null));
                 ref.invalidate(currentDispatchProvider);
+                
 
                 try {
                   await Future.wait([

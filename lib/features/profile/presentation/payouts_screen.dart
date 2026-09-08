@@ -8,6 +8,7 @@ import 'package:tasker_app/core/router/navigator_keys.dart';
 import '../../../core/models/models.dart';
 import '../../../core/providers/payments_provider.dart';
 import '../../../core/ui/designs/designs.dart';
+import '../../../core/ui/widgets/app_error_widget.dart';
 import '../../../core/utils/extensions/num_ext.dart';
 
 /// Main screen listing the user's provider payouts with filter chips,
@@ -649,30 +650,10 @@ class _ErrorState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: EdgeInsets.all(24.r),
-        child: Column(
-          children: [
-            Icon(
-              Icons.error_outline_rounded,
-              color: AppColors.error,
-              size: 48.r,
-            ),
-            SizedBox(height: 12.h),
-            Text(
-              'Failed to load payouts',
-              style: AppTextStyles.subtitle.copyWith(color: AppColors.error),
-            ),
-            SizedBox(height: 16.h),
-            ElevatedButton.icon(
-              onPressed: onRetry,
-              icon: const Icon(Icons.refresh_rounded),
-              label: const Text('Retry'),
-            ),
-          ],
-        ),
-      ),
+    return AppErrorWidget.small(
+      error: error,
+      title: 'Failed to load payouts',
+      onRetry: onRetry,
     );
   }
 }

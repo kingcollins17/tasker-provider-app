@@ -11,6 +11,8 @@ UserLocation _$UserLocationFromJson(Map<String, dynamic> json) => UserLocation(
   userId: json['user_id'] as String?,
   regionId: json['region_id'] as String?,
   addressLine: json['address_line'] as String?,
+  latitude: (json['latitude'] as num?)?.toDouble(),
+  longitude: (json['longitude'] as num?)?.toDouble(),
   createdAt: json['created_at'] == null
       ? null
       : DateTime.parse(json['created_at'] as String),
@@ -25,6 +27,8 @@ Map<String, dynamic> _$UserLocationToJson(UserLocation instance) =>
       'user_id': instance.userId,
       'region_id': instance.regionId,
       'address_line': instance.addressLine,
+      'latitude': instance.latitude,
+      'longitude': instance.longitude,
       'created_at': instance.createdAt?.toIso8601String(),
       'updated_at': instance.updatedAt?.toIso8601String(),
     };

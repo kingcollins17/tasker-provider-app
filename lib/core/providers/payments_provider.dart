@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:tasker_app/core/utils/debug_logger.dart';
+import 'package:tasker_app/core/utils/retry_util.dart';
 import '../api/api.dart';
 import '../models/models.dart';
 import '../services/local_storage_service.dart';
@@ -277,7 +278,7 @@ final providerPayoutsProvider =
       ProviderPayoutsNotifier,
       List<Payout>,
       String?
-    >((status) => ProviderPayoutsNotifier(status: status));
+    >((status) => ProviderPayoutsNotifier(status: status), retry: retryFunc(2));
 
 /// FutureProvider for fetching the provider's current outstanding commission debt summary.
 final debtSummaryProvider = FutureProvider<Debt>((ref) async {

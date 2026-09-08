@@ -95,7 +95,7 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
         scrolledUnderElevation: 0,
         leading: context.canPop() ? const BackButton() : null,
         title: Text(
-          'My Assignments',
+          'My Tasks',
           style: AppTextStyles.h3.copyWith(
             fontSize: 18.sp,
             fontWeight: FontWeight.bold,
