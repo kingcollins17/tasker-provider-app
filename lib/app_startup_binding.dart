@@ -1,9 +1,13 @@
 import 'dart:async';
-
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:queue/queue.dart';
 import 'package:tasker_app/core/services/device_tray.dart';
 import 'package:tasker_app/core/services/local_storage_service.dart';
+
+/// Global queue for managing and sequencing asynchronous app tasks and UI prompts.
+final Queue appQueue = Queue(parallel: 1);
+
 
 Future<void> bootstrap() async {
   await dotenv.load();
@@ -15,4 +19,5 @@ Future<void> bootstrap() async {
 }
 
 Future<void> _bootstrapDeferred() async {}
+
 

@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:tasker_app/app_startup_binding.dart';
 import 'package:tasker_app/core/utils/debug_logger.dart';
 import '../services/network_service.dart';
 import '../services/local_storage_service.dart';
@@ -7,6 +8,7 @@ import '../services/web_socket_connection_handler.dart';
 import '../services/device_tray.dart';
 import 'notifications_provider.dart';
 import 'package:tasker_app/features/tasks/presentation/widgets/offer_ping_bottom_sheet.dart';
+
 
 /// AsyncNotifierProvider that maintains a WebSocket connection and exposes a broadcast stream.
 class NotificationsWebSocketNotifier extends AsyncNotifier<Stream<dynamic>> {
@@ -271,7 +273,10 @@ final offerPingListenerProvider = Provider<void>((ref) {
       expiresAt = DateTime.fromMillisecondsSinceEpoch(expiresAtRaw);
     }
 
-    debugLog('offerPingListenerProvider: showing offer ping for task $taskId (expiresAt: $expiresAt)');
-    OfferPingBottomSheet.show(taskId, expiresAt: expiresAt);
+    debugLog('offerPingListenerProvider: queuing offer ping for task $taskId (expiresAt: $expiresAt)');
+    appQueue.add(() async {
+      await OfferPingBottomSheet.show(taskId, expiresAt: expiresAt);
+    });
   });
 });
+

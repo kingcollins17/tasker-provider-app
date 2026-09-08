@@ -34,6 +34,8 @@ class HomeScreen extends ConsumerWidget {
     ref.watch(deviceTrayNotificationProvider);
     ref.watch(offerPingListenerProvider);
     ref.watch(currentDispatchListenerProvider);
+    ref.watch(pendingReviewPrompterProvider);
+
     final user = ref.watch(userProvider);
     ref.watch(syncUserLocationProvider);
     ref.watch(userAddressProvider);

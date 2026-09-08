@@ -1,9 +1,11 @@
 import 'dart:async';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:tasker_app/app_startup_binding.dart';
 import 'package:tasker_app/core/utils/debug_logger.dart';
 import 'package:tasker_app/core/utils/retry_util.dart';
 import 'package:tasker_app/features/tasks/presentation/widgets/offer_ping_bottom_sheet.dart';
+
 import '../utils/app_exception_handler.dart';
 import '../utils/extensions/error_ext.dart';
 import '../models/models.dart';
@@ -222,8 +224,9 @@ final currentDispatchListenerProvider = Provider.autoDispose<void>((ref) {
           dispatch.expiresAt!.isAfter(DateTime.now());
       debugLog(dispatch);
       if (isPending && isNotExpired && dispatch.taskId != null && dispatch.taskId!.isNotEmpty) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          OfferPingBottomSheet.show(
+        
+        appQueue.add(() async {
+          await OfferPingBottomSheet.show(
             dispatch.taskId!,
             expiresAt: dispatch.expiresAt,
           );

@@ -11,7 +11,9 @@ class TaskerApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(pendingReviewPrompterProvider);
     return ScreenUtilInit(
+
       designSize: const Size(
         375,
         812,

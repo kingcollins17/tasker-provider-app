@@ -125,7 +125,12 @@ class _SubmitReviewSheetState extends ConsumerState<SubmitReviewSheet> {
                       ),
                       const Spacer(),
                       IconButton(
-                        onPressed: () => Navigator.of(context).pop(),
+                        onPressed: () {
+                          ref
+                              .read(taskReviewPromptTrackerProvider.notifier)
+                              .updatePromptTrack(taskId: widget.taskId);
+                          Navigator.of(context).pop();
+                        },
                         icon: Icon(
                           Icons.close_rounded,
                           size: 18.r,
@@ -592,6 +597,9 @@ class _SubmitReviewSheetState extends ConsumerState<SubmitReviewSheet> {
                     onSuccess: () {
                       if (mounted) {
                         context.hideLoading();
+                        ref
+                            .read(taskReviewPromptTrackerProvider.notifier)
+                            .resetTrack(taskId: widget.taskId);
                         widget.onSuccess?.call();
                         Navigator.of(context).pop();
                       }
