@@ -6,6 +6,7 @@ part 'base_api_response.g.dart';
 @JsonSerializable(
   genericArgumentFactories: true,
   fieldRename: FieldRename.snake,
+  explicitToJson: true
 )
 class BaseApiResponse<T> {
   final String? detail;

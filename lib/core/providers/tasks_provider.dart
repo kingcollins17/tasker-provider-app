@@ -10,7 +10,6 @@ import '../utils/app_exception_handler.dart';
 import '../utils/extensions/error_ext.dart';
 import '../models/models.dart';
 import '../api/tasks_client.dart';
-import 'location_provider.dart';
 import 'user_provider.dart';
 
 
@@ -23,6 +22,8 @@ final taskDetailProvider = FutureProvider.family<Task, String>((
   if (response.data == null) {
     throw Exception(response.detail ?? 'Failed to load task details');
   }
+  debugLog(response.data!.toJson());
+  debugLog('[taskDetailProvider]');
   return response.data!;
 }, retry: retryFunc(3));
 
@@ -134,12 +135,50 @@ class TaskManagementNotifier extends Notifier<AsyncValue<void>> {
       onError?.call(e.toFriendlyString());
     }
   }
+
+  /// Requests a price adjustment for the given [taskId].
+  Future<void> requestPriceAdjustment(
+    String taskId, {
+    required double amount,
+    String? description,
+    VoidCallback? onSuccess,
+    void Function(String)? onError,
+  }) async {
+    state = const AsyncLoading();
+    try {
+      final client = ref.read(tasksClientProvider);
+      final response = await client.requestPriceAdjustment(
+        taskId,
+        CreatePriceAdjustmentRequest(
+          amount: amount,
+          description: description,
+        ),
+      );
+
+      if (response.isError) {
+        throw Exception(
+          response.detail ?? 'Failed to request price adjustment',
+        );
+      }
+
+      ref.invalidate(taskDetailProvider(taskId));
+      ref.invalidate(taskAssignmentProvider(taskId));
+
+      state = const AsyncData(null);
+      onSuccess?.call();
+    } catch (e, st) {
+      state = AsyncError(e, st);
+      AppExceptionHandler.instance.handleError(e, st);
+      onError?.call(e.toFriendlyString());
+    }
+  }
 }
 
 final taskManagementProvider =
     NotifierProvider<TaskManagementNotifier, AsyncValue<void>>(
       TaskManagementNotifier.new,
     );
+
 
 /// Future family provider to retrieve the provider's current active assignment.
 final currentAssignmentProvider = FutureProvider<Assignment?>((ref) async {
@@ -183,12 +222,16 @@ final isUserAssignedToTaskProvider = FutureProvider.family<bool, String>((
   if (currentProviderId == null || currentProviderId.isEmpty) return false;
 
   try {
-    final assignment = await ref.watch(taskAssignmentProvider(taskId).future);
-    if (assignment == null) return false;
+    // final assignment = await ref.watch(taskAssignmentProvider(taskId).future);
+    // if (assignment == null) return false;
 
-    final assignedProviderId = assignment.providerId ?? assignment.provider?.id;
-    return assignedProviderId == currentProviderId;
-  } catch (_) {
+    // final assignedProviderId = assignment.providerId ?? assignment.provider?.id;
+    var task = (await ref.watch(taskDetailProvider(taskId).future));
+    final assignedProviderId = task.assignedProviderId ?? task.assignment?.providerId;
+    debugLog('[isUserAssignedToTaskProvider] $assignedProviderId == $currentProviderId');
+    return assignedProviderId != null && assignedProviderId == currentProviderId;
+  } catch (e) {
+    debugLog('[isUserAssignedToTaskProvider] error $e');
     return false;
   }
 });

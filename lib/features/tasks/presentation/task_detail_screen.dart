@@ -103,7 +103,6 @@ class _TaskDetailBody extends ConsumerWidget {
             .toList() ??
         [];
 
-    final customerName = task.customer?.fullname ?? 'Customer';
     final formattedDate = task.scheduledStartAt != null
         ? DateFormat('MMMM d, yyyy').format(task.scheduledStartAt!)
         : (task.createdAt != null
@@ -164,7 +163,7 @@ class _TaskDetailBody extends ConsumerWidget {
                     top: Radius.circular(24.r),
                   ),
                 ),
-                padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 20.h),
+                padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 16.h),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -172,40 +171,64 @@ class _TaskDetailBody extends ConsumerWidget {
                     Text(
                       task.title ?? 'Untitled Task',
                       style: AppTextStyles.h1.copyWith(
-                        fontSize: 22.sp,
+                        fontSize: 20.sp,
                         fontWeight: FontWeight.bold,
                         color: isDark ? AppColors.textPrimary : Colors.black87,
                         height: 1.25,
                       ),
                     ),
-                    SizedBox(height: 10.h),
+                    SizedBox(height: 6.h),
 
-                    // ─── LOCATION & STATUS ROW ───
+                    // ─── LOCATION & SCHEDULED DATE ROW ───
                     Row(
                       children: [
                         if (primaryLocationText != null) ...[
                           Icon(
                             Icons.location_on_rounded,
-                            size: 16.r,
+                            size: 15.r,
                             color: AppColors.primary,
                           ),
                           SizedBox(width: 4.w),
-                          Expanded(
-                            child: Text(
-                              primaryLocationText,
-                              style: AppTextStyles.bodyMedium.copyWith(
-                                color: isDark
-                                    ? AppColors.textSecondary
-                                    : Colors.grey[700],
-                                fontSize: 13.sp,
-                                fontWeight: FontWeight.w500,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
+                          Text(
+                            primaryLocationText,
+                            style: AppTextStyles.bodyMedium.copyWith(
+                              color: isDark
+                                  ? AppColors.textSecondary
+                                  : Colors.grey[700],
+                              fontSize: 13.sp,
+                              fontWeight: FontWeight.w500,
                             ),
                           ),
-                          SizedBox(width: 8.w),
+                          SizedBox(width: 12.w),
                         ],
+                        Icon(
+                          Icons.calendar_today_rounded,
+                          size: 14.r,
+                          color: AppColors.primary,
+                        ),
+                        SizedBox(width: 4.w),
+                        Expanded(
+                          child: Text(
+                            formattedDate,
+                            style: AppTextStyles.bodyMedium.copyWith(
+                              color: isDark
+                                  ? AppColors.textSecondary
+                                  : Colors.grey[700],
+                              fontSize: 13.sp,
+                              fontWeight: FontWeight.w500,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 8.h),
+
+                    // ─── STATUS & PAYOUT ROW ───
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
                         _StatusDropdownPill(
                           status: task.status,
                           isDark: isDark,
@@ -219,93 +242,64 @@ class _TaskDetailBody extends ConsumerWidget {
                             }
                           },
                         ),
+                        Text(
+                          payoutStr,
+                          style: AppTextStyles.h2.copyWith(
+                            fontSize: 20.sp,
+                            fontWeight: FontWeight.w800,
+                            color: const Color(0xFF10B981),
+                          ),
+                        ),
                       ],
                     ),
 
                     // ─── DESCRIPTION DIRECTLY UNDER TITLE ───
                     if (task.description != null &&
                         task.description!.trim().isNotEmpty) ...[
-                      SizedBox(height: 14.h),
+                      SizedBox(height: 10.h),
                       Text(
                         task.description!.trim(),
                         style: AppTextStyles.bodyMedium.copyWith(
-                          fontSize: 14.sp,
+                          fontSize: 13.5.sp,
                           color: isDark
                               ? AppColors.textSecondary
                               : Colors.grey[700],
-                          height: 1.5,
+                          height: 1.45,
                         ),
                       ),
                     ],
 
-                    SizedBox(height: 20.h),
-
-                    // ─── DETAIL PROPERTIES GRID ───
-                    Text(
-                      'Detail Properties',
-                      style: AppTextStyles.h3.copyWith(
-                        fontSize: 15.sp,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
                     SizedBox(height: 12.h),
 
-                    GridView.count(
-                      crossAxisCount: 2,
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      crossAxisSpacing: 10.w,
-                      mainAxisSpacing: 10.h,
-                      childAspectRatio: 2.5,
-                      children: [
-                        _PropertyTile(
-                          icon: Icons.calendar_today_outlined,
-                          title: 'Scheduled Date',
-                          value: formattedDate,
-                          isDark: isDark,
-                        ),
-                        _PropertyTile(
-                          icon: Icons.person_outline_rounded,
-                          title: 'Customer',
-                          value: customerName,
-                          isDark: isDark,
-                        ),
-                        _PropertyTile(
-                          icon: Icons.payments_outlined,
-                          title: 'Payout',
-                          value: payoutStr,
-                          isDark: isDark,
-                        ),
-                        _PropertyTile(
-                          icon: Icons.near_me_outlined,
-                          title: 'Distance',
-                          value: distance != null ? '$distance km away' : 'Nearby',
-                          isDark: isDark,
-                        ),
-                      ],
-                    ),
-                    SizedBox(height: 24.h),
+                    // ─── CUSTOMER CARD ───
+                    if (task.customer != null) ...[
+                      _CustomerCard(
+                        customer: task.customer,
+                        isDark: isDark,
+                      ),
+                      SizedBox(height: 14.h),
+                    ],
 
                     // ─── ATTACHMENTS (NON-IMAGE FILES) ───
                     if (otherAttachments.isNotEmpty) ...[
                       Text(
                         'Attachments',
                         style: AppTextStyles.h3.copyWith(
-                          fontSize: 15.sp,
+                          fontSize: 14.sp,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      SizedBox(height: 12.h),
+                      SizedBox(height: 6.h),
                       ...otherAttachments.map(
                         (att) => Padding(
-                          padding: EdgeInsets.only(bottom: 10.h),
+                          padding: EdgeInsets.only(bottom: 8.h),
                           child: _WorkFileCard(
                             attachment: att,
                             isDark: isDark,
                           ),
                         ),
                       ),
-                      SizedBox(height: 16.h),
+                      SizedBox(height: 14.h),
                     ],
 
                     // ─── LOCATION SECTION ───
@@ -313,14 +307,14 @@ class _TaskDetailBody extends ConsumerWidget {
                       Text(
                         'Locations',
                         style: AppTextStyles.h3.copyWith(
-                          fontSize: 15.sp,
+                          fontSize: 14.sp,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      SizedBox(height: 10.h),
+                      SizedBox(height: 6.h),
                       ...task.locations!.map(
                         (loc) => Padding(
-                          padding: EdgeInsets.only(bottom: 8.h),
+                          padding: EdgeInsets.only(bottom: 6.h),
                           child: _LocationCard(
                             location: loc,
                             distance: distance,
@@ -328,7 +322,7 @@ class _TaskDetailBody extends ConsumerWidget {
                           ),
                         ),
                       ),
-                      SizedBox(height: 24.h),
+                      SizedBox(height: 14.h),
                     ],
 
                     // ─── ASSIGNMENT CARD ───
@@ -337,10 +331,10 @@ class _TaskDetailBody extends ConsumerWidget {
                         assignment: task.assignment!,
                         isDark: isDark,
                       ),
-                      SizedBox(height: 24.h),
+                      SizedBox(height: 14.h),
                     ],
 
-                    SizedBox(height: 20.h),
+                    SizedBox(height: 12.h),
                   ],
                 ),
               ),
@@ -437,6 +431,7 @@ class _TaskDetailBody extends ConsumerWidget {
       case TaskOptionAction.startTask:
       case TaskOptionAction.completeTask:
       case TaskOptionAction.getPin:
+      case TaskOptionAction.adjustPrice:
         break;
       case TaskOptionAction.call:
         _makePhoneCall(context, task.customer?.phoneNumber);
@@ -646,72 +641,120 @@ class _CircleOverlayButton extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// DETAIL PROPERTY TILE WIDGET
+// CUSTOMER CARD WIDGET
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _PropertyTile extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String value;
+class _CustomerCard extends StatelessWidget {
+  final CustomerLite? customer;
   final bool isDark;
 
-  const _PropertyTile({
-    required this.icon,
-    required this.title,
-    required this.value,
+  const _CustomerCard({
+    required this.customer,
     required this.isDark,
   });
 
   @override
   Widget build(BuildContext context) {
+    final name = customer?.fullname?.trim();
+    final displayName = (name != null && name.isNotEmpty) ? name : 'Customer';
+    final phoneNumber = customer?.phoneNumber;
+    final hasPhone = phoneNumber != null && phoneNumber.trim().isNotEmpty;
+
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
+      padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 10.h),
       decoration: BoxDecoration(
         color: isDark
             ? Theme.of(context).colorScheme.surface
             : Colors.grey[50],
-        borderRadius: BorderRadius.circular(14.r),
+        borderRadius: BorderRadius.circular(16.r),
         border: Border.all(
           color: isDark ? AppColors.border : Colors.grey.withValues(alpha: 0.2),
         ),
       ),
       child: Row(
         children: [
-          Container(
-            padding: EdgeInsets.all(8.r),
-            decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(10.r),
+          CircleAvatar(
+            radius: 18.r,
+            backgroundColor: AppColors.primary.withValues(alpha: 0.12),
+            child: Text(
+              displayName.isNotEmpty ? displayName[0].toUpperCase() : 'C',
+              style: AppTextStyles.h3.copyWith(
+                color: AppColors.primary,
+                fontSize: 15.sp,
+                fontWeight: FontWeight.bold,
+              ),
             ),
-            child: Icon(icon, size: 16.r, color: AppColors.primary),
           ),
-          SizedBox(width: 8.w),
+          SizedBox(width: 10.w),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  title,
+                  'Customer',
                   style: AppTextStyles.label.copyWith(
-                    fontSize: 10.sp,
                     color: AppColors.textMuted,
+                    fontSize: 10.sp,
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
                 ),
                 SizedBox(height: 2.h),
                 Text(
-                  value,
-                  style: AppTextStyles.bodySmall.copyWith(
-                    fontSize: 12.sp,
-                    fontWeight: FontWeight.w600,
+                  displayName,
+                  style: AppTextStyles.bodyMedium.copyWith(
                     color: isDark ? AppColors.textPrimary : Colors.black87,
+                    fontSize: 13.5.sp,
+                    fontWeight: FontWeight.w600,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
               ],
+            ),
+          ),
+          SizedBox(width: 8.w),
+          Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () => _makePhoneCall(context, phoneNumber),
+              borderRadius: BorderRadius.circular(20.r),
+              child: Container(
+                padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
+                decoration: BoxDecoration(
+                  color: hasPhone
+                      ? const Color(0xFF10B981).withValues(alpha: 0.12)
+                      : (isDark ? Colors.white10 : Colors.grey[200]),
+                  borderRadius: BorderRadius.circular(20.r),
+                  border: Border.all(
+                    color: hasPhone
+                        ? const Color(0xFF10B981).withValues(alpha: 0.3)
+                        : Colors.transparent,
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.phone_rounded,
+                      size: 14.r,
+                      color: hasPhone
+                          ? const Color(0xFF10B981)
+                          : AppColors.textMuted,
+                    ),
+                    SizedBox(width: 4.w),
+                    Text(
+                      'Call',
+                      style: AppTextStyles.label.copyWith(
+                        color: hasPhone
+                            ? const Color(0xFF10B981)
+                            : AppColors.textMuted,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 11.5.sp,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
           ),
         ],

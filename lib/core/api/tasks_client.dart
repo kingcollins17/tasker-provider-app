@@ -94,6 +94,12 @@ abstract class TasksClient {
     @Path("taskId") String taskId,
     @Body() CompleteTaskRequest request,
   );
+
+  @POST("tasks/{taskId}/price-adjustments")
+  Future<BaseApiResponse<dynamic>> requestPriceAdjustment(
+    @Path("taskId") String taskId,
+    @Body() CreatePriceAdjustmentRequest request,
+  );
 }
 
 /// Provider exposing the [TasksClient] dependency.

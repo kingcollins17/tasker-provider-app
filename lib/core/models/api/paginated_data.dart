@@ -5,6 +5,7 @@ part 'paginated_data.g.dart';
 @JsonSerializable(
   genericArgumentFactories: true,
   fieldRename: FieldRename.snake,
+  explicitToJson: true
 )
 class PaginatedData<T> {
   final List<T>? items;

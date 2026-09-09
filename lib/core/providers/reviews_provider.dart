@@ -246,6 +246,8 @@ final pendingReviewPrompterProvider = Provider<void>((ref) {
           now.difference(trackRecord.lastShownAt!).inHours >= 24;
 
       if (shouldShow) {
+        debugLog(trackRecord?.toJson());
+        debugLog('[pendingReviewPrompterProvider]: pending review');
         await ref
             .read(taskReviewPromptTrackerProvider.notifier)
             .updatePromptTrack(taskId: taskId, lastShownAt: now);

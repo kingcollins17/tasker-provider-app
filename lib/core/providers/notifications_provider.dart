@@ -24,8 +24,8 @@ class NotificationsNotifier extends AsyncNotifier<NotificationsState> {
     final notificationsRes =
         results[0] as BaseApiResponse<PaginatedData<NotificationItem>>;
     final countsRes = results[1] as BaseApiResponse<NotificationCounts>;
-    debugLog(results[0]);
-    debugLog(results[1]);
+   
+   
     return NotificationsState(
       paginatedData: notificationsRes.data,
       counts: countsRes.data,
@@ -73,7 +73,7 @@ class NotificationsNotifier extends AsyncNotifier<NotificationsState> {
             isLoadingMore: false,
           ),
         );
-        debugLog(newPaginatedData);
+        debugLog(newPaginatedData.toJson((i) => i.toJson()));
       } else {
         state = AsyncData(state.value!.copyWith(isLoadingMore: false));
       }

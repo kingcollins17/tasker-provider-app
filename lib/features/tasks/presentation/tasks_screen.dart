@@ -830,17 +830,19 @@ class _AssignmentTile extends StatelessWidget {
           children: [
             // Category / Task Icon Avatar
             Container(
-              width: 44.r,
-              height: 44.r,
+              width: 40.r,
+              height: 40.r,
               decoration: BoxDecoration(
-                color: avatarProps.bgColor,
+                color: isDark
+                    ? avatarProps.bgColor.withValues(alpha: 0.16)
+                    : avatarProps.bgColor.withValues(alpha: 0.08),
                 shape: BoxShape.circle,
               ),
               child: Center(
                 child: Icon(
                   avatarProps.icon,
-                  size: 20.r,
-                  color: Colors.white,
+                  size: 18.r,
+                  color: avatarProps.bgColor,
                 ),
               ),
             ),
@@ -1119,8 +1121,8 @@ class _ShimmerList extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Container(
-                  width: 44.r,
-                  height: 44.r,
+                  width: 40.r,
+                  height: 40.r,
                   decoration: const BoxDecoration(
                     color: Colors.white,
                     shape: BoxShape.circle,

@@ -6,12 +6,13 @@ import 'package:tasker_app/core/providers/tasks_provider.dart';
 import 'package:tasker_app/core/router/navigator_keys.dart';
 import 'package:tasker_app/core/ui/designs/colors.dart';
 import 'package:tasker_app/core/ui/designs/text_styles.dart';
+import 'package:tasker_app/core/ui/widgets/adjust_task_price_sheet.dart';
 import 'package:tasker_app/core/utils/debug_logger.dart';
 import 'pin_display_sheet.dart';
 import 'package:go_router/go_router.dart';
 import 'package:tasker_app/features/tasks/tasks_routes.dart';
 
-enum TaskOptionAction { startTask, completeTask, getPin, call, report }
+enum TaskOptionAction { startTask, completeTask, getPin, call, report, adjustPrice }
 
 class TaskDetailsOptionSheet extends ConsumerWidget {
   final Task task;
@@ -121,6 +122,17 @@ class TaskDetailsOptionSheet extends ConsumerWidget {
                 },
                 isDark: isDark,
               ),
+
+            // Request Price Adjustment option for assigned provider
+            _OptionTile(
+              icon: Icons.request_quote_outlined,
+              title: 'Request Price Adjustment',
+              onTap: () {
+                Navigator.of(context).pop(TaskOptionAction.adjustPrice);
+                AdjustTaskPriceSheet.show(taskId: taskId);
+              },
+              isDark: isDark,
+            ),
           ],
 
           // If taskAssignmentProvider has value

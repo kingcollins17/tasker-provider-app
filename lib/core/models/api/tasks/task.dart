@@ -4,10 +4,11 @@ import 'task_lite.dart';
 
 part 'task.g.dart';
 
-@JsonSerializable(fieldRename: FieldRename.snake)
+@JsonSerializable(fieldRename: FieldRename.snake, explicitToJson: true)
 class Task {
   final String? id;
   final String? customerId;
+  final String? assignedProviderId;
   final String? regionId;
   final String? title;
   final String? description;
@@ -38,6 +39,7 @@ class Task {
   Task({
     this.id,
     this.customerId,
+    this.assignedProviderId,
     this.regionId,
     this.title,
     this.description,

@@ -9,6 +9,7 @@ part of 'task.dart';
 Task _$TaskFromJson(Map<String, dynamic> json) => Task(
   id: json['id'] as String?,
   customerId: json['customer_id'] as String?,
+  assignedProviderId: json['assigned_provider_id'] as String?,
   regionId: json['region_id'] as String?,
   title: json['title'] as String?,
   description: json['description'] as String?,
@@ -55,6 +56,7 @@ Task _$TaskFromJson(Map<String, dynamic> json) => Task(
 Map<String, dynamic> _$TaskToJson(Task instance) => <String, dynamic>{
   'id': instance.id,
   'customer_id': instance.customerId,
+  'assigned_provider_id': instance.assignedProviderId,
   'region_id': instance.regionId,
   'title': instance.title,
   'description': instance.description,
@@ -76,10 +78,10 @@ Map<String, dynamic> _$TaskToJson(Task instance) => <String, dynamic>{
   'start_pin': instance.startPin,
   'completion_pin': instance.completionPin,
   'updated_at': instance.updatedAt?.toIso8601String(),
-  'locations': instance.locations,
-  'assignment': instance.assignment,
-  'attachments': instance.attachments,
-  'customer': instance.customer,
+  'locations': instance.locations?.map((e) => e.toJson()).toList(),
+  'assignment': instance.assignment?.toJson(),
+  'attachments': instance.attachments?.map((e) => e.toJson()).toList(),
+  'customer': instance.customer?.toJson(),
 };
 
 TaskLocation _$TaskLocationFromJson(Map<String, dynamic> json) => TaskLocation(
