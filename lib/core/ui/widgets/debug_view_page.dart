@@ -7,7 +7,7 @@ import '../../utils/debug_logger.dart';
 import '../designs/designs.dart';
 import '../widgets/app_text_field.dart';
 
-enum _FilterLevel { all, info, warn, error }
+enum _FilterLevel { all, info, warn, error, network }
 
 class DebugViewPage extends StatefulWidget {
   const DebugViewPage({super.key});
@@ -62,6 +62,10 @@ class _DebugViewPageState extends State<DebugViewPage> {
       }
       if (_selectedFilter == _FilterLevel.error &&
           log.level != DebugLevel.error) {
+        return false;
+      }
+      if (_selectedFilter == _FilterLevel.network &&
+          log.level != DebugLevel.network) {
         return false;
       }
 
@@ -142,6 +146,7 @@ class _DebugViewPageState extends State<DebugViewPage> {
                         _FilterLevel.info => 'Info',
                         _FilterLevel.warn => 'Warnings',
                         _FilterLevel.error => 'Errors',
+                        _FilterLevel.network => 'Network',
                       };
 
                       return Padding(
@@ -257,6 +262,8 @@ class _LogCard extends StatelessWidget {
         return AppColors.warning;
       case DebugLevel.error:
         return AppColors.error;
+      case DebugLevel.network:
+        return const Color(0xFF0EA5E9);
     }
   }
 
@@ -272,16 +279,19 @@ class _LogCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final levelColor = _getLevelColor(log.level);
 
-    return Container(
-      margin: EdgeInsets.only(bottom: 12.h),
-      padding: EdgeInsets.all(12.r),
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.surface : Colors.white,
-        borderRadius: AppDecorations.radiusMd,
-        border: Border.all(
-          color: isDark ? AppColors.border : levelColor.withValues(alpha: 0.25),
+    return InkWell(
+      onTap: () => DebugDetailPage.show(context, log),
+      borderRadius: AppDecorations.radiusMd,
+      child: Container(
+        margin: EdgeInsets.only(bottom: 12.h),
+        padding: EdgeInsets.all(12.r),
+        decoration: BoxDecoration(
+          color: isDark ? AppColors.surface : Colors.white,
+          borderRadius: AppDecorations.radiusMd,
+          border: Border.all(
+            color: isDark ? AppColors.border : levelColor.withValues(alpha: 0.25),
+          ),
         ),
-      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -347,6 +357,7 @@ class _LogCard extends StatelessWidget {
           _buildContent(context),
         ],
       ),
+    ),
     );
   }
 
@@ -1011,6 +1022,196 @@ class _JsonNodeWidgetState extends State<_JsonNodeWidget> {
     final more = map.length > 3 ? '...' : '';
     final keysStr = more.isNotEmpty ? '$keys, $more' : keys;
     return '{ $keysStr } (${map.length} ${map.length == 1 ? 'key' : 'keys'})';
+  }
+}
+
+class DebugDetailPage extends StatelessWidget {
+  final DebugData log;
+
+  const DebugDetailPage({super.key, required this.log});
+
+  static Future<void> show(BuildContext context, DebugData log) {
+    return Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => DebugDetailPage(log: log),
+      ),
+    );
+  }
+
+  Color _getLevelColor(DebugLevel level) {
+    switch (level) {
+      case DebugLevel.info:
+        return AppColors.success;
+      case DebugLevel.warn:
+        return AppColors.warning;
+      case DebugLevel.error:
+        return AppColors.error;
+      case DebugLevel.network:
+        return const Color(0xFF0EA5E9);
+    }
+  }
+
+  String _formatTime(DateTime dt) {
+    final h = dt.hour.toString().padLeft(2, '0');
+    final m = dt.minute.toString().padLeft(2, '0');
+    final s = dt.second.toString().padLeft(2, '0');
+    final ms = dt.millisecond.toString().padLeft(3, '0');
+    return '$h:$m:$s.$ms';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final levelColor = _getLevelColor(log.level);
+
+    dynamic jsonObject;
+    final trimmed = log.data.trim();
+    if ((trimmed.startsWith('{') && trimmed.endsWith('}')) ||
+        (trimmed.startsWith('[') && trimmed.endsWith(']'))) {
+      try {
+        jsonObject = jsonDecode(trimmed);
+      } catch (_) {
+        jsonObject = null;
+      }
+    }
+
+    final isJson =
+        jsonObject != null && (jsonObject is Map || jsonObject is List);
+
+    return Scaffold(
+      backgroundColor: theme.scaffoldBackgroundColor,
+      appBar: AppBar(
+        leading: const BackButton(),
+        title: Text('Log Detail', style: AppTextStyles.h3),
+        centerTitle: true,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.copy_rounded),
+            tooltip: 'Copy Log Content',
+            onPressed: () {
+              Clipboard.setData(ClipboardData(text: log.data));
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Log copied to clipboard'),
+                  duration: Duration(seconds: 1),
+                ),
+              );
+            },
+          ),
+          SizedBox(width: 8.w),
+        ],
+      ),
+      body: SafeArea(
+        child: Column(
+          children: [
+            // Header Info Card
+            Container(
+              margin: EdgeInsets.all(16.r),
+              padding: EdgeInsets.all(16.r),
+              decoration: BoxDecoration(
+                color: isDark ? AppColors.surface : Colors.white,
+                borderRadius: AppDecorations.radiusMd,
+                border: Border.all(
+                  color: isDark
+                      ? AppColors.border
+                      : levelColor.withValues(alpha: 0.3),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: 10.w,
+                      vertical: 4.h,
+                    ),
+                    decoration: BoxDecoration(
+                      color: levelColor.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(6.r),
+                    ),
+                    child: Text(
+                      log.level.name.toUpperCase(),
+                      style: AppTextStyles.labelUppercase.copyWith(
+                        color: levelColor,
+                        fontSize: 12.sp,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                  SizedBox(width: 12.w),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _formatTime(log.timestamp),
+                        style: AppTextStyles.bodyMedium.copyWith(
+                          color: isDark
+                              ? AppColors.textPrimary
+                              : Colors.black87,
+                          fontFamily: 'monospace',
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      SizedBox(height: 2.h),
+                      Text(
+                        isJson ? 'JSON Payload' : 'Text Payload',
+                        style: AppTextStyles.bodySmall.copyWith(
+                          color: AppColors.textMuted,
+                          fontSize: 11.sp,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+
+            // Payload detail view
+            Expanded(
+              child: Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16.w),
+                child: SingleChildScrollView(
+                  physics: const BouncingScrollPhysics(),
+                  child: isJson
+                      ? _JsonViewer(
+                          data: jsonObject,
+                          rawJson: log.data,
+                          isDark: isDark,
+                        )
+                      : Container(
+                          width: double.infinity,
+                          padding: EdgeInsets.all(14.r),
+                          decoration: BoxDecoration(
+                            color: isDark
+                                ? const Color(0xFF0F172A)
+                                : const Color(0xFFF8FAFC),
+                            borderRadius: BorderRadius.circular(10.r),
+                            border: Border.all(
+                              color: isDark
+                                  ? const Color(0xFF1E293B)
+                                  : const Color(0xFFE2E8F0),
+                            ),
+                          ),
+                          child: SelectableText(
+                            log.data,
+                            style: TextStyle(
+                              fontFamily: 'monospace',
+                              fontSize: 12.sp,
+                              color: isDark
+                                  ? const Color(0xFFE2E8F0)
+                                  : const Color(0xFF1E293B),
+                              height: 1.5,
+                            ),
+                          ),
+                        ),
+                ),
+              ),
+            ),
+            SizedBox(height: 16.h),
+          ],
+        ),
+      ),
+    );
   }
 }
 

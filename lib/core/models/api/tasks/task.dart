@@ -4,6 +4,64 @@ import 'task_lite.dart';
 
 part 'task.g.dart';
 
+@JsonEnum()
+enum PaymentStatus {
+  @JsonValue('PENDING')
+  pending,
+  @JsonValue('PAYMENT_REQUESTED')
+  paymentRequested,
+  @JsonValue('CUSTOMER_PAID')
+  customerPaid,
+  @JsonValue('TRANSFER_INITIATED')
+  transferInitiated,
+  @JsonValue('PAID')
+  paid,
+  @JsonValue('CASH_PAID')
+  cashPaid,
+  @JsonValue('FAILED')
+  failed,
+}
+
+@JsonSerializable(fieldRename: FieldRename.snake, explicitToJson: true)
+class TaskPayout {
+  final String? id;
+  final String? providerId;
+  final String? customerId;
+  final String? taskId;
+  final double? payoutAmount;
+  final double? customerPaymentAmount;
+  final String? status;
+  final String? description;
+  final String? paymentUrl;
+  final DateTime? urlGeneratedAt;
+  final String? reference;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
+  final TaskLite? task;
+
+  TaskPayout({
+    this.id,
+    this.providerId,
+    this.customerId,
+    this.taskId,
+    this.payoutAmount,
+    this.customerPaymentAmount,
+    this.status,
+    this.description,
+    this.paymentUrl,
+    this.urlGeneratedAt,
+    this.reference,
+    this.createdAt,
+    this.updatedAt,
+    this.task,
+  });
+
+  factory TaskPayout.fromJson(Map<String, dynamic> json) =>
+      _$TaskPayoutFromJson(json);
+
+  Map<String, dynamic> toJson() => _$TaskPayoutToJson(this);
+}
+
 @JsonSerializable(fieldRename: FieldRename.snake, explicitToJson: true)
 class Task {
   final String? id;
@@ -24,6 +82,7 @@ class Task {
   final double? platformFee;
   final double? providerPayout;
   final String? status;
+  final String? paymentStatus;
   final DateTime? createdAt;
   final DateTime? expiresAt;
   final DateTime? scheduledStartAt;
@@ -35,6 +94,7 @@ class Task {
   final TaskAssignment? assignment;
   final List<TaskAttachment>? attachments;
   final CustomerLite? customer;
+  final TaskPayout? payout;
 
   Task({
     this.id,
@@ -55,6 +115,7 @@ class Task {
     this.platformFee,
     this.providerPayout,
     this.status,
+    this.paymentStatus,
     this.createdAt,
     this.expiresAt,
     this.scheduledStartAt,
@@ -65,6 +126,7 @@ class Task {
     this.assignment,
     this.attachments,
     this.customer,
+    this.payout,
   });
 
   factory Task.fromJson(Map<String, dynamic> json) => _$TaskFromJson(json);
@@ -108,37 +170,7 @@ class TaskLocation {
   Map<String, dynamic> toJson() => _$TaskLocationToJson(this);
 }
 
-@JsonSerializable(fieldRename: FieldRename.snake)
-class TaskBid {
-  final String? id;
-  final String? taskId;
-  final String? providerId;
-  final double? price;
-  final String? message;
-  final String? estimatedDuration;
-  final String? status;
-  final DateTime? createdAt;
-  final DateTime? updatedAt;
-  final TaskLite? task;
 
-  TaskBid({
-    this.id,
-    this.taskId,
-    this.providerId,
-    this.price,
-    this.message,
-    this.estimatedDuration,
-    this.status,
-    this.createdAt,
-    this.updatedAt,
-    this.task,
-  });
-
-  factory TaskBid.fromJson(Map<String, dynamic> json) =>
-      _$TaskBidFromJson(json);
-
-  Map<String, dynamic> toJson() => _$TaskBidToJson(this);
-}
 
 @JsonSerializable(fieldRename: FieldRename.snake)
 class TaskAssignment {
@@ -200,22 +232,4 @@ class TaskAttachment {
   Map<String, dynamic> toJson() => _$TaskAttachmentToJson(this);
 }
 
-@JsonSerializable(fieldRename: FieldRename.snake)
-class CreateBidRequest {
-  final double? price;
-  final String? message;
-  final String? estimatedDuration;
 
-  CreateBidRequest({
-    required this.price,
-    required this.message,
-    this.estimatedDuration,
-  });
-
-  factory CreateBidRequest.fromJson(Map<String, dynamic> json) =>
-      _$CreateBidRequestFromJson(json);
-
-  Map<String, dynamic> toJson() => _$CreateBidRequestToJson(this);
-}
-
-typedef UpdateBidRequest = CreateBidRequest;

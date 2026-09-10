@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shimmer/shimmer.dart';
+import 'package:tasker_app/core/router/navigator_keys.dart';
 import 'package:tasker_app/core/utils/debug_logger.dart';
 
 import '../../../core/models/models.dart';
@@ -115,7 +116,7 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
                       : (isDark ? AppColors.textPrimary : Colors.black87),
                   size: 22.r,
                 ),
-                onPressed: () => _FilterSheet.show(context),
+                onPressed: () => _FilterSheet.show(),
               ),
               if (filterState.hasActiveFilters)
                 Positioned(
@@ -308,10 +309,14 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
 class _FilterSheet extends ConsumerStatefulWidget {
   const _FilterSheet();
 
-  static Future<void> show(BuildContext context) {
+  static Future<void> show([BuildContext? context]) {
+    final targetContext =
+        NavigatorKeys.rootNavigatorKey.currentContext ?? context;
+    if (targetContext == null) return Future.value();
     return showModalBottomSheet(
-      context: context,
+      context: targetContext,
       isScrollControlled: true,
+      useRootNavigator: true,
       backgroundColor: Colors.transparent,
       builder: (context) => const _FilterSheet(),
     );
@@ -391,14 +396,33 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
+    final activeCount = _statuses.length +
+        (_startDate != null ? 1 : 0) +
+        (_endDate != null ? 1 : 0) +
+        (_minAmountController.text.isNotEmpty ? 1 : 0) +
+        (_maxAmountController.text.isNotEmpty ? 1 : 0);
+
     return Container(
-      constraints: BoxConstraints(maxHeight: 0.85.sh),
+      constraints: BoxConstraints(maxHeight: 0.82.sh),
       decoration: BoxDecoration(
-        color: theme.scaffoldBackgroundColor,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24.r)),
+        color: isDark ? AppColors.surface : theme.scaffoldBackgroundColor,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28.r)),
+        border: Border(
+          top: BorderSide(
+            color: isDark ? AppColors.border : Colors.transparent,
+            width: 1,
+          ),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.25),
+            blurRadius: 20,
+            offset: const Offset(0, -4),
+          ),
+        ],
       ),
       padding: EdgeInsets.only(
-        top: 16.h,
+        top: 12.h,
         left: 20.w,
         right: 20.w,
         bottom: MediaQuery.of(context).viewInsets.bottom + 20.h,
@@ -411,10 +435,12 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
             // Handle bar
             Center(
               child: Container(
-                width: 40.w,
+                width: 36.w,
                 height: 4.h,
                 decoration: BoxDecoration(
-                  color: isDark ? AppColors.border : Colors.grey[300],
+                  color: isDark
+                      ? AppColors.border
+                      : Colors.grey.withValues(alpha: 0.4),
                   borderRadius: BorderRadius.circular(2.r),
                 ),
               ),
@@ -423,15 +449,49 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
 
             // Header row
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
+                Container(
+                  padding: EdgeInsets.all(8.r),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(10.r),
+                  ),
+                  child: Icon(
+                    Icons.tune_rounded,
+                    color: AppColors.primary,
+                    size: 18.r,
+                  ),
+                ),
+                SizedBox(width: 10.w),
                 Text(
                   'Filter Assignments',
                   style: AppTextStyles.h2.copyWith(
-                    fontSize: 18.sp,
+                    fontSize: 17.sp,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
+                if (activeCount > 0) ...[
+                  SizedBox(width: 8.w),
+                  Container(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: 8.w,
+                      vertical: 2.h,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary,
+                      borderRadius: BorderRadius.circular(12.r),
+                    ),
+                    child: Text(
+                      '$activeCount',
+                      style: AppTextStyles.label.copyWith(
+                        color: Colors.white,
+                        fontSize: 11.sp,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
+                const Spacer(),
                 TextButton(
                   onPressed: () {
                     setState(() {
@@ -442,27 +502,38 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
                       _maxAmountController.clear();
                     });
                   },
+                  style: TextButton.styleFrom(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: 10.w,
+                      vertical: 4.h,
+                    ),
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
                   child: Text(
-                    'Reset All',
+                    'Reset',
                     style: AppTextStyles.label.copyWith(
                       color: AppColors.error,
                       fontWeight: FontWeight.w600,
+                      fontSize: 13.sp,
                     ),
                   ),
                 ),
               ],
             ),
-            SizedBox(height: 16.h),
+            SizedBox(height: 18.h),
 
             // Status Section
             Text(
-              'Assignment Status',
+              'ASSIGNMENT STATUS',
               style: AppTextStyles.subtitle.copyWith(
-                fontWeight: FontWeight.bold,
-                fontSize: 14.sp,
+                fontWeight: FontWeight.w700,
+                fontSize: 11.sp,
+                letterSpacing: 0.6,
+                color: isDark ? AppColors.textSecondary : AppColors.textMuted,
               ),
             ),
-            SizedBox(height: 10.h),
+            SizedBox(height: 8.h),
             Wrap(
               spacing: 8.w,
               runSpacing: 8.h,
@@ -471,42 +542,70 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
                   .map((filter) {
                 final isSelected = filter.value != null &&
                     _statuses.contains(filter.value);
-                return ChoiceChip(
-                  label: Text(filter.label),
-                  selected: isSelected,
-                  selectedColor: AppColors.primary,
-                  backgroundColor: isDark
-                      ? Colors.white.withValues(alpha: 0.08)
-                      : Colors.grey.withValues(alpha: 0.12),
-                  labelStyle: AppTextStyles.label.copyWith(
-                    color: isSelected
-                        ? Colors.white
-                        : (isDark ? AppColors.textPrimary : Colors.black87),
-                    fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                  ),
-                  onSelected: (selected) {
+                return InkWell(
+                  onTap: () {
                     setState(() {
-                      if (selected && filter.value != null) {
-                        _statuses.add(filter.value!);
-                      } else if (filter.value != null) {
-                        _statuses.remove(filter.value!);
+                      if (filter.value != null) {
+                        if (isSelected) {
+                          _statuses.remove(filter.value!);
+                        } else {
+                          _statuses.add(filter.value!);
+                        }
                       }
                     });
                   },
+                  borderRadius: BorderRadius.circular(12.r),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 180),
+                    padding: EdgeInsets.symmetric(
+                      horizontal: 14.w,
+                      vertical: 8.h,
+                    ),
+                    decoration: BoxDecoration(
+                      color: isSelected
+                          ? AppColors.primary
+                          : (isDark
+                              ? Colors.white.withValues(alpha: 0.06)
+                              : Colors.grey.withValues(alpha: 0.08)),
+                      borderRadius: BorderRadius.circular(12.r),
+                      border: Border.all(
+                        color: isSelected
+                            ? AppColors.primary
+                            : (isDark
+                                ? AppColors.border
+                                : Colors.grey.withValues(alpha: 0.2)),
+                      ),
+                    ),
+                    child: Text(
+                      filter.label,
+                      style: AppTextStyles.label.copyWith(
+                        color: isSelected
+                            ? Colors.white
+                            : (isDark
+                                ? AppColors.textPrimary
+                                : Colors.black87),
+                        fontWeight:
+                            isSelected ? FontWeight.bold : FontWeight.w500,
+                        fontSize: 12.sp,
+                      ),
+                    ),
+                  ),
                 );
               }).toList(),
             ),
-            SizedBox(height: 20.h),
+            SizedBox(height: 18.h),
 
             // Date Range Section
             Text(
-              'Date Range',
+              'DATE RANGE',
               style: AppTextStyles.subtitle.copyWith(
-                fontWeight: FontWeight.bold,
-                fontSize: 14.sp,
+                fontWeight: FontWeight.w700,
+                fontSize: 11.sp,
+                letterSpacing: 0.6,
+                color: isDark ? AppColors.textSecondary : AppColors.textMuted,
               ),
             ),
-            SizedBox(height: 10.h),
+            SizedBox(height: 8.h),
             Row(
               children: [
                 Expanded(
@@ -520,7 +619,7 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
                     isDark: isDark,
                   ),
                 ),
-                SizedBox(width: 12.w),
+                SizedBox(width: 10.w),
                 Expanded(
                   child: _DateField(
                     label: 'End Date',
@@ -534,69 +633,139 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
                 ),
               ],
             ),
-            SizedBox(height: 20.h),
+            SizedBox(height: 18.h),
 
             // Amount Range Section
             Text(
-              'Payout Amount (₦)',
+              'PAYOUT AMOUNT (₦)',
               style: AppTextStyles.subtitle.copyWith(
-                fontWeight: FontWeight.bold,
-                fontSize: 14.sp,
+                fontWeight: FontWeight.w700,
+                fontSize: 11.sp,
+                letterSpacing: 0.6,
+                color: isDark ? AppColors.textSecondary : AppColors.textMuted,
               ),
             ),
-            SizedBox(height: 10.h),
+            SizedBox(height: 8.h),
             Row(
               children: [
                 Expanded(
                   child: TextField(
                     controller: _minAmountController,
                     keyboardType: TextInputType.number,
-                    style: AppTextStyles.bodyMedium,
+                    style: AppTextStyles.bodyMedium.copyWith(fontSize: 13.sp),
                     decoration: InputDecoration(
-                      hintText: 'Min (₦)',
-                      isDense: true,
-                      prefixText: '₦ ',
-                      prefixStyle: AppTextStyles.bodyMedium.copyWith(
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.bold,
+                      hintText: 'Min Amount',
+                      hintStyle: AppTextStyles.bodySmall.copyWith(
+                        color: AppColors.textMuted,
+                        fontSize: 12.sp,
                       ),
+                      isDense: true,
+                      contentPadding: EdgeInsets.symmetric(
+                        horizontal: 12.w,
+                        vertical: 10.h,
+                      ),
+                      prefixIcon: Padding(
+                        padding: EdgeInsets.only(left: 10.w, right: 4.w),
+                        child: Text(
+                          '₦',
+                          style: AppTextStyles.bodyMedium.copyWith(
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13.sp,
+                          ),
+                        ),
+                      ),
+                      prefixIconConstraints: const BoxConstraints(
+                        minWidth: 0,
+                        minHeight: 0,
+                      ),
+                      filled: true,
+                      fillColor: isDark
+                          ? Colors.white.withValues(alpha: 0.05)
+                          : Colors.grey[100],
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12.r),
-                        borderSide: const BorderSide(color: AppColors.border),
+                        borderSide: BorderSide(
+                          color: isDark ? AppColors.border : Colors.grey[300]!,
+                        ),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12.r),
+                        borderSide: BorderSide(
+                          color: isDark ? AppColors.border : Colors.grey[300]!,
+                        ),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12.r),
+                        borderSide: const BorderSide(color: AppColors.primary),
                       ),
                     ),
                   ),
                 ),
-                SizedBox(width: 12.w),
+                SizedBox(width: 10.w),
                 Expanded(
                   child: TextField(
                     controller: _maxAmountController,
                     keyboardType: TextInputType.number,
-                    style: AppTextStyles.bodyMedium,
+                    style: AppTextStyles.bodyMedium.copyWith(fontSize: 13.sp),
                     decoration: InputDecoration(
-                      hintText: 'Max (₦)',
-                      isDense: true,
-                      prefixText: '₦ ',
-                      prefixStyle: AppTextStyles.bodyMedium.copyWith(
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.bold,
+                      hintText: 'Max Amount',
+                      hintStyle: AppTextStyles.bodySmall.copyWith(
+                        color: AppColors.textMuted,
+                        fontSize: 12.sp,
                       ),
+                      isDense: true,
+                      contentPadding: EdgeInsets.symmetric(
+                        horizontal: 12.w,
+                        vertical: 10.h,
+                      ),
+                      prefixIcon: Padding(
+                        padding: EdgeInsets.only(left: 10.w, right: 4.w),
+                        child: Text(
+                          '₦',
+                          style: AppTextStyles.bodyMedium.copyWith(
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13.sp,
+                          ),
+                        ),
+                      ),
+                      prefixIconConstraints: const BoxConstraints(
+                        minWidth: 0,
+                        minHeight: 0,
+                      ),
+                      filled: true,
+                      fillColor: isDark
+                          ? Colors.white.withValues(alpha: 0.05)
+                          : Colors.grey[100],
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12.r),
-                        borderSide: const BorderSide(color: AppColors.border),
+                        borderSide: BorderSide(
+                          color: isDark ? AppColors.border : Colors.grey[300]!,
+                        ),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12.r),
+                        borderSide: BorderSide(
+                          color: isDark ? AppColors.border : Colors.grey[300]!,
+                        ),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12.r),
+                        borderSide: const BorderSide(color: AppColors.primary),
                       ),
                     ),
                   ),
                 ),
               ],
             ),
-            SizedBox(height: 24.h),
+            SizedBox(height: 22.h),
 
             // Apply Button
             SizedBox(
               width: double.infinity,
-              height: 48.h,
-              child: ElevatedButton(
+              height: 46.h,
+              child: ElevatedButton.icon(
                 onPressed: () {
                   final minVal = double.tryParse(_minAmountController.text);
                   final maxVal = double.tryParse(_maxAmountController.text);
@@ -612,19 +781,25 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
                       );
                   Navigator.pop(context);
                 },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(24.r),
-                  ),
+                icon: Icon(
+                  Icons.check_rounded,
+                  size: 18.r,
+                  color: Colors.white,
                 ),
-                child: Text(
+                label: Text(
                   'Apply Filters',
                   style: AppTextStyles.buttonMedium.copyWith(
                     fontWeight: FontWeight.bold,
-                    fontSize: 15.sp,
+                    fontSize: 14.sp,
                     color: Colors.white,
+                  ),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  elevation: 2,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16.r),
                   ),
                 ),
               ),

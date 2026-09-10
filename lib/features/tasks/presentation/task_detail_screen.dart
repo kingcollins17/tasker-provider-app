@@ -13,6 +13,8 @@ import 'package:tasker_app/core/utils/extensions/flushbar_context_ext.dart';
 import 'package:tasker_app/core/utils/extensions/num_ext.dart';
 import 'package:tasker_app/core/utils/extensions/image_ext.dart';
 import 'package:tasker_app/features/tasks/presentation/widgets/task_details_option_sheet.dart';
+import 'package:go_router/go_router.dart';
+import 'package:tasker_app/features/tasks/tasks_routes.dart';
 
 class TaskDetailScreen extends ConsumerWidget {
   final String taskId;
@@ -109,8 +111,8 @@ class _TaskDetailBody extends ConsumerWidget {
             ? DateFormat('MMMM d, yyyy').format(task.createdAt!)
             : 'Flexible Date');
 
-    final payoutStr = task.providerPayout?.toNaira() ??
-        task.customerTotalPrice?.toNaira() ??
+    final payoutStr = task.providerPayout?.toNaira(2) ??
+        task.customerTotalPrice?.toNaira(2) ??
         'Negotiable';
 
     final isAssignedAsync = ref.watch(
@@ -252,6 +254,19 @@ class _TaskDetailBody extends ConsumerWidget {
                         ),
                       ],
                     ),
+                    if (task.paymentStatus != null &&
+                        task.paymentStatus!.trim().toUpperCase() !=
+                            'PENDING') ...[
+                      SizedBox(height: 8.h),
+                      Row(
+                        children: [
+                          _PaymentStatusPill(
+                            status: task.paymentStatus,
+                            isDark: isDark,
+                          ),
+                        ],
+                      ),
+                    ],
 
                     // ─── DESCRIPTION DIRECTLY UNDER TITLE ───
                     if (task.description != null &&
@@ -343,22 +358,24 @@ class _TaskDetailBody extends ConsumerWidget {
         ),
       ),
 
-      // ─── FIXED BOTTOM BAR (Matching Inspo Layout) ───
+      // ─── FIXED BOTTOM BAR (Compact & Reflective of Task Status) ───
       bottomNavigationBar: Container(
-        padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 14.h),
+        padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 10.h),
         decoration: BoxDecoration(
           color: isDark ? theme.colorScheme.surface : Colors.white,
           border: Border(
             top: BorderSide(
-              color: isDark ? AppColors.border : Colors.grey.withValues(alpha: 0.2),
+              color: isDark
+                  ? AppColors.border
+                  : Colors.grey.withValues(alpha: 0.15),
               width: 1.r,
             ),
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.05),
+              color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.04),
               blurRadius: 10.r,
-              offset: const Offset(0, -4),
+              offset: const Offset(0, -3),
             ),
           ],
         ),
@@ -367,6 +384,7 @@ class _TaskDetailBody extends ConsumerWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
+              // Payout info
               Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -375,52 +393,112 @@ class _TaskDetailBody extends ConsumerWidget {
                     'Task Payout',
                     style: AppTextStyles.bodySmall.copyWith(
                       color: AppColors.textMuted,
-                      fontSize: 11.sp,
+                      fontSize: 10.5.sp,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                   SizedBox(height: 2.h),
                   Text(
                     payoutStr,
                     style: AppTextStyles.h2.copyWith(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 18.sp,
-                      color: isDark ? AppColors.textPrimary : Colors.black87,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 17.sp,
+                      color: const Color(0xFF10B981),
                     ),
                   ),
                 ],
               ),
-              ElevatedButton(
-                onPressed: () async {
-                  final action = await TaskDetailsOptionSheet.show(
-                    context,
+
+              // Action buttons row
+              Row(
+                children: [
+                  _buildPrimaryActionButton(
+                    context: context,
                     task: task,
-                  );
-                  if (action != null && context.mounted) {
-                    _handleOptionAction(context, action);
-                  }
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: isAssigned
-                      ? const Color(0xFFEF4444)
-                      : AppColors.primary,
-                  foregroundColor: Colors.white,
-                  elevation: 0,
-                  padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 12.h),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(24.r),
+                    isAssigned: isAssigned,
                   ),
-                ),
-                child: Text(
-                  isAssigned ? 'Manage Task' : 'Accept Job',
-                  style: AppTextStyles.buttonMedium.copyWith(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14.sp,
-                    color: Colors.white,
-                  ),
-                ),
+                 
+                ],
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPrimaryActionButton({
+    required BuildContext context,
+    required Task task,
+    required bool isAssigned,
+  }) {
+    final statusLower = task.status?.toLowerCase() ?? '';
+    final isInProgress = statusLower == 'in_progress';
+    final isCompleted = statusLower == 'completed';
+    final taskId = task.id ?? '';
+
+    String label;
+    IconData icon;
+    Color buttonColor;
+    VoidCallback? onPressed;
+
+    if (!isAssigned) {
+      return const SizedBox.shrink();
+    }
+
+    if (isCompleted) {
+      label = 'Completed';
+      icon = Icons.task_alt_rounded;
+      buttonColor = const Color(0xFF10B981);
+      onPressed = null;
+    } else if (isInProgress) {
+      label = 'Complete Task';
+      icon = Icons.check_circle_rounded;
+      buttonColor = const Color(0xFF10B981);
+      onPressed = () {
+        context.pushNamed(
+          TasksRoutes.pinEntryRoute,
+          pathParameters: {'taskId': taskId},
+          queryParameters: {
+            'mode': 'completePin',
+            'isInitialCash': 'true',
+          },
+        );
+      };
+    } else {
+      label = 'Start Task';
+      icon = Icons.play_circle_fill_rounded;
+      buttonColor = AppColors.primary;
+      onPressed = () {
+        context.pushNamed(
+          TasksRoutes.pinEntryRoute,
+          pathParameters: {'taskId': taskId},
+          queryParameters: {
+            'mode': 'startPin',
+            'isInitialCash': 'true',
+          },
+        );
+      };
+    }
+
+    return ElevatedButton.icon(
+      onPressed: onPressed,
+      icon: Icon(icon, size: 17.r),
+      label: Text(
+        label,
+        style: AppTextStyles.buttonMedium.copyWith(
+          fontWeight: FontWeight.bold,
+          fontSize: 13.5.sp,
+          color: Colors.white,
+        ),
+      ),
+      style: ElevatedButton.styleFrom(
+        backgroundColor: buttonColor,
+        foregroundColor: Colors.white,
+        elevation: 0,
+        padding: EdgeInsets.symmetric(horizontal: 18.w, vertical: 10.h),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20.r),
         ),
       ),
     );
@@ -1496,5 +1574,92 @@ class _StatusHelper {
           icon: Icons.help_outline_rounded,
         );
     }
+  }
+}
+
+class _PaymentStatusPill extends StatelessWidget {
+  final String? status;
+  final bool isDark;
+
+  const _PaymentStatusPill({
+    required this.status,
+    required this.isDark,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (status == null || status!.trim().isEmpty) return const SizedBox.shrink();
+    final raw = status!.trim().toUpperCase();
+    if (raw == 'PENDING') return const SizedBox.shrink();
+
+    final (label, icon, color) = switch (raw) {
+      'PAYMENT_REQUESTED' => (
+          'Payment Requested',
+          Icons.request_quote_rounded,
+          const Color(0xFFF59E0B)
+        ),
+      'CUSTOMER_PAID' => (
+          'Customer Paid',
+          Icons.account_balance_wallet_rounded,
+          const Color(0xFF3B82F6)
+        ),
+      'TRANSFER_INITIATED' => (
+          'Transfer Initiated',
+          Icons.swap_horiz_rounded,
+          const Color(0xFF8B5CF6)
+        ),
+      'PAID' => (
+          'Paid',
+          Icons.check_circle_rounded,
+          const Color(0xFF10B981)
+        ),
+      'CASH_PAID' => (
+          'Paid in Cash',
+          Icons.payments_rounded,
+          const Color(0xFF059669)
+        ),
+      'FAILED' => (
+          'Payment Failed',
+          Icons.error_outline_rounded,
+          const Color(0xFFEF4444)
+        ),
+      _ => (
+          raw
+              .replaceAll('_', ' ')
+              .toLowerCase()
+              .split(' ')
+              .map((w) =>
+                  w.isEmpty ? '' : '${w[0].toUpperCase()}${w.substring(1)}')
+              .join(' '),
+          Icons.payment_rounded,
+          const Color(0xFF6B7280)
+        ),
+    };
+
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 5.h),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: isDark ? 0.18 : 0.1),
+        borderRadius: BorderRadius.circular(20.r),
+        border: Border.all(
+          color: color.withValues(alpha: isDark ? 0.4 : 0.25),
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14.r, color: color),
+          SizedBox(width: 5.w),
+          Text(
+            label,
+            style: AppTextStyles.bodySmall.copyWith(
+              color: color,
+              fontWeight: FontWeight.w700,
+              fontSize: 11.5.sp,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

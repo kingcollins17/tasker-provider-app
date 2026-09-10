@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 
-enum DebugLevel { info, warn, error }
+enum DebugLevel { info, warn, error, network }
 
 class DebugData {
   final DebugLevel level;

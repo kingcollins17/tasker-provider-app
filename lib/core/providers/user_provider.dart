@@ -344,61 +344,6 @@ final isOnlineProvider = FutureProvider<bool>((ref) {
   return isOnline;
 });
 
-final pingLocationProvider = Provider<void>((ref) {
-  final isOnline = ref.watch(isOnlineProvider).value ?? false;
-  debugLog(
-    '[pingLocationProvider] Online status evaluated: isOnline=$isOnline',
-  );
-
-  if (isOnline) {
-    void ping() async {
-      try {
-        debugLog('[pingLocationProvider] Attempting location ping...');
-        final address = await ref.read(userAddressProvider.future);
-        if (address.coordinates?.latitude != null &&
-            address.coordinates?.longitude != null) {
-          debugLog(
-            '[pingLocationProvider] Sending ping to backend: lat=${address.coordinates!.latitude}, lng=${address.coordinates!.longitude}',
-          );
-          final client = ref.read(usersClientProvider);
-          await client.pingLocation(
-            PingLocationRequest(
-              latitude: address.coordinates!.latitude!,
-              longitude: address.coordinates!.longitude!,
-            ),
-          );
-          debugLog('[pingLocationProvider] Ping successful');
-        } else {
-          debugLog(
-            '[pingLocationProvider] Ping skipped: coordinates null',
-            level: DebugLevel.warn,
-          );
-        }
-      } catch (e, st) {
-        debugLog(
-          '[pingLocationProvider] Ping failed: $e',
-          level: DebugLevel.error,
-        );
-        AppExceptionHandler.instance.handleError(e, st);
-      }
-    }
-
-    // Ping immediately when going online
-    ping();
-
-    final timer = Timer.periodic(const Duration(minutes: 2), (_) {
-      ping();
-    });
-
-    ref.onDispose(() {
-      debugLog(
-        '[pingLocationProvider] Provider disposed, canceling ping timer',
-      );
-      timer.cancel();
-    });
-  }
-});
-
 // KYC Providers
 final hasSelfieProvider = FutureProvider<bool>((ref) async {
   debugLog('[hasSelfieProvider] Checking selfie availability...');

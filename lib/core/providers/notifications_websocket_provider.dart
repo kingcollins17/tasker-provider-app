@@ -49,38 +49,33 @@ final notificationsWebSocketProvider =
     });
 
 /// Provider that listens to the typed notification events stream and shows device tray notifications.
-final deviceTrayNotificationProvider = Provider<void>((ref) {
-  ref.listen<AsyncValue<NotificationEvent>>(notificationEventsStream, (
-    previous,
-    next,
-  ) {
-    debugLog(next.value ?? 'No Value');
-    if (next.hasValue && next.value != null) {
-      final event = next.value!;
-      if (event.type != NotificationEventType.notification) return;
+final deviceTrayNotificationProvider = FutureProvider.autoDispose<void>((
+  ref,
+) async {
+  final event = await ref.watch(notificationEventsStream.future);
+  debugLog(event);
+  if (event.type != NotificationEventType.notification) return;
 
-      final raw = event.data;
-      if (raw is! Map<String, dynamic>) return;
+  final raw = event.data;
+  if (raw is! Map<String, dynamic>) return;
 
-      Map<String, dynamic> payload = raw;
+  Map<String, dynamic> payload = raw;
 
-      final title = payload['title'] as String?;
-      final body = payload['body'] as String?;
-      final id =
-          payload['notificationId'] ??
-          payload['id'] ??
-          DateTime.now().millisecondsSinceEpoch;
+  final title = payload['title'] as String?;
+  final body = payload['body'] as String?;
+  final id =
+      payload['notificationId'] ??
+      payload['id'] ??
+      DateTime.now().millisecondsSinceEpoch;
 
-      if (body != null && body.isNotEmpty) {
-        DeviceTray.instance.showNotification(
-          title: title ?? 'Taska',
-          body: body,
-          id: id.hashCode,
-        );
-        ref.invalidate(notificationsProvider);
-      }
-    }
-  });
+  if (body != null && body.isNotEmpty) {
+    DeviceTray.instance.showNotification(
+      title: title ?? 'Taska',
+      body: body,
+      id: id.hashCode,
+    );
+    ref.invalidate(notificationsProvider);
+  }
 });
 
 /// Represents the type of notification received over the WebSocket.
@@ -230,53 +225,50 @@ NotificationEventType? _parseRaw(dynamic raw) {
 
 /// Provider that listens for [NotificationEventType.offerPing] events and
 /// shows the [OfferPingBottomSheet] when one arrives with a valid `task_id`.
-final offerPingListenerProvider = Provider<void>((ref) {
-  ref.listen<AsyncValue<NotificationEvent>>(notificationEventsStream, (
-    previous,
-    next,
-  ) {
-    if (!next.hasValue || next.value == null) return;
+final offerPingListenerProvider = FutureProvider.autoDispose<void>((
+  ref,
+) async {
+  final event = await ref.watch(notificationEventsStream.future);
+  if (event.type != NotificationEventType.offerPing) return;
 
-    final event = next.value!;
-    if (event.type != NotificationEventType.offerPing) return;
+  final raw = event.data;
+  if (raw is! Map<String, dynamic>) return;
 
-    final raw = event.data;
-    if (raw is! Map<String, dynamic>) return;
+  // Extract task_id from the payload — check root, then nested 'data'
+  final taskId =
+      raw['task_id'] as String? ??
+      (raw['data'] is Map<String, dynamic>
+          ? (raw['data'] as Map<String, dynamic>)['task_id'] as String?
+          : null);
 
-    // Extract task_id from the payload — check root, then nested 'data'
-    final taskId =
-        raw['task_id'] as String? ??
-        (raw['data'] is Map<String, dynamic>
-            ? (raw['data'] as Map<String, dynamic>)['task_id'] as String?
-            : null);
+  if (taskId == null || taskId.isEmpty) {
+    debugLog('offerPingListenerProvider: no task_id found in payload');
+    return;
+  }
 
-    if (taskId == null || taskId.isEmpty) {
-      debugLog('offerPingListenerProvider: no task_id found in payload');
-      return;
-    }
+  // Extract expires_at from payload (root or nested 'data') and ensure DateTime conversion
+  final dynamic expiresAtRaw =
+      raw['expires_at'] ??
+      raw['expiresAt'] ??
+      (raw['data'] is Map<String, dynamic>
+          ? ((raw['data'] as Map<String, dynamic>)['expires_at'] ??
+              (raw['data'] as Map<String, dynamic>)['expiresAt'])
+          : null);
 
-    // Extract expires_at from payload (root or nested 'data') and ensure DateTime conversion
-    final dynamic expiresAtRaw =
-        raw['expires_at'] ??
-        raw['expiresAt'] ??
-        (raw['data'] is Map<String, dynamic>
-            ? ((raw['data'] as Map<String, dynamic>)['expires_at'] ??
-                (raw['data'] as Map<String, dynamic>)['expiresAt'])
-            : null);
+  DateTime? expiresAt;
+  if (expiresAtRaw is DateTime) {
+    expiresAt = expiresAtRaw;
+  } else if (expiresAtRaw is String && expiresAtRaw.isNotEmpty) {
+    expiresAt = DateTime.tryParse(expiresAtRaw);
+  } else if (expiresAtRaw is int) {
+    expiresAt = DateTime.fromMillisecondsSinceEpoch(expiresAtRaw);
+  }
 
-    DateTime? expiresAt;
-    if (expiresAtRaw is DateTime) {
-      expiresAt = expiresAtRaw;
-    } else if (expiresAtRaw is String && expiresAtRaw.isNotEmpty) {
-      expiresAt = DateTime.tryParse(expiresAtRaw);
-    } else if (expiresAtRaw is int) {
-      expiresAt = DateTime.fromMillisecondsSinceEpoch(expiresAtRaw);
-    }
-
-    debugLog('offerPingListenerProvider: queuing offer ping for task $taskId (expiresAt: $expiresAt)');
-    appQueue.add(() async {
-      await OfferPingBottomSheet.show(taskId, expiresAt: expiresAt);
-    });
+  debugLog(
+    'offerPingListenerProvider: queuing offer ping for task $taskId (expiresAt: $expiresAt)',
+  );
+  appQueue.add(() async {
+    await OfferPingBottomSheet.show(taskId, expiresAt: expiresAt);
   });
 });
 

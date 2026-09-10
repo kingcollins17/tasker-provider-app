@@ -34,27 +34,6 @@ abstract class TasksClient {
   @GET("tasks/{taskId}")
   Future<BaseApiResponse<Task>> getTask(@Path("taskId") String taskId);
 
-  @POST("tasks/{taskId}/bids")
-  Future<BaseApiResponse<TaskBid>> submitBid(
-    @Path("taskId") String taskId,
-    @Body() CreateBidRequest request,
-  );
-
-  @GET("tasks/{taskId}/my-bid")
-  Future<BaseApiResponse<TaskBid>> getMyBidForTask(
-    @Path("taskId") String taskId,
-  );
-
-  @PUT("bids/{bidId}")
-  Future<BaseApiResponse<TaskBid>> updateBid(
-    @Path("bidId") String bidId,
-    @Body() CreateBidRequest request,
-  );
-
-  @POST("bids/{bidId}/withdraw")
-  Future<BaseApiResponse<TaskBid>> withdrawBid(
-    @Path("bidId") String bidId,
-  );
 
   @POST("tasks/{taskId}/dispatch/respond")
   Future<BaseApiResponse<dynamic>> respondToDispatchPing(

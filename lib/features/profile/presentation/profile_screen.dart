@@ -46,6 +46,7 @@ class ProfileScreen extends ConsumerWidget {
             ref.invalidate(userProvider);
             ref.invalidate(userServicesProvider);
             ref.invalidate(kycStatusProvider);
+            ref.invalidate(providerEarningsStatsProvider);
             ref.invalidate(selectedEarningsProvider);
             try {
               await Future.wait([

@@ -64,7 +64,7 @@ class _PayoutsScreenState extends ConsumerState<PayoutsScreen> {
       body: RefreshIndicator(
         color: AppColors.primary,
         onRefresh: () async {
-          ref.invalidate(providerEarningsStatsProvider(null));
+          ref.invalidate(providerEarningsStatsProvider);
           await ref
               .read(providerPayoutsProvider(_selectedStatus).notifier)
               .refresh();

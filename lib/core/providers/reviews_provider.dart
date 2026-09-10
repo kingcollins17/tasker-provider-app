@@ -216,48 +216,45 @@ final taskReviewPromptTrackerProvider = AsyncNotifierProvider<
 /// Provider that listens to [pendingProviderReviewsProvider] and automatically shows
 /// [SubmitReviewSheet] for a random pending review if it has not been shown or if
 /// 1 day has passed since it was last shown.
-final pendingReviewPrompterProvider = Provider<void>((ref) {
-  ref.listen<AsyncValue<List<PendingProviderReviewItem>>>(
-    pendingProviderReviewsProvider,
-    (previous, next) async {
-      final items = next.value;
-      if (items == null || items.isEmpty) return;
+final pendingReviewPrompterProvider = FutureProvider.autoDispose<void>((
+  ref,
+) async {
+  final items = await ref.watch(pendingProviderReviewsProvider.future);
+  if (items.isEmpty) return;
 
-      final trackerState = ref.read(taskReviewPromptTrackerProvider);
-      final tracks = trackerState.value ?? [];
+  final trackerState = ref.read(taskReviewPromptTrackerProvider);
+  final tracks = trackerState.value ?? [];
 
-      // Pick a random item from pending reviews
-      final randomItem = items[Random().nextInt(items.length)];
-      final taskId = randomItem.id;
-      if (taskId == null || taskId.isEmpty) return;
+  // Pick a random item from pending reviews
+  final randomItem = items[Random().nextInt(items.length)];
+  final taskId = randomItem.id;
+  if (taskId == null || taskId.isEmpty) return;
 
-      // Find tracking record for this task
-      TaskReviewPromptTrack? trackRecord;
-      for (final track in tracks) {
-        if (track.taskId == taskId) {
-          trackRecord = track;
-          break;
-        }
-      }
+  // Find tracking record for this task
+  TaskReviewPromptTrack? trackRecord;
+  for (final track in tracks) {
+    if (track.taskId == taskId) {
+      trackRecord = track;
+      break;
+    }
+  }
 
-      final now = DateTime.now();
-      final shouldShow = trackRecord == null ||
-          trackRecord.lastShownAt == null ||
-          now.difference(trackRecord.lastShownAt!).inHours >= 24;
+  final now = DateTime.now();
+  final shouldShow = trackRecord == null ||
+      trackRecord.lastShownAt == null ||
+      now.difference(trackRecord.lastShownAt!).inHours >= 24;
 
-      if (shouldShow) {
-        debugLog(trackRecord?.toJson());
-        debugLog('[pendingReviewPrompterProvider]: pending review');
-        await ref
-            .read(taskReviewPromptTrackerProvider.notifier)
-            .updatePromptTrack(taskId: taskId, lastShownAt: now);
+  if (shouldShow) {
+    debugLog(trackRecord?.toJson());
+    debugLog('[pendingReviewPrompterProvider]: pending review');
+    await ref
+        .read(taskReviewPromptTrackerProvider.notifier)
+        .updatePromptTrack(taskId: taskId, lastShownAt: now);
 
-        appQueue.add(() async {
-          await SubmitReviewSheet.show(taskId: taskId);
-        });
-      }
-    },
-  );
+    appQueue.add(() async {
+      await SubmitReviewSheet.show(taskId: taskId);
+    });
+  }
 });
 
 

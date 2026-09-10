@@ -1,11 +1,14 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geocoding/geocoding.dart' hide Location;
+import 'package:hive_flutter/hive_flutter.dart';
 import 'package:location/location.dart';
+import 'package:tasker_app/core/services/local_storage_service.dart';
 import 'package:tasker_app/core/utils/app_exception_handler.dart';
 import 'package:tasker_app/core/utils/debug_logger.dart';
 import '../api/api.dart';
 import '../models/models.dart';
 import 'region_provider.dart';
+
 // ---------------------------------------------------------------------------
 // Data models
 // ---------------------------------------------------------------------------
@@ -16,6 +19,13 @@ class Coordinates {
   final double? longitude;
 
   const Coordinates({this.latitude, this.longitude});
+
+  Map<String, dynamic> toJson() {
+    return {
+      'latitude': latitude,
+      'longitude': longitude,
+    };
+  }
 
   @override
   String toString() => 'Coordinates($latitude, $longitude)';
@@ -39,6 +49,19 @@ class Address {
     this.country,
   });
 
+  /// Converts the address object to a JSON-serializable Map.
+  Map<String, dynamic> toJson() {
+    return {
+      'coordinates': coordinates?.toJson(),
+      'street': street,
+      'locality': locality,
+      'administrativeArea': administrativeArea,
+      'postalCode': postalCode,
+      'country': country,
+      'formatted': formatted,
+    };
+  }
+
   /// Returns a concise, human-readable address string.
   String get formatted {
     final parts = [
@@ -58,6 +81,39 @@ class Address {
 // ---------------------------------------------------------------------------
 // Providers
 // ---------------------------------------------------------------------------
+
+/// Manages whether to use live device GPS location vs mock location.
+class UseLiveLocationNotifier extends Notifier<bool> {
+  static const String _storageKey = 'use_live_location';
+
+  @override
+  bool build() {
+    if (!Hive.isBoxOpen(appStorage.filename)) {
+      return false;
+    }
+    final box = Hive.box(appStorage.filename);
+    final rawVal = box.get(_storageKey);
+    if (rawVal == null) return false;
+    if (rawVal is bool) return rawVal;
+    if (rawVal is String) return rawVal.toLowerCase() == 'true';
+    return false;
+  }
+
+  Future<void> setUseLiveLocation(bool value) async {
+    state = value;
+    await appStorage.save(_storageKey, value);
+  }
+
+  Future<void> toggle() async {
+    await setUseLiveLocation(!state);
+  }
+}
+
+/// Provider exposing whether live location or mock location is used.
+final useLiveLocationProvider =
+    NotifierProvider<UseLiveLocationNotifier, bool>(() {
+  return UseLiveLocationNotifier();
+});
 
 /// Exposes a singleton [Location] instance for the whole app.
 final locationServiceProvider = Provider<Location>((ref) {
@@ -132,48 +188,71 @@ final userCoordinatesProvider = FutureProvider<Coordinates>((ref) async {
 });
 
 /// Reverse-geocodes the user's coordinates into a readable [Address].
-/// Depends on [userCoordinatesProvider], so it waits for coordinates first.
+/// Depends on [userCoordinatesProvider] when live location is enabled.
 final userAddressProvider = FutureProvider<Address>((ref) async {
-  debugLog('[userAddressProvider] Resolving address...');
-  // MOCK: Mock address set to University of Nigeria, Nsukka
-  const address = Address(
-    coordinates: Coordinates(latitude: 6.8429, longitude: 7.4116),
-    street: 'University of Nigeria, Nsukka',
-    locality: 'Nsukka',
-    administrativeArea: 'Enugu',
-    postalCode: '410001',
-    country: 'Nigeria',
+  final useLiveLocation = ref.watch(useLiveLocationProvider);
+  debugLog(
+    '[userAddressProvider] Resolving address (useLiveLocation: $useLiveLocation)...',
   );
-  debugLog('[userAddressProvider] Returning address: ${address.formatted}');
-  return address;
 
-  /*
+  if (!useLiveLocation) {
+    // MOCK: Mock address set to University of Nigeria, Nsukka
+    const address = Address(
+      coordinates: Coordinates(latitude: 6.8429, longitude: 7.4116),
+      street: 'University of Nigeria, Nsukka',
+      locality: 'Nsukka',
+      administrativeArea: 'Enugu',
+      postalCode: '410001',
+      country: 'Nigeria',
+    );
+    debugLog('[userAddressProvider] Returning mock address:');
+    debugLog(address.toJson());
+    return address;
+  }
+
   final coordinates = await ref.watch(userCoordinatesProvider.future);
 
   if (coordinates.latitude == null || coordinates.longitude == null) {
-    return Address(coordinates: coordinates);
+    final address = Address(coordinates: coordinates);
+    debugLog('[userAddressProvider] Coordinates null, returning address:');
+    debugLog(address.toJson());
+    return address;
   }
 
-  final placemarks = await placemarkFromCoordinates(
-    coordinates.latitude!,
-    coordinates.longitude!,
-  );
+  try {
+    final placemarks = await placemarkFromCoordinates(
+      coordinates.latitude!,
+      coordinates.longitude!,
+    );
 
-  if (placemarks.isEmpty) {
-    return Address(coordinates: coordinates);
+    if (placemarks.isEmpty) {
+      final address = Address(coordinates: coordinates);
+      debugLog('[userAddressProvider] No placemark found, returning address:');
+      debugLog(address.toJson());
+      return address;
+    }
+
+    final placemark = placemarks.first;
+    final address = Address(
+      coordinates: coordinates,
+      street: placemark.street,
+      locality: placemark.locality,
+      administrativeArea: placemark.administrativeArea,
+      postalCode: placemark.postalCode,
+      country: placemark.country,
+    );
+    debugLog('[userAddressProvider] Returning live address:');
+    debugLog(address.toJson());
+    return address;
+  } catch (e) {
+    debugLog(
+      '[userAddressProvider] Geocoding failed, returning raw coordinates: $e',
+      level: DebugLevel.warn,
+    );
+    final address = Address(coordinates: coordinates);
+    debugLog(address.toJson());
+    return address;
   }
-
-  final placemark = placemarks.first;
-
-  return Address(
-    coordinates: coordinates,
-    street: placemark.street,
-    locality: placemark.locality,
-    administrativeArea: placemark.administrativeArea,
-    postalCode: placemark.postalCode,
-    country: placemark.country,
-  );
-  */
 });
 
 /// Provides a live stream of location updates as the user moves.
@@ -208,8 +287,9 @@ final syncUserLocationProvider = FutureProvider<void>((ref) async {
     final client = ref.read(usersClientProvider);
 
     debugLog(
-      '[syncUserLocationProvider] Updating location: lat=${address.coordinates!.latitude}, lng=${address.coordinates!.longitude}, address=${address.formatted}, regionId=${region?.id}',
+      '[syncUserLocationProvider] Updating location with regionId=${region?.id}:',
     );
+    debugLog(address.toJson());
     await client.updateLocation(
       UpdateLocationRequest(
         latitude: address.coordinates!.latitude!,

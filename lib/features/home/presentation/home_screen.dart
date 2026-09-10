@@ -4,7 +4,6 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:shimmer/shimmer.dart';
 
 import 'package:tasker_app/core/providers/providers.dart';
-import 'package:tasker_app/core/ui/widgets/submit_review_sheet.dart';
 import 'package:tasker_app/core/utils/extensions/loading_context_ext.dart';
 
 import '../../../core/ui/designs/colors.dart';
@@ -60,11 +59,13 @@ class HomeScreen extends ConsumerWidget {
                 ref.invalidate(userProvider);
                 ref.invalidate(isOnlineProvider);
                 ref.invalidate(notificationsProvider);
+                ref.invalidate(providerEarningsStatsProvider);
                 ref.invalidate(selectedEarningsProvider);
+                ref.invalidate(earningsDurationProvider);
                 ref.invalidate(debtSummaryProvider);
                 ref.invalidate(currentAssignmentProvider);
                 ref.invalidate(kycStatusProvider);
-                ref.invalidate(providerPayoutsProvider(null));
+                ref.invalidate(providerPayoutsProvider);
                 ref.invalidate(currentDispatchProvider);
                 
 
@@ -388,6 +389,45 @@ class _SectionHeader extends StatelessWidget {
   }
 }
 
+class _SectionHeaderShimmer extends StatelessWidget {
+  final bool hasAction;
+  final double? titleWidth;
+
+  const _SectionHeaderShimmer({
+    this.hasAction = false,
+    this.titleWidth,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.only(bottom: 12.h),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Container(
+            width: titleWidth ?? 100.w,
+            height: 14.h,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(4.r),
+            ),
+          ),
+          if (hasAction)
+            Container(
+              width: 50.w,
+              height: 12.h,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(4.r),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // ACTIVE WORK SECTION
 // ─────────────────────────────────────────────────────────────────────────────
@@ -406,10 +446,6 @@ class _ActiveWorkSection extends ConsumerWidget {
         }
 
         final title = assignment.task?.title ?? 'Active Task';
-        final address =
-            assignment.provider?.location?.addressLine ??
-            assignment.task?.description ??
-            'Location not specified';
 
         String timeStr = 'In Progress';
         if (assignment.startedAt != null) {
@@ -423,11 +459,10 @@ class _ActiveWorkSection extends ConsumerWidget {
           );
         }
 
-        final priceStr = assignment.acceptedPrice != null
-            ? assignment.acceptedPrice!.toNaira()
-            : (assignment.task?.providerPayout != null
-                  ? assignment.task!.providerPayout!.toNaira()
-                  : null);
+        final rawPrice = assignment.acceptedPrice ??
+            assignment.task?.providerPayout ??
+            assignment.task?.customerTotalPrice;
+        final priceStr = rawPrice?.toNaira(2);
 
         final statusStr = (assignment.status ?? 'assigned')
             .replaceAll('_', ' ')
@@ -439,7 +474,6 @@ class _ActiveWorkSection extends ConsumerWidget {
             _SectionHeader(title: "Active Work", onAction: () {}),
             _ActiveWorkCard(
               title: title,
-              address: address,
               time: timeStr,
               price: priceStr,
               status: statusStr,
@@ -532,61 +566,65 @@ class _ActiveWorkSkeleton extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final baseColor = isDark ? Colors.grey[800]! : Colors.grey[300]!;
-    final highlightColor = isDark ? Colors.grey[700]! : Colors.grey[100]!;
+    final baseColor = isDark ? theme.colorScheme.surface : Colors.grey[200]!;
+    final highlightColor = isDark ? AppColors.border : Colors.grey[100]!;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const _SectionHeader(title: "Active Work"),
-        Shimmer.fromColors(
-          baseColor: baseColor,
-          highlightColor: highlightColor,
-          child: Container(
+    return Shimmer.fromColors(
+      baseColor: baseColor,
+      highlightColor: highlightColor,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const _SectionHeaderShimmer(titleWidth: 90),
+          Container(
             margin: EdgeInsets.only(bottom: 12.h),
-            padding: EdgeInsets.all(16.r),
+            padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 12.h),
             decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surface,
+              color: Colors.white,
               borderRadius: AppDecorations.radiusMd,
               border: Border.all(color: AppColors.border, width: 1.r),
             ),
             child: Row(
               children: [
                 Container(
-                  width: 48.r,
-                  height: 48.r,
+                  width: 40.r,
+                  height: 40.r,
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: AppDecorations.radiusSm,
+                    borderRadius: BorderRadius.circular(10.r),
                   ),
                 ),
-                SizedBox(width: 16.w),
+                SizedBox(width: 12.w),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Container(
-                        width: 140.w,
-                        height: 16.h,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(4.r),
-                        ),
-                      ),
-                      SizedBox(height: 8.h),
-                      Container(
-                        width: 180.w,
-                        height: 12.h,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(4.r),
-                        ),
-                      ),
-                      SizedBox(height: 8.h),
                       Row(
                         children: [
                           Container(
-                            width: 80.w,
+                            width: 120.w,
+                            height: 14.h,
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(4.r),
+                            ),
+                          ),
+                          const Spacer(),
+                          Container(
+                            width: 60.w,
+                            height: 12.h,
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(4.r),
+                            ),
+                          ),
+                        ],
+                      ),
+                      SizedBox(height: 6.h),
+                      Row(
+                        children: [
+                          Container(
+                            width: 100.w,
                             height: 12.h,
                             decoration: BoxDecoration(
                               color: Colors.white,
@@ -610,15 +648,14 @@ class _ActiveWorkSkeleton extends StatelessWidget {
               ],
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
 
 class _ActiveWorkCard extends StatelessWidget {
   final String title;
-  final String address;
   final String time;
   final String? price;
   final String? status;
@@ -628,7 +665,6 @@ class _ActiveWorkCard extends StatelessWidget {
 
   const _ActiveWorkCard({
     required this.title,
-    required this.address,
     required this.time,
     this.price,
     this.status,
@@ -639,122 +675,132 @@ class _ActiveWorkCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return InkWell(
       onTap: onTap,
+      borderRadius: AppDecorations.radiusMd,
       child: Container(
         margin: EdgeInsets.only(bottom: 12.h),
-        padding: EdgeInsets.all(16.r),
+        padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 12.h),
         decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surface,
+          color: theme.colorScheme.surface,
           borderRadius: AppDecorations.radiusMd,
-          border: Border.all(color: AppColors.border, width: 1.r),
+          border: Border.all(
+            color: isDark
+                ? AppColors.border
+                : Colors.grey.withValues(alpha: 0.15),
+            width: 1.r,
+          ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
-              blurRadius: 10.r,
-              offset: const Offset(0, 4),
+              color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.04),
+              blurRadius: 8.r,
+              offset: const Offset(0, 3),
             ),
           ],
         ),
         child: Row(
           children: [
             Container(
-              padding: EdgeInsets.all(12.r),
+              width: 40.r,
+              height: 40.r,
               decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.12),
-                borderRadius: AppDecorations.radiusSm,
+                color: color.withValues(alpha: isDark ? 0.18 : 0.1),
+                borderRadius: BorderRadius.circular(10.r),
               ),
-              child: Icon(icon, color: color, size: 24.r),
+              child: Center(
+                child: Icon(icon, color: color, size: 20.r),
+              ),
             ),
-            SizedBox(width: 16.w),
+            SizedBox(width: 12.w),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   Row(
                     children: [
                       Expanded(
                         child: Text(
                           title,
-                          style: AppTextStyles.bodyLarge.copyWith(
-                            fontWeight: FontWeight.w600,
+                          style: AppTextStyles.bodyMedium.copyWith(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 13.5.sp,
+                            color: isDark
+                                ? AppColors.textPrimary
+                                : const Color(0xFF0F172A),
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
                       if (status != null) ...[
-                        SizedBox(width: 8.w),
+                        SizedBox(width: 6.w),
                         Container(
                           padding: EdgeInsets.symmetric(
-                            horizontal: 8.w,
+                            horizontal: 7.w,
                             vertical: 2.h,
                           ),
                           decoration: BoxDecoration(
-                            color: AppColors.primary.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(12.r),
+                            color: AppColors.primary.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(6.r),
                           ),
                           child: Text(
                             status!,
-                            style: AppTextStyles.bodySmall.copyWith(
+                            style: AppTextStyles.label.copyWith(
                               color: AppColors.primary,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 10.sp,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 9.5.sp,
+                              letterSpacing: 0.3,
                             ),
                           ),
                         ),
                       ],
                     ],
                   ),
-                  SizedBox(height: 4.h),
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.location_on_outlined,
-                        color: AppColors.textMuted,
-                        size: 14.r,
-                      ),
-                      SizedBox(width: 4.w),
-                      Expanded(
-                        child: Text(
-                          address,
-                          style: AppTextStyles.bodySmall,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: 4.h),
+                  SizedBox(height: 5.h),
                   Row(
                     children: [
                       Icon(
                         Icons.access_time_rounded,
                         color: AppColors.textMuted,
-                        size: 14.r,
+                        size: 13.r,
                       ),
                       SizedBox(width: 4.w),
-                      Text(time, style: AppTextStyles.bodySmall),
+                      Expanded(
+                        child: Text(
+                          time,
+                          style: AppTextStyles.bodySmall.copyWith(
+                            color: AppColors.textMuted,
+                            fontSize: 11.5.sp,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
                       if (price != null) ...[
-                        const Spacer(),
+                        SizedBox(width: 8.w),
                         Text(
                           price!,
-                          style: AppTextStyles.bodyMedium.copyWith(
-                            fontWeight: FontWeight.bold,
+                          style: AppTextStyles.subtitle.copyWith(
+                            fontWeight: FontWeight.w800,
+                            fontSize: 13.5.sp,
                             color: AppColors.primary,
                           ),
                         ),
                       ],
+                      SizedBox(width: 6.w),
+                      Icon(
+                        Icons.arrow_forward_ios_rounded,
+                        color: AppColors.textMuted,
+                        size: 12.r,
+                      ),
                     ],
                   ),
                 ],
               ),
-            ),
-            SizedBox(width: 8.w),
-            Icon(
-              Icons.arrow_forward_ios_rounded,
-              color: AppColors.textMuted,
-              size: 16.r,
             ),
           ],
         ),
@@ -906,7 +952,16 @@ class _AccountIssuesSection extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final userAsync = ref.watch(userProvider);
     final kycStatusAsync = ref.watch(kycStatusProvider);
+
+    if (userAsync.isLoading || kycStatusAsync.isLoading) {
+      return Padding(
+        padding: EdgeInsets.only(bottom: 12.h),
+        child: const _AccountIssuesSkeleton(),
+      );
+    }
+
     final user = userAsync.value;
+    final kycStatus = kycStatusAsync.value;
 
     final issues = <Widget>[];
 
@@ -942,16 +997,15 @@ class _AccountIssuesSection extends ConsumerWidget {
       }
     }
 
-    final kycStatus = kycStatusAsync.value;
     if (user != null && kycStatus != null) {
       if (kycStatus == KycStatus.pending || kycStatus == KycStatus.rejected) {
         issues.add(
           _AccountIssueCard(
             title: kycStatus == KycStatus.rejected
                 ? 'KYC Rejected'
-                : 'Complete KYC',
+                : 'Complete Identity Verification',
             description: kycStatus == KycStatus.rejected
-                ? 'Your identity verification was rejected. Please try again.'
+                ? 'Your identity verification was rejected. Tap to retry.'
                 : 'Verify your identity to start receiving tasks.',
             icon: Icons.verified_user_outlined,
             isError: kycStatus == KycStatus.rejected,
@@ -967,13 +1021,83 @@ class _AccountIssuesSection extends ConsumerWidget {
       return const SizedBox.shrink();
     }
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const _SectionHeader(title: "Account Issues"),
-        ...issues,
-        SizedBox(height: 8.h),
-      ],
+    return Padding(
+      padding: EdgeInsets.only(bottom: 12.h),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const _SectionHeader(title: "Account Issues"),
+          ...issues,
+        ],
+      ),
+    );
+  }
+}
+
+class _AccountIssuesSkeleton extends StatelessWidget {
+  const _AccountIssuesSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final baseColor = isDark ? theme.colorScheme.surface : Colors.grey[200]!;
+    final highlightColor = isDark ? AppColors.border : Colors.grey[100]!;
+
+    return Shimmer.fromColors(
+      baseColor: baseColor,
+      highlightColor: highlightColor,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const _SectionHeaderShimmer(titleWidth: 100),
+          Container(
+            padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 7.h),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: AppDecorations.radiusMd,
+              border: Border.all(color: AppColors.border, width: 1.r),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 26.r,
+                  height: 26.r,
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                SizedBox(width: 10.w),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        width: 110.w,
+                        height: 11.h,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(3.r),
+                        ),
+                      ),
+                      SizedBox(height: 3.h),
+                      Container(
+                        width: 170.w,
+                        height: 9.h,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(3.r),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -995,38 +1119,39 @@ class _AccountIssueCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = isError ? AppColors.error : AppColors.warning;
-    return GestureDetector(
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final accentColor = isError ? AppColors.error : AppColors.warning;
+
+    return InkWell(
       onTap: onTap,
+      borderRadius: AppDecorations.radiusMd,
       child: Container(
-        margin: EdgeInsets.only(bottom: 8.h),
-        padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 10.h),
+        margin: EdgeInsets.only(bottom: 6.h),
+        padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 7.h),
         decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surface,
+          color: theme.colorScheme.surface,
           borderRadius: AppDecorations.radiusMd,
-          border: Border.all(color: AppColors.border, width: 1.r),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
-              blurRadius: 10.r,
-              offset: const Offset(0, 4),
-            ),
-          ],
+          border: Border.all(
+            color: accentColor.withValues(alpha: isDark ? 0.25 : 0.18),
+            width: 1.r,
+          ),
         ),
         child: Row(
           children: [
             Container(
-              padding: EdgeInsets.all(8.r),
+              padding: EdgeInsets.all(5.r),
               decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.12),
-                borderRadius: AppDecorations.radiusSm,
+                color: accentColor.withValues(alpha: isDark ? 0.14 : 0.08),
+                shape: BoxShape.circle,
               ),
-              child: Icon(icon, color: color, size: 20.r),
+              child: Icon(icon, color: accentColor, size: 15.r),
             ),
-            SizedBox(width: 14.w),
+            SizedBox(width: 10.w),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
                     title,
@@ -1034,26 +1159,30 @@ class _AccountIssueCard extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     style: AppTextStyles.bodyMedium.copyWith(
                       fontWeight: FontWeight.w600,
+                      fontSize: 12.sp,
+                      color: isDark
+                          ? AppColors.textPrimary
+                          : const Color(0xFF0F172A),
                     ),
                   ),
-                  SizedBox(height: 2.h),
+                  SizedBox(height: 1.h),
                   Text(
                     description,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: AppTextStyles.bodySmall.copyWith(
                       color: AppColors.textMuted,
-                      fontSize: 11.sp,
+                      fontSize: 10.sp,
                     ),
                   ),
                 ],
               ),
             ),
-            SizedBox(width: 8.w),
+            SizedBox(width: 6.w),
             Icon(
               Icons.arrow_forward_ios_rounded,
-              color: AppColors.textMuted,
-              size: 14.r,
+              color: AppColors.textMuted.withValues(alpha: 0.5),
+              size: 10.r,
             ),
           ],
         ),
@@ -1114,60 +1243,134 @@ class _PayoutsOverviewSection extends ConsumerWidget {
                           final dateStr = payout.createdAt != null
                               ? DateFormat('dd MMM yyyy').format(payout.createdAt!)
                               : 'Recent';
+                          final taskId = payout.taskId ?? payout.task?.id;
+                          final statusLower = payout.status?.toLowerCase() ?? 'pending';
 
-                          return Padding(
-                            padding: EdgeInsets.symmetric(vertical: 8.h),
-                            child: Row(
-                              children: [
-                                Container(
-                                  padding: EdgeInsets.all(8.r),
-                                  decoration: BoxDecoration(
-                                    color: AppColors.primary.withValues(alpha: 0.1),
-                                    shape: BoxShape.circle,
+                          final (iconData, iconBgColor, iconColor, amountColor, statusText, statusColor) =
+                              switch (statusLower) {
+                            'completed' || 'paid' => (
+                                Icons.arrow_downward_rounded,
+                                AppColors.success.withValues(alpha: 0.15),
+                                AppColors.success,
+                                AppColors.success,
+                                'PAID',
+                                AppColors.success,
+                              ),
+                            'failed' => (
+                                Icons.warning_amber_rounded,
+                                AppColors.error.withValues(alpha: 0.15),
+                                AppColors.error,
+                                AppColors.error,
+                                'FAILED',
+                                AppColors.error,
+                              ),
+                            _ => (
+                                Icons.access_time_rounded,
+                                AppColors.warning.withValues(alpha: 0.15),
+                                AppColors.warning,
+                                AppColors.warning,
+                                'PENDING',
+                                AppColors.warning,
+                              ),
+                          };
+
+                          return InkWell(
+                            onTap: () {
+                              if (taskId != null && taskId.isNotEmpty) {
+                                context.pushNamed(
+                                  TasksRoutes.taskDetailRoute,
+                                  pathParameters: {'taskId': taskId},
+                                );
+                              }
+                            },
+                            borderRadius: BorderRadius.circular(8.r),
+                            child: Padding(
+                              padding: EdgeInsets.symmetric(
+                                vertical: 8.h,
+                                horizontal: 4.w,
+                              ),
+                              child: Row(
+                                children: [
+                                  Container(
+                                    padding: EdgeInsets.all(8.r),
+                                    decoration: BoxDecoration(
+                                      color: iconBgColor,
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: Icon(
+                                      iconData,
+                                      color: iconColor,
+                                      size: 18.r,
+                                    ),
                                   ),
-                                  child: Icon(
-                                    Icons.payments_outlined,
-                                    color: AppColors.primary,
-                                    size: 18.r,
-                                  ),
-                                ),
-                                SizedBox(width: 12.w),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        titleText,
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: AppTextStyles.bodyMedium.copyWith(
-                                          fontWeight: FontWeight.w600,
-                                          fontSize: 13.sp,
-                                          color: isDark
-                                              ? AppColors.textPrimary
-                                              : const Color(0xFF0F172A),
+                                  SizedBox(width: 12.w),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          titleText,
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style:
+                                              AppTextStyles.bodyMedium.copyWith(
+                                            fontWeight: FontWeight.w600,
+                                            fontSize: 13.sp,
+                                            color: isDark
+                                                ? AppColors.textPrimary
+                                                : const Color(0xFF0F172A),
+                                          ),
                                         ),
-                                      ),
-                                      SizedBox(height: 2.h),
-                                      Text(
-                                        dateStr,
-                                        style: AppTextStyles.bodySmall.copyWith(
-                                          color: AppColors.textMuted,
-                                          fontSize: 11.sp,
+                                        SizedBox(height: 2.h),
+                                        Row(
+                                          children: [
+                                            Text(
+                                              dateStr,
+                                              style: AppTextStyles.bodySmall
+                                                  .copyWith(
+                                                color: AppColors.textMuted,
+                                                fontSize: 11.sp,
+                                              ),
+                                            ),
+                                            SizedBox(width: 6.w),
+                                            Container(
+                                              padding: EdgeInsets.symmetric(
+                                                horizontal: 6.w,
+                                                vertical: 1.h,
+                                              ),
+                                              decoration: BoxDecoration(
+                                                color: statusColor.withValues(
+                                                  alpha: 0.12,
+                                                ),
+                                                borderRadius:
+                                                    BorderRadius.circular(4.r),
+                                              ),
+                                              child: Text(
+                                                statusText,
+                                                style: AppTextStyles.label
+                                                    .copyWith(
+                                                  color: statusColor,
+                                                  fontSize: 9.5.sp,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
                                         ),
-                                      ),
-                                    ],
+                                      ],
+                                    ),
                                   ),
-                                ),
-                                Text(
-                                  '+${amount.toNaira(2)}',
-                                  style: AppTextStyles.subtitle.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 13.sp,
-                                    color: AppColors.primary,
+                                  Text(
+                                    '+${amount.toNaira(2)}',
+                                    style: AppTextStyles.subtitle.copyWith(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 13.sp,
+                                      color: amountColor,
+                                    ),
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
                           );
                         },
@@ -1195,14 +1398,14 @@ class _PayoutsOverviewShimmer extends StatelessWidget {
     final baseColor = isDark ? theme.colorScheme.surface : Colors.grey[200]!;
     final highlightColor = isDark ? AppColors.border : Colors.grey[100]!;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const _SectionHeader(title: "Payouts Overview"),
-        Shimmer.fromColors(
-          baseColor: baseColor,
-          highlightColor: highlightColor,
-          child: ListView.separated(
+    return Shimmer.fromColors(
+      baseColor: baseColor,
+      highlightColor: highlightColor,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const _SectionHeaderShimmer(hasAction: true, titleWidth: 70),
+          ListView.separated(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             padding: EdgeInsets.zero,
@@ -1263,8 +1466,8 @@ class _PayoutsOverviewShimmer extends StatelessWidget {
               ),
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

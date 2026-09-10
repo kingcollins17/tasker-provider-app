@@ -257,26 +257,29 @@ final currentDispatchProvider = FutureProvider.autoDispose<Dispatch?>((
 }, retry: (retryCount, error) => null);
 
 /// Provider that watches currentDispatchProvider and shows the OfferPingBottomSheet if the dispatch is PENDING and has not expired.
-final currentDispatchListenerProvider = Provider.autoDispose<void>((ref) {
-  ref.listen<AsyncValue<Dispatch?>>(currentDispatchProvider, (previous, next) {
-    if (next.hasValue && next.value != null) {
-      final dispatch = next.value!;
-      final isPending = dispatch.status == null ||
-          dispatch.status!.toUpperCase() == 'PENDING';
-      final isNotExpired = dispatch.expiresAt == null ||
-          dispatch.expiresAt!.isAfter(DateTime.now());
-      debugLog(dispatch);
-      if (isPending && isNotExpired && dispatch.taskId != null && dispatch.taskId!.isNotEmpty) {
-        
-        appQueue.add(() async {
-          await OfferPingBottomSheet.show(
-            dispatch.taskId!,
-            expiresAt: dispatch.expiresAt,
-          );
-        });
-      }
+final currentDispatchListenerProvider = FutureProvider.autoDispose<void>((
+  ref,
+) async {
+  final dispatch = await ref.watch(currentDispatchProvider.future);
+  if (dispatch != null) {
+    final isPending =
+        dispatch.status == null || dispatch.status!.toUpperCase() == 'PENDING';
+    final isNotExpired =
+        dispatch.expiresAt == null ||
+        dispatch.expiresAt!.isAfter(DateTime.now());
+    debugLog(dispatch);
+    if (isPending &&
+        isNotExpired &&
+        dispatch.taskId != null &&
+        dispatch.taskId!.isNotEmpty) {
+      appQueue.add(() async {
+        await OfferPingBottomSheet.show(
+          dispatch.taskId!,
+          expiresAt: dispatch.expiresAt,
+        );
+      });
     }
-  }, fireImmediately: true);
+  }
 });
 
 /// Notifier to manage paginated list of user assignments.
