@@ -210,6 +210,7 @@ class ProviderPayoutsNotifier extends AsyncNotifier<List<Payout>> {
   int _page = 1;
   final int _perPage = 20;
   bool _hasMore = true;
+  bool _isLoadingMore = false;
 
   final String? status;
   final String? sortBy;
@@ -218,6 +219,7 @@ class ProviderPayoutsNotifier extends AsyncNotifier<List<Payout>> {
   ProviderPayoutsNotifier({this.status, this.sortBy, this.sortDesc});
 
   bool get hasMore => _hasMore;
+  bool get isLoadingMore => _isLoadingMore;
   int get currentPage => _page;
   int get perPage => _perPage;
 
@@ -225,6 +227,7 @@ class ProviderPayoutsNotifier extends AsyncNotifier<List<Payout>> {
   Future<List<Payout>> build() async {
     _page = 1;
     _hasMore = true;
+    _isLoadingMore = false;
     return _fetchPage(1);
   }
 
@@ -253,22 +256,27 @@ class ProviderPayoutsNotifier extends AsyncNotifier<List<Payout>> {
 
   /// Refreshes the payouts list by re-initializing build().
   Future<void> refresh() async {
-    state = const AsyncValue.loading();
-    state = await AsyncValue.guard(() => build());
+    ref.invalidateSelf();
+    await future;
   }
 
   /// Loads the next page of payouts and appends them to current state.
   Future<void> loadMore() async {
-    if (state.isLoading || state.hasError || !_hasMore) return;
+    final currentItems = state.value;
+    if (state.isLoading || state.hasError || !_hasMore || _isLoadingMore || currentItems == null) return;
 
-    final currentItems = state.value ?? [];
-    state = const AsyncValue.loading();
+    _isLoadingMore = true;
 
-    state = await AsyncValue.guard(() async {
-      _page++;
-      final nextItems = await _fetchPage(_page);
-      return [...currentItems, ...nextItems];
-    });
+    try {
+      final nextPage = _page + 1;
+      final nextItems = await _fetchPage(nextPage);
+      _page = nextPage;
+      state = AsyncData([...currentItems, ...nextItems]);
+    } catch (e) {
+      debugLog('[ProviderPayoutsNotifier.loadMore] Error: $e', level: DebugLevel.error);
+    } finally {
+      _isLoadingMore = false;
+    }
   }
 }
 

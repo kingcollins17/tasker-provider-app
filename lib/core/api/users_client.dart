@@ -113,6 +113,18 @@ abstract class UsersClient {
 
   @POST("users/provider/availability/default")
   Future<BaseApiResponse<List<ProviderAvailability>>> createDefaultProviderAvailability();
+
+  @POST("vetting/guarantor")
+  Future<BaseApiResponse> addGuarantor(@Body() GuarantorRequest body);
+
+  @POST("vetting/guarantor/resubmit")
+  Future<BaseApiResponse> resubmitGuarantor(@Body() GuarantorRequest body);
+
+  @GET("vetting/guarantor")
+  Future<BaseApiResponse<Guarantor>> getLatestGuarantor();
+
+  @GET("vetting/interview/me")
+  Future<BaseApiResponse<Interview>> getMyInterview();
 }
 
 /// Provider exposing the [UsersClient] dependency.

@@ -10,5 +10,8 @@ export 'payments_provider.dart';
 export 'provider_availability_provider.dart';
 export 'services_editor_provider.dart';
 export 'reviews_provider.dart';
+export 'interview_provider.dart';
+export 'guarantor_providers.dart';
+export 'offers_providers.dart';
 export '../utils/retry_util.dart';
 

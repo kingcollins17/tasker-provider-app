@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -41,7 +42,8 @@ extension LoadingContextExt on BuildContext {
   }
 }
 
-/// A subtle, non-intrusive loading overlay with a compact floating card and smooth spinner.
+/// A modern, refined loading overlay featuring a glassmorphic floating card,
+/// smooth spring entrance animation, and custom brand gradient spinner.
 class _LoadingOverlay extends StatefulWidget {
   final String? message;
 
@@ -52,21 +54,28 @@ class _LoadingOverlay extends StatefulWidget {
 }
 
 class _LoadingOverlayState extends State<_LoadingOverlay>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   late final AnimationController _entranceController;
+  late final AnimationController _spinController;
 
   @override
   void initState() {
     super.initState();
     _entranceController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 200),
+      duration: const Duration(milliseconds: 250),
     )..forward();
+
+    _spinController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    )..repeat();
   }
 
   @override
   void dispose() {
     _entranceController.dispose();
+    _spinController.dispose();
     super.dispose();
   }
 
@@ -74,72 +83,107 @@ class _LoadingOverlayState extends State<_LoadingOverlay>
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final hasMessage = widget.message != null && widget.message!.trim().isNotEmpty;
 
     final fadeAnimation = CurvedAnimation(
       parent: _entranceController,
       curve: Curves.easeOut,
     );
 
+    final scaleAnimation = Tween<double>(begin: 0.88, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _entranceController,
+        curve: Curves.easeOutBack,
+      ),
+    );
+
     return FadeTransition(
       opacity: fadeAnimation,
       child: Stack(
         children: [
-          // Soft dimmed backdrop with subtle blur
+          // Subtle ambient dimmed backdrop with minimal blur
           Positioned.fill(
             child: BackdropFilter(
-              filter: ui.ImageFilter.blur(sigmaX: 1.0, sigmaY: 1.0),
+              filter: ui.ImageFilter.blur(sigmaX: 1.5, sigmaY: 1.5),
               child: ModalBarrier(
                 dismissible: false,
-                color: Colors.black.withValues(alpha: isDark ? 0.30 : 0.18),
+                color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.12),
               ),
             ),
           ),
-          // Centered compact floating card
+          // Centered elevated floating glass card
           Center(
-            child: Material(
-              color: Colors.transparent,
-              child: Container(
-                padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 14.h),
-                decoration: BoxDecoration(
-                  color: isDark
-                      ? AppColors.surface.withValues(alpha: 0.92)
-                      : Colors.white.withValues(alpha: 0.95),
-                  borderRadius: BorderRadius.circular(16.r),
-                  border: Border.all(
+            child: ScaleTransition(
+              scale: scaleAnimation,
+              child: Material(
+                color: Colors.transparent,
+                child: Container(
+                  padding: hasMessage
+                      ? EdgeInsets.symmetric(horizontal: 20.w, vertical: 14.h)
+                      : EdgeInsets.all(16.r),
+                  decoration: BoxDecoration(
                     color: isDark
-                        ? AppColors.border
-                        : Colors.black.withValues(alpha: 0.08),
-                    width: 1,
+                        ? AppColors.surface.withValues(alpha: 0.90)
+                        : Colors.white.withValues(alpha: 0.95),
+                    borderRadius: BorderRadius.circular(hasMessage ? 20.r : 16.r),
+                    border: Border.all(
+                      color: isDark
+                          ? AppColors.primary.withValues(alpha: 0.35)
+                          : AppColors.primary.withValues(alpha: 0.18),
+                      width: 1.2,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.primary.withValues(
+                          alpha: isDark ? 0.22 : 0.10,
+                        ),
+                        blurRadius: 20.r,
+                        offset: const Offset(0, 6),
+                      ),
+                      BoxShadow(
+                        color: Colors.black.withValues(
+                          alpha: isDark ? 0.35 : 0.05,
+                        ),
+                        blurRadius: 10.r,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
                   ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.08),
-                      blurRadius: 16.r,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    SizedBox(
-                      width: 20.r,
-                      height: 20.r,
-                      child: const CircularProgressIndicator(
-                        strokeWidth: 2.2,
-                        valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Custom brand spinner widget
+                      SizedBox(
+                        width: 26.r,
+                        height: 26.r,
+                        child: AnimatedBuilder(
+                          animation: _spinController,
+                          builder: (context, child) {
+                            return CustomPaint(
+                              painter: _BrandSpinnerPainter(
+                                progress: _spinController.value,
+                                isDark: isDark,
+                              ),
+                            );
+                          },
+                        ),
                       ),
-                    ),
-                    SizedBox(width: 12.w),
-                    Text(
-                      widget.message ?? 'Loading...',
-                      style: AppTextStyles.bodyMedium.copyWith(
-                        color: isDark ? AppColors.textPrimary : Colors.black87,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 13.sp,
-                      ),
-                    ),
-                  ],
+                      if (hasMessage) ...[
+                        SizedBox(width: 12.w),
+                        Text(
+                          widget.message!,
+                          style: AppTextStyles.bodyMedium.copyWith(
+                            color: isDark
+                                ? AppColors.textPrimary
+                                : const Color(0xFF0F172A),
+                            fontWeight: FontWeight.w600,
+                            fontSize: 13.5.sp,
+                            letterSpacing: 0.2,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -149,3 +193,63 @@ class _LoadingOverlayState extends State<_LoadingOverlay>
     );
   }
 }
+
+/// Custom painter for a sleek brand dual-ring gradient spinner.
+class _BrandSpinnerPainter extends CustomPainter {
+  final double progress;
+  final bool isDark;
+
+  _BrandSpinnerPainter({required this.progress, required this.isDark});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = (size.width - 3.r) / 2;
+
+    // 1. Muted track background ring
+    final trackPaint = Paint()
+      ..color = AppColors.primary.withValues(alpha: isDark ? 0.20 : 0.12)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.4.r;
+    canvas.drawCircle(center, radius, trackPaint);
+
+    // 2. Rotating active gradient sweep arc
+    final startAngle = progress * 2 * math.pi;
+    final sweepAngle = 1.35 * math.pi;
+
+    final arcPaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round
+      ..strokeWidth = 2.6.r
+      ..shader = SweepGradient(
+        colors: const [
+          AppColors.primaryLight,
+          AppColors.primary,
+          Colors.transparent,
+        ],
+        stops: const [0.0, 0.75, 1.0],
+        transform: GradientRotation(startAngle),
+      ).createShader(Rect.fromCircle(center: center, radius: radius));
+
+    canvas.drawArc(
+      Rect.fromCircle(center: center, radius: radius),
+      startAngle,
+      sweepAngle,
+      false,
+      arcPaint,
+    );
+
+    // 3. Central subtle pulsing core dot
+    final pulseOpacity = 0.5 + 0.5 * math.sin(progress * 2 * math.pi);
+    final dotPaint = Paint()
+      ..color = AppColors.primary.withValues(alpha: pulseOpacity)
+      ..style = PaintingStyle.fill;
+    canvas.drawCircle(center, 2.0.r, dotPaint);
+  }
+
+  @override
+  bool shouldRepaint(covariant _BrandSpinnerPainter oldDelegate) {
+    return oldDelegate.progress != progress || oldDelegate.isDark != isDark;
+  }
+}
+

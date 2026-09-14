@@ -94,7 +94,7 @@ class _UpdatePayoutAccountScreenState
     return Scaffold(
       appBar: AppBar(
         leading: const BackButton(),
-        title: Text('Update Payout Account', style: AppTextStyles.h3),
+        title: Text('Bank Account', style: AppTextStyles.h3.copyWith(fontSize: 18.sp)),
         centerTitle: true,
       ),
       body: SingleChildScrollView(

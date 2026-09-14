@@ -10,7 +10,7 @@ BaseApiResponse<T> _$BaseApiResponseFromJson<T>(
   Map<String, dynamic> json,
   T Function(Object? json) fromJsonT,
 ) => BaseApiResponse<T>(
-  detail: json['detail'] as String?,
+  detail: json['detail'],
   statusCode: (json['status_code'] as num?)?.toInt(),
   data: _$nullableGenericFromJson(json['data'], fromJsonT),
 );

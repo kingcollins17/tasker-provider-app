@@ -16,9 +16,10 @@ ProviderProfile _$ProviderProfileFromJson(Map<String, dynamic> json) =>
       idDocUrl: json['id_doc_url'] as String?,
       selfieUrl: json['selfie_url'] as String?,
       gender: json['gender'] as String?,
+      kycStatus: json['kyc_status'] as String?,
       status: json['status'] as String?,
       providerReference: json['provider_reference'] as String?,
-      livenessScore: (json['liveness_score'] as num?)?.toDouble(),
+      livenessScore: json['liveness_score'] as num?,
       rejectionReason: json['rejection_reason'] as String?,
       verifiedAt: json['verified_at'] as String?,
       addressLine: json['address_line'] as String?,
@@ -29,6 +30,7 @@ ProviderProfile _$ProviderProfileFromJson(Map<String, dynamic> json) =>
       services: (json['services'] as List<dynamic>?)
           ?.map((e) => Service.fromJson(e as Map<String, dynamic>))
           .toList(),
+      kycDocuments: json['kyc_documents'] as List<dynamic>?,
     );
 
 Map<String, dynamic> _$ProviderProfileToJson(ProviderProfile instance) =>
@@ -41,6 +43,7 @@ Map<String, dynamic> _$ProviderProfileToJson(ProviderProfile instance) =>
       'id_doc_url': instance.idDocUrl,
       'selfie_url': instance.selfieUrl,
       'gender': instance.gender,
+      'kyc_status': instance.kycStatus,
       'status': instance.status,
       'provider_reference': instance.providerReference,
       'liveness_score': instance.livenessScore,
@@ -52,4 +55,5 @@ Map<String, dynamic> _$ProviderProfileToJson(ProviderProfile instance) =>
       'last_heartbeat_at': instance.lastHeartbeatAt,
       'total_tasks_completed': instance.totalTasksCompleted,
       'services': instance.services,
+      'kyc_documents': instance.kycDocuments,
     };

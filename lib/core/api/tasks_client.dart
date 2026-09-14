@@ -79,6 +79,12 @@ abstract class TasksClient {
     @Path("taskId") String taskId,
     @Body() CreatePriceAdjustmentRequest request,
   );
+
+  @GET("offers")
+  Future<BaseApiResponse<PaginatedData<Offer>>> getMyOffers({
+    @Query("page") int page = 1,
+    @Query("per_page") int perPage = 20,
+  });
 }
 
 /// Provider exposing the [TasksClient] dependency.

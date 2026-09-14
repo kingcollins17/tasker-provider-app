@@ -6,4 +6,5 @@ export 'task_lite.dart';
 export 'task.dart';
 export 'assignment.dart';
 export 'dispatch.dart';
+export 'offer.dart';
 

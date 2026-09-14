@@ -14,6 +14,8 @@ export 'update_provider_profile_request.dart';
 export 'update_cloud_messaging_token_request.dart';
 
 export 'provider_profile.dart';
+export 'customer_profile.dart';
+export 'user_stats.dart';
 export 'region.dart';
 export 'user.dart';
 export 'customer_lite.dart';
@@ -24,3 +26,6 @@ export 'update_online_status_request.dart';
 export 'ping_location_request.dart';
 export 'provider_availability.dart';
 export 'update_availability_request.dart';
+export 'guarantor_request.dart';
+export 'guarantor.dart';
+export 'interview.dart';

@@ -1,3 +1,5 @@
+import 'dart:io';
+
 /// Callback signature expected by Riverpod's `retry` provider parameter.
 typedef RetryFunc = Duration? Function(int retryCount, Object error);
 
@@ -29,6 +31,7 @@ RetryFunc retryFunc([
   bool Function(Object error)? retryIf,
 ]) {
   return (int retryCount, Object error) {
+    if (error is! SocketException) return null;
     if (retryCount >= maxAttempts) {
       return null;
     }

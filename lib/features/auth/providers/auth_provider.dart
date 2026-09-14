@@ -37,7 +37,7 @@ class AuthNotifier extends AsyncNotifier<User?> {
     try {
       final response = await ref
           .read(usersClientProvider)
-          .login(username: username, password: password);
+          .login(username: username, password: password, userType: 'provider');
 
       final token = response.accessToken;
       if (token != null) {
@@ -66,7 +66,7 @@ class AuthNotifier extends AsyncNotifier<User?> {
       if (response.isSuccessful) {
         onSuccess?.call();
       } else {
-        onError?.call(response.detail ?? 'Registration failed.');
+        onError?.call(response.errorMessage ?? 'Registration failed.');
       }
     } catch (e, st) {
       AppExceptionHandler.instance.handleError(e, st);

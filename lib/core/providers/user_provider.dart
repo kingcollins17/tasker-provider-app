@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:tasker_app/core/utils/retry_util.dart';
 import 'package:uuid/uuid.dart';
 import '../api/api.dart';
 import '../models/models.dart';
@@ -275,7 +276,7 @@ class UserNotifier extends AsyncNotifier<User> {
 
 final userProvider = AsyncNotifierProvider<UserNotifier, User>(
   () => UserNotifier(),
-  retry: (retryCount, error) => retryCount >= 3 ? null : Duration(seconds: 1),
+  retry: retryFunc(3),
 );
 
 final syncCloudMessagingTokenProvider = FutureProvider<void>((ref) async {

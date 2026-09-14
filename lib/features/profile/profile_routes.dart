@@ -7,6 +7,7 @@ import 'presentation/update_availability_screen.dart';
 import 'presentation/update_payout_account_screen.dart';
 import 'presentation/view_payout_account_screen.dart';
 import 'presentation/edit_services_screen.dart';
+import 'presentation/guarantor_form_screen.dart';
 
 class ProfileRoutes {
   static const String profileRoute = 'profile';
@@ -16,6 +17,7 @@ class ProfileRoutes {
   static const String updatePayoutAccountRoute = 'update-payout-account';
   static const String updateAvailabilityRoute = 'update-availability';
   static const String editServicesRoute = 'edit-services';
+  static const String guarantorRoute = 'guarantor';
 
   static final routes = [
     GoRoute(
@@ -80,6 +82,18 @@ class ProfileRoutes {
           path: 'edit-services',
           name: editServicesRoute,
           builder: (context, state) => const EditServicesScreen(),
+        ),
+
+        GoRoute(
+          parentNavigatorKey: NavigatorKeys.rootNavigatorKey,
+          path: 'guarantor',
+          name: guarantorRoute,
+          builder: (context, state) {
+            final isResubmission =
+                state.uri.queryParameters['is_resubmission'] == 'true' ||
+                state.uri.queryParameters['isResubmission'] == 'true';
+            return GuarantorFormScreen(isResubmission: isResubmission);
+          },
         ),
       ],
     ),

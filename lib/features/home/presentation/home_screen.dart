@@ -4,6 +4,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:shimmer/shimmer.dart';
 
 import 'package:tasker_app/core/providers/providers.dart';
+import 'package:tasker_app/core/utils/debug_logger.dart';
 import 'package:tasker_app/core/utils/extensions/loading_context_ext.dart';
 
 import '../../../core/ui/designs/colors.dart';
@@ -17,15 +18,36 @@ import '../../profile/presentation/widgets/earnings_card.dart';
 import '../../profile/profile_routes.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:tasker_app/core/utils/extensions/flushbar_context_ext.dart';
 import 'package:tasker_app/core/utils/extensions/num_ext.dart';
 import 'package:tasker_app/features/tasks/tasks_routes.dart';
+import '../../../app_routes.dart';
+import '../../auth/providers/auth_provider.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    ref.listen(
+      userProvider,
+      (previous, next) {
+        if (next.hasError) {
+          final es = next.error.toString().toLowerCase();
+          if (es.contains('user not found') || es.contains('user data is null')) {
+            ref.read(authProvider.notifier).logout(
+              onSuccess: () {
+                if (context.mounted) {
+                  context.pushNamed(AppRoutes.loginRoute);
+                }
+              },
+            );
+          }
+        }
+      },
+    );
+    debugLog(ref.read(userProvider));
     ref.watch(syncUserLocationProvider);
     ref.watch(userAddressProvider);
     ref.watch(currentRegionProvider);
@@ -42,7 +64,7 @@ class HomeScreen extends ConsumerWidget {
     ref.watch(pendingProviderReviewsProvider);
 
     final firstName = user.value?.providerProfile?.firstName ?? '';
-    
+    final lastName = user.value?.providerProfile?.lastName ?? '';
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       floatingActionButton: const DebugFab(),
@@ -67,7 +89,7 @@ class HomeScreen extends ConsumerWidget {
                 ref.invalidate(kycStatusProvider);
                 ref.invalidate(providerPayoutsProvider);
                 ref.invalidate(currentDispatchProvider);
-                
+                ref.invalidate(interviewProvider);
 
                 try {
                   await Future.wait([
@@ -84,6 +106,7 @@ class HomeScreen extends ConsumerWidget {
                     ref.read(kycStatusProvider.future),
                     ref.read(providerPayoutsProvider(null).future),
                     ref.read(currentDispatchProvider.future),
+                    ref.read(interviewProvider.future),
                   ]);
                 } catch (_) {}
               },
@@ -96,7 +119,7 @@ class HomeScreen extends ConsumerWidget {
                   SliverPadding(
                     padding: AppSpacing.pHorsMd,
                     sliver: SliverToBoxAdapter(
-                      child: _HomeAppBar(firstName: firstName),
+                      child: _HomeAppBar(fullname: '$firstName $lastName'),
                     ),
                   ),
 
@@ -115,6 +138,14 @@ class HomeScreen extends ConsumerWidget {
                     padding: AppSpacing.pHorsMd,
                     sliver: const SliverToBoxAdapter(
                       child: _AccountIssuesSection(),
+                    ),
+                  ),
+
+                  // ─── UPCOMING INTERVIEW ───
+                  SliverPadding(
+                    padding: AppSpacing.pHorsMd,
+                    sliver: const SliverToBoxAdapter(
+                      child: _UpcomingInterviewSection(),
                     ),
                   ),
 
@@ -205,9 +236,9 @@ class HomeScreen extends ConsumerWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _HomeAppBar extends ConsumerWidget {
-  final String firstName;
+  final String fullname;
 
-  const _HomeAppBar({required this.firstName});
+  const _HomeAppBar({required this.fullname});
 
   String get _greeting {
     final hour = DateTime.now().hour;
@@ -219,6 +250,7 @@ class _HomeAppBar extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isOnlineAsync = ref.watch(isOnlineProvider);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Padding(
       padding: EdgeInsets.only(top: 8.h),
@@ -230,8 +262,8 @@ class _HomeAppBar extends ConsumerWidget {
             alignment: Alignment.center,
             children: [
               Container(
-                width: 48.r,
-                height: 48.r,
+                width: 38.r,
+                height: 38.r,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   gradient: const LinearGradient(
@@ -241,18 +273,19 @@ class _HomeAppBar extends ConsumerWidget {
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: AppColors.primary.withValues(alpha: 0.3),
-                      blurRadius: 12.r,
-                      offset: const Offset(0, 4),
+                      color: AppColors.primary.withValues(alpha: 0.25),
+                      blurRadius: 8.r,
+                      offset: const Offset(0, 3),
                     ),
                   ],
                 ),
                 child: Center(
                   child: Text(
-                    firstName.isNotEmpty ? firstName[0].toUpperCase() : '?',
-                    style: AppTextStyles.h2.copyWith(
+                    fullname.isNotEmpty ? fullname[0].toUpperCase() : '?',
+                    style: AppTextStyles.h3.copyWith(
                       color: Colors.white,
-                      fontSize: 20.sp,
+                      fontSize: 15.sp,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
                 ),
@@ -264,8 +297,8 @@ class _HomeAppBar extends ConsumerWidget {
                     bottom: 0,
                     right: 0,
                     child: Container(
-                      width: 14.r,
-                      height: 14.r,
+                      width: 11.r,
+                      height: 11.r,
                       decoration: BoxDecoration(
                         color: isOnline
                             ? AppColors.success
@@ -273,7 +306,7 @@ class _HomeAppBar extends ConsumerWidget {
                         shape: BoxShape.circle,
                         border: Border.all(
                           color: Theme.of(context).scaffoldBackgroundColor,
-                          width: 2.5.r,
+                          width: 2.r,
                         ),
                       ),
                     ),
@@ -284,20 +317,31 @@ class _HomeAppBar extends ConsumerWidget {
               ),
             ],
           ),
-          AppSpacing.wMd,
+          SizedBox(width: 10.w),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  '$_greeting,',
-                  style: AppTextStyles.bodyMedium.copyWith(
-                    color: AppColors.textMuted,
+                  fullname.isNotEmpty ? fullname : 'User',
+                  style: AppTextStyles.h3.copyWith(
+                    fontSize: 15.5.sp,
+                    fontWeight: FontWeight.bold,
+                    color: isDark ? AppColors.textPrimary : const Color(0xFF0F172A),
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
+                SizedBox(height: 1.h),
                 Text(
-                  firstName,
-                  style: AppTextStyles.h3.copyWith(fontSize: 20.sp),
+                  _greeting,
+                  style: AppTextStyles.bodySmall.copyWith(
+                    color: AppColors.textMuted,
+                    fontSize: 11.sp,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),
@@ -331,8 +375,8 @@ class _TopIconAction extends StatelessWidget {
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: Container(
-        width: 44.r,
-        height: 44.r,
+        width: 38.r,
+        height: 38.r,
         margin: EdgeInsets.only(right: 8.w),
         decoration: BoxDecoration(
           color: Theme.of(context).colorScheme.surface,
@@ -340,13 +384,13 @@ class _TopIconAction extends StatelessWidget {
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.05),
-              blurRadius: 10.r,
-              offset: const Offset(0, 4),
+              blurRadius: 8.r,
+              offset: const Offset(0, 3),
             ),
           ],
         ),
         child: Center(
-          child: Icon(icon, color: color, size: 24.r),
+          child: Icon(icon, color: color, size: 20.r),
         ),
       ),
     );
@@ -422,6 +466,300 @@ class _SectionHeaderShimmer extends StatelessWidget {
                 borderRadius: BorderRadius.circular(4.r),
               ),
             ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// UPCOMING INTERVIEW SECTION
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _UpcomingInterviewSection extends ConsumerWidget {
+  const _UpcomingInterviewSection();
+
+  Future<void> _launchMeeting(BuildContext context, String url) async {
+    try {
+      final uri = Uri.tryParse(url.trim());
+      if (uri != null && await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } else if (context.mounted) {
+        context.showError('Could not open meeting link');
+      }
+    } catch (_) {
+      if (context.mounted) {
+        context.showError('Could not open meeting link');
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final interviewAsync = ref.watch(interviewProvider);
+
+    return interviewAsync.when(
+      data: (interview) {
+        if (interview == null || interview.scheduledAt == null) {
+          return const SizedBox.shrink();
+        }
+
+        final status = (interview.status ?? 'SCHEDULED').toUpperCase();
+        if (status == 'PASSED' ||
+            status == 'COMPLETED' ||
+            status == 'CANCELLED' ||
+            status == 'REJECTED') {
+          return const SizedBox.shrink();
+        }
+
+        final formattedDate = DateFormat.yMMMd().add_jm().format(
+          interview.scheduledAt!,
+        );
+        final theme = Theme.of(context);
+        final isDark = theme.brightness == Brightness.dark;
+
+        return Padding(
+          padding: EdgeInsets.only(bottom: 16.h),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const _SectionHeader(title: "Upcoming Interview"),
+              Container(
+                padding: EdgeInsets.all(16.r),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surface,
+                  borderRadius: AppDecorations.radiusLg,
+                  border: Border.all(
+                    color: AppColors.primary.withValues(
+                      alpha: isDark ? 0.35 : 0.2,
+                    ),
+                    width: 1.2.r,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.primary.withValues(
+                        alpha: isDark ? 0.15 : 0.06,
+                      ),
+                      blurRadius: 12.r,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          width: 42.r,
+                          height: 42.r,
+                          decoration: BoxDecoration(
+                            color: AppColors.primary.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(10.r),
+                          ),
+                          child: Icon(
+                            Icons.video_camera_front_rounded,
+                            color: AppColors.primary,
+                            size: 22.r,
+                          ),
+                        ),
+                        SizedBox(width: 12.w),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      'Verification Interview',
+                                      style: AppTextStyles.bodyMedium.copyWith(
+                                        fontWeight: FontWeight.w700,
+                                        fontSize: 14.sp,
+                                        color: isDark
+                                            ? AppColors.textPrimary
+                                            : const Color(0xFF0F172A),
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                  Container(
+                                    padding: EdgeInsets.symmetric(
+                                      horizontal: 8.w,
+                                      vertical: 2.h,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.primary.withValues(
+                                        alpha: 0.12,
+                                      ),
+                                      borderRadius: BorderRadius.circular(6.r),
+                                    ),
+                                    child: Text(
+                                      status,
+                                      style: AppTextStyles.label.copyWith(
+                                        color: AppColors.primary,
+                                        fontWeight: FontWeight.w700,
+                                        fontSize: 9.5.sp,
+                                        letterSpacing: 0.3,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              SizedBox(height: 4.h),
+                              Row(
+                                children: [
+                                  Icon(
+                                    Icons.event_available_rounded,
+                                    color: AppColors.primaryLight,
+                                    size: 14.r,
+                                  ),
+                                  SizedBox(width: 4.w),
+                                  Expanded(
+                                    child: Text(
+                                      formattedDate,
+                                      style: AppTextStyles.bodySmall.copyWith(
+                                        color: isDark
+                                            ? AppColors.textSecondary
+                                            : const Color(0xFF334155),
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 11.5.sp,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (interview.notes != null &&
+                        interview.notes!.trim().isNotEmpty) ...[
+                      SizedBox(height: 10.h),
+                      Text(
+                        interview.notes!,
+                        style: AppTextStyles.bodySmall.copyWith(
+                          color: AppColors.textMuted,
+                          fontSize: 11.5.sp,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                    if (interview.meetingLink != null &&
+                        interview.meetingLink!.trim().isNotEmpty) ...[
+                      SizedBox(height: 12.h),
+                      SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton.icon(
+                          onPressed: () => _launchMeeting(
+                            context,
+                            interview.meetingLink!,
+                          ),
+                          icon: Icon(
+                            Icons.video_call_rounded,
+                            size: 18.r,
+                            color: AppColors.primary,
+                          ),
+                          label: Text(
+                            'Join Interview Meeting',
+                            style: AppTextStyles.buttonMedium.copyWith(
+                              fontSize: 12.5.sp,
+                              color: AppColors.primary,
+                            ),
+                          ),
+                          style: OutlinedButton.styleFrom(
+                            side: const BorderSide(color: AppColors.primary),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10.r),
+                            ),
+                            padding: EdgeInsets.symmetric(vertical: 8.h),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+      loading: () => Padding(
+        padding: EdgeInsets.only(bottom: 16.h),
+        child: const _UpcomingInterviewSkeleton(),
+      ),
+      error: (e, st) => const SizedBox.shrink(),
+    );
+  }
+}
+
+class _UpcomingInterviewSkeleton extends StatelessWidget {
+  const _UpcomingInterviewSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final baseColor = isDark ? theme.colorScheme.surface : Colors.grey[200]!;
+    final highlightColor = isDark ? AppColors.border : Colors.grey[100]!;
+
+    return Shimmer.fromColors(
+      baseColor: baseColor,
+      highlightColor: highlightColor,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const _SectionHeaderShimmer(titleWidth: 130),
+          Container(
+            padding: EdgeInsets.all(16.r),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: AppDecorations.radiusLg,
+              border: Border.all(color: AppColors.border, width: 1.r),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 42.r,
+                  height: 42.r,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(10.r),
+                  ),
+                ),
+                SizedBox(width: 12.w),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        width: 140.w,
+                        height: 14.h,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(4.r),
+                        ),
+                      ),
+                      SizedBox(height: 6.h),
+                      Container(
+                        width: 100.w,
+                        height: 12.h,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(4.r),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );
@@ -818,22 +1156,56 @@ class _PerformanceSnapshotCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final user = ref.watch(userProvider).value;
+    final userAsync = ref.watch(userProvider);
+    final earningsAsync = ref.watch(providerEarningsStatsProvider(null));
 
-    final avgRating = user?.averageRatings != null
-        ? user!.averageRatings!.toDouble().toStringAsFixed(1)
+    if (userAsync.isLoading || earningsAsync.isLoading) {
+      return const _PerformanceSnapshotShimmer();
+    }
+
+    final user = userAsync.value;
+    final earnings = earningsAsync.value;
+
+    final avgRatingNum = user?.stats?.averageRatings ?? user?.averageRatings;
+    final avgRating = avgRatingNum != null
+        ? avgRatingNum.toDouble().toStringAsFixed(1)
         : '0.0';
-    final totalJobs = user?.providerProfile?.totalTasksCompleted ?? 0;
-    final credibility = user?.credibilityScore != null
-        ? '${user!.credibilityScore}%'
-        : '0%';
+
+    final totalJobs = user?.stats?.totalTasksCompleted ??
+        user?.providerProfile?.totalTasksCompleted ??
+        0;
+
+    final totalEarned = earnings?.totalEarnings ?? 0.0;
+    final earnedStr = totalEarned >= 1000000
+        ? '₦${(totalEarned / 1000000).toStringAsFixed(1)}M'
+        : (totalEarned >= 1000
+            ? '₦${(totalEarned / 1000).toStringAsFixed(totalEarned % 1000 == 0 ? 0 : 1)}k'
+            : totalEarned.toNaira(0));
+
+    final credibilityNum = user?.stats?.credibilityScore ?? user?.credibilityScore;
+    final credibility = credibilityNum != null ? '${credibilityNum.toInt()}%' : '0%';
+
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
     return Container(
-      padding: EdgeInsets.all(20.r),
+      padding: EdgeInsets.all(16.r),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
+        color: theme.colorScheme.surface,
         borderRadius: AppDecorations.radiusLg,
-        border: Border.all(color: AppColors.border, width: 1.r),
+        border: Border.all(
+          color: isDark
+              ? AppColors.border
+              : Colors.grey.withValues(alpha: 0.15),
+          width: 1.r,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.04),
+            blurRadius: 8.r,
+            offset: const Offset(0, 3),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -843,25 +1215,15 @@ class _PerformanceSnapshotCard extends ConsumerWidget {
             children: [
               Text(
                 "Performance",
-                style: AppTextStyles.h3.copyWith(fontSize: 18.sp),
-              ),
-              Container(
-                padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.1),
-                  borderRadius: AppDecorations.radiusXl,
-                ),
-                child: Text(
-                  "This Month",
-                  style: AppTextStyles.label.copyWith(
-                    color: AppColors.primaryLight,
-                    fontSize: 11.sp,
-                  ),
+                style: AppTextStyles.h3.copyWith(
+                  fontSize: 15.sp,
+                  fontWeight: FontWeight.bold,
                 ),
               ),
+              
             ],
           ),
-          SizedBox(height: 20.h),
+          SizedBox(height: 16.h),
           Row(
             children: [
               _PerformanceStat(
@@ -870,21 +1232,21 @@ class _PerformanceSnapshotCard extends ConsumerWidget {
                 label: "Rating",
                 color: const Color(0xFFF59E0B),
               ),
-              _statDivider(),
+              _statDivider(isDark),
               _PerformanceStat(
                 icon: Icons.work_rounded,
                 value: "$totalJobs",
                 label: "Jobs",
                 color: const Color(0xFF3B82F6),
               ),
-              _statDivider(),
+              _statDivider(isDark),
               _PerformanceStat(
                 icon: Icons.payments_rounded,
-                value: "₦245k",
+                value: earnedStr,
                 label: "Earned",
                 color: const Color(0xFF10B981),
               ),
-              _statDivider(),
+              _statDivider(isDark),
               _PerformanceStat(
                 icon: Icons.check_circle_rounded,
                 value: credibility,
@@ -898,8 +1260,12 @@ class _PerformanceSnapshotCard extends ConsumerWidget {
     );
   }
 
-  Widget _statDivider() {
-    return Container(width: 1.r, height: 40.h, color: AppColors.border);
+  Widget _statDivider(bool isDark) {
+    return Container(
+      width: 1.r,
+      height: 32.h,
+      color: isDark ? AppColors.border : Colors.grey.withValues(alpha: 0.2),
+    );
   }
 }
 
@@ -918,22 +1284,130 @@ class _PerformanceStat extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Expanded(
       child: Column(
         children: [
           Container(
-            padding: EdgeInsets.all(8.r),
+            padding: EdgeInsets.all(7.r),
             decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.1),
+              color: color.withValues(alpha: isDark ? 0.18 : 0.1),
               shape: BoxShape.circle,
             ),
-            child: Icon(icon, color: color, size: 20.r),
+            child: Icon(icon, color: color, size: 18.r),
           ),
-          SizedBox(height: 8.h),
-          Text(value, style: AppTextStyles.h3.copyWith(fontSize: 18.sp)),
+          SizedBox(height: 6.h),
+          Text(
+            value,
+            style: AppTextStyles.h3.copyWith(
+              fontSize: 13.5.sp,
+              fontWeight: FontWeight.bold,
+              color: isDark ? AppColors.textPrimary : const Color(0xFF0F172A),
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
           SizedBox(height: 2.h),
-          Text(label, style: AppTextStyles.label.copyWith(fontSize: 11.sp)),
+          Text(
+            label,
+            style: AppTextStyles.label.copyWith(
+              fontSize: 10.5.sp,
+              color: AppColors.textMuted,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
         ],
+      ),
+    );
+  }
+}
+
+class _PerformanceSnapshotShimmer extends StatelessWidget {
+  const _PerformanceSnapshotShimmer();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final baseColor = isDark ? theme.colorScheme.surface : Colors.grey[200]!;
+    final highlightColor = isDark ? AppColors.border : Colors.grey[100]!;
+
+    return Shimmer.fromColors(
+      baseColor: baseColor,
+      highlightColor: highlightColor,
+      child: Container(
+        padding: EdgeInsets.all(16.r),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: AppDecorations.radiusLg,
+          border: Border.all(color: AppColors.border, width: 1.r),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Container(
+                  width: 90.w,
+                  height: 14.h,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(4.r),
+                  ),
+                ),
+                Container(
+                  width: 65.w,
+                  height: 12.h,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(10.r),
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: 16.h),
+            Row(
+              children: List.generate(
+                4,
+                (index) => Expanded(
+                  child: Column(
+                    children: [
+                      Container(
+                        width: 32.r,
+                        height: 32.r,
+                        decoration: const BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      SizedBox(height: 6.h),
+                      Container(
+                        width: 36.w,
+                        height: 12.h,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(4.r),
+                        ),
+                      ),
+                      SizedBox(height: 3.h),
+                      Container(
+                        width: 28.w,
+                        height: 10.h,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(4.r),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

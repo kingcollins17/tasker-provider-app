@@ -79,7 +79,7 @@ class _EditServicesScreenState extends ConsumerState<EditServicesScreen> {
         title: Text(
           'Edit My Services',
 
-          style: AppTextStyles.h3.copyWith(fontWeight: FontWeight.bold),
+          style: AppTextStyles.h3.copyWith(fontWeight: FontWeight.bold, fontSize: 18.sp),
         ),
         elevation: 0,
         backgroundColor: Colors.transparent,

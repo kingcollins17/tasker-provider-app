@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -49,35 +50,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    SizedBox(height: 20.h),
-                    // Shield Icon Badge
-                    Center(
-                      child: Container(
-                        width: 72.r,
-                        height: 72.r,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFEEF2FF), // Very light indigo
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: const Color(
-                                0xFF6366F1,
-                              ).withValues(alpha: 0.15),
-                              blurRadius: 12.r,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                        child: Center(
-                          child: Icon(
-                            Icons.shield,
-                            color: const Color(0xFF4F46E5), // Indigo
-                            size: 38.r,
-                          ),
-                        ),
-                      ),
+                    SizedBox(height: 12.h),
+
+                    // Welcoming Animated Security Graphic
+                    const Center(
+                      child: _WelcomingSecurityGraphic(),
                     ),
-                    SizedBox(height: 32.h),
+                    SizedBox(height: 24.h),
 
                     // Welcome Back Title
                     Text(
@@ -241,5 +220,157 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             },
           );
     }
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ANIMATED WELCOMING SECURITY GRAPHIC (CUSTOM PAINT)
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _WelcomingSecurityGraphic extends StatefulWidget {
+  const _WelcomingSecurityGraphic();
+
+  @override
+  State<_WelcomingSecurityGraphic> createState() =>
+      _WelcomingSecurityGraphicState();
+}
+
+class _WelcomingSecurityGraphicState extends State<_WelcomingSecurityGraphic>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 4),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        return SizedBox(
+          width: 110.r,
+          height: 110.r,
+          child: CustomPaint(
+            painter: _SecurityBadgePainter(
+              progress: _controller.value,
+              isDark: isDark,
+            ),
+            child: Center(
+              child: Container(
+                width: 56.r,
+                height: 56.r,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: const LinearGradient(
+                    colors: [
+                      AppColors.primary,
+                      AppColors.primaryDark,
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.primary.withValues(alpha: 0.4),
+                      blurRadius: 16.r,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Center(
+                  child: Icon(
+                    Icons.shield_rounded,
+                    color: Colors.white,
+                    size: 28.r,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _SecurityBadgePainter extends CustomPainter {
+  final double progress;
+  final bool isDark;
+
+  _SecurityBadgePainter({required this.progress, required this.isDark});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = size.width / 2;
+
+    // 1. Ambient pulsing glow background
+    final pulseScale = 0.82 + 0.08 * math.sin(progress * 2 * math.pi);
+    final auraPaint = Paint()
+      ..shader = RadialGradient(
+        colors: [
+          AppColors.primary.withValues(alpha: isDark ? 0.35 : 0.2),
+          AppColors.primary.withValues(alpha: 0.0),
+        ],
+        stops: const [0.2, 1.0],
+      ).createShader(Rect.fromCircle(center: center, radius: radius));
+
+    canvas.drawCircle(center, radius * pulseScale, auraPaint);
+
+    // 2. Rotating Dash Orbit Ring
+    final ringRadius = radius * 0.76;
+    final ringPaint = Paint()
+      ..color = AppColors.primary.withValues(alpha: isDark ? 0.45 : 0.3)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.8;
+
+    const dashCount = 8;
+    final sweepAngle = (2 * math.pi) / dashCount;
+    final rotationAngle = progress * 2 * math.pi;
+
+    for (int i = 0; i < dashCount; i++) {
+      final startAngle = rotationAngle + i * sweepAngle;
+      canvas.drawArc(
+        Rect.fromCircle(center: center, radius: ringRadius),
+        startAngle,
+        sweepAngle * 0.45,
+        false,
+        ringPaint,
+      );
+    }
+
+    // 3. Orbiting illuminated node
+    final particleAngle = -rotationAngle * 1.2;
+    final particleOffset = Offset(
+      center.dx + ringRadius * math.cos(particleAngle),
+      center.dy + ringRadius * math.sin(particleAngle),
+    );
+
+    final nodeGlow = Paint()
+      ..color = AppColors.primaryLight.withValues(alpha: 0.6)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4);
+    canvas.drawCircle(particleOffset, 5.r, nodeGlow);
+
+    final nodePaint = Paint()..color = Colors.white;
+    canvas.drawCircle(particleOffset, 2.5.r, nodePaint);
+  }
+
+  @override
+  bool shouldRepaint(covariant _SecurityBadgePainter oldDelegate) {
+    return oldDelegate.progress != progress || oldDelegate.isDark != isDark;
   }
 }

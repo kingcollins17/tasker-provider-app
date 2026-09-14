@@ -40,6 +40,7 @@ class AppRoutes {
             routes: HomeRoutes.routes,
           ),
           StatefulShellBranch(routes: TasksRoutes.routes),
+          StatefulShellBranch(routes: HomeRoutes.offersRoutes),
           StatefulShellBranch(routes: ProfileRoutes.routes),
         ],
       ),

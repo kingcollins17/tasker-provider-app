@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -50,82 +51,42 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           child: SingleChildScrollView(
             physics: const BouncingScrollPhysics(),
             child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 20.h),
+              padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 16.h),
               child: Form(
                 key: _formKey,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    SizedBox(height: 10.h),
-                    // Profile Icon Badge with Plus
-                    Center(
-                      child: Stack(
-                        children: [
-                          Container(
-                            width: 80.r,
-                            height: 80.r,
-                            decoration: BoxDecoration(
-                              color: Theme.of(context).colorScheme.surface, // Slate 100/800
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: isDark
-                                    ? AppColors.border
-                                    : const Color(0xFFE2E8F0),
-                                width: 2.r,
-                              ),
-                            ),
-                            child: Icon(
-                              Icons.person_outline,
-                              color: AppColors.textMuted,
-                              size: 40.r,
-                            ),
-                          ),
-                          Positioned(
-                            bottom: 0,
-                            right: 0,
-                            child: Container(
-                              width: 24.r,
-                              height: 24.r,
-                              decoration: const BoxDecoration(
-                                color: AppColors.primary,
-                                shape: BoxShape.circle,
-                              ),
-                              child: Icon(
-                                Icons.add,
-                                color: Colors.white,
-                                size: 16.r,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
+                    SizedBox(height: 8.h),
+                    // Welcoming Animated Profile Graphic
+                    const Center(
+                      child: _WelcomingRegisterGraphic(),
                     ),
-                    SizedBox(height: 24.h),
+                    SizedBox(height: 16.h),
 
                     // Create Account Title
                     Text(
                       'Create Account',
-                      style:
-                          theme.textTheme.titleLarge?.copyWith(
-                            fontSize: 28.sp,
-                            fontWeight: FontWeight.bold,
-                          ) ??
-                          AppTextStyles.h2.copyWith(fontSize: 28.sp),
+                      style: AppTextStyles.h2.copyWith(
+                        fontSize: 24.sp,
+                        fontWeight: FontWeight.bold,
+                      ),
                       textAlign: TextAlign.center,
                     ),
-                    SizedBox(height: 8.h),
+                    SizedBox(height: 4.h),
 
                     // Subtitle
                     Text(
                       'Sign up to get started with your dashboard.',
-                      style: theme.textTheme.bodyMedium?.copyWith(
+                      style: AppTextStyles.bodyMedium.copyWith(
+                        fontSize: 13.sp,
                         color: isDark
                             ? AppColors.textSecondary
                             : const Color(0xFF64748B),
                       ),
                       textAlign: TextAlign.center,
                     ),
-                    SizedBox(height: 32.h),
+                    SizedBox(height: 24.h),
 
                     // Full Name Input Section
                     AppTextField(
@@ -144,7 +105,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                         return null;
                       },
                     ),
-                    SizedBox(height: 20.h),
+                    SizedBox(height: 14.h),
 
                     // Email Input Section
                     AppTextField(
@@ -169,7 +130,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                         return null;
                       },
                     ),
-                    SizedBox(height: 20.h),
+                    SizedBox(height: 14.h),
 
                     // Phone Number Input Section
                     AppTextField(
@@ -213,7 +174,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                         return null;
                       },
                     ),
-                    SizedBox(height: 20.h),
+                    SizedBox(height: 14.h),
 
                     // Password Input Section
                     AppTextField(
@@ -250,14 +211,14 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                         return null;
                       },
                     ),
-                    SizedBox(height: 32.h),
+                    SizedBox(height: 24.h),
 
                     // Create Account Button
                     PrimaryButton(
                       text: 'Create Account',
                       onPressed: _handleRegister,
                     ),
-                    SizedBox(height: 32.h),
+                    SizedBox(height: 24.h),
 
                     // Already have an account text
                     Row(
@@ -283,7 +244,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                         ),
                       ],
                     ),
-                    SizedBox(height: 20.h),
+                    SizedBox(height: 16.h),
                   ],
                 ),
               ),
@@ -314,8 +275,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       password: password,
       firstName: firstName,
       lastName: lastName,
-      type: 'provider',
-
+      type: 'PROVIDER', // capitalize for api compatibility
       regionId: await _getRegionId(),
     );
 
@@ -383,5 +343,157 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   void _onError(String error) {
     context.hideLoading();
     context.showError(error);
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ANIMATED WELCOMING REGISTER GRAPHIC (CUSTOM PAINT)
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _WelcomingRegisterGraphic extends StatefulWidget {
+  const _WelcomingRegisterGraphic();
+
+  @override
+  State<_WelcomingRegisterGraphic> createState() =>
+      _WelcomingRegisterGraphicState();
+}
+
+class _WelcomingRegisterGraphicState extends State<_WelcomingRegisterGraphic>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 4),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        return SizedBox(
+          width: 100.r,
+          height: 100.r,
+          child: CustomPaint(
+            painter: _RegisterBadgePainter(
+              progress: _controller.value,
+              isDark: isDark,
+            ),
+            child: Center(
+              child: Container(
+                width: 52.r,
+                height: 52.r,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: const LinearGradient(
+                    colors: [
+                      AppColors.primary,
+                      AppColors.primaryDark,
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.primary.withValues(alpha: 0.4),
+                      blurRadius: 14.r,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Center(
+                  child: Icon(
+                    Icons.person_add_rounded,
+                    color: Colors.white,
+                    size: 26.r,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _RegisterBadgePainter extends CustomPainter {
+  final double progress;
+  final bool isDark;
+
+  _RegisterBadgePainter({required this.progress, required this.isDark});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = size.width / 2;
+
+    // 1. Ambient pulsing glow background
+    final pulseScale = 0.82 + 0.08 * math.sin(progress * 2 * math.pi);
+    final auraPaint = Paint()
+      ..shader = RadialGradient(
+        colors: [
+          AppColors.primary.withValues(alpha: isDark ? 0.35 : 0.2),
+          AppColors.primary.withValues(alpha: 0.0),
+        ],
+        stops: const [0.2, 1.0],
+      ).createShader(Rect.fromCircle(center: center, radius: radius));
+
+    canvas.drawCircle(center, radius * pulseScale, auraPaint);
+
+    // 2. Rotating Dash Orbit Ring
+    final ringRadius = radius * 0.76;
+    final ringPaint = Paint()
+      ..color = AppColors.primary.withValues(alpha: isDark ? 0.45 : 0.3)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.8;
+
+    const dashCount = 8;
+    final sweepAngle = (2 * math.pi) / dashCount;
+    final rotationAngle = progress * 2 * math.pi;
+
+    for (int i = 0; i < dashCount; i++) {
+      final startAngle = rotationAngle + i * sweepAngle;
+      canvas.drawArc(
+        Rect.fromCircle(center: center, radius: ringRadius),
+        startAngle,
+        sweepAngle * 0.45,
+        false,
+        ringPaint,
+      );
+    }
+
+    // 3. Orbiting illuminated node
+    final particleAngle = -rotationAngle * 1.2;
+    final particleOffset = Offset(
+      center.dx + ringRadius * math.cos(particleAngle),
+      center.dy + ringRadius * math.sin(particleAngle),
+    );
+
+    final nodeGlow = Paint()
+      ..color = AppColors.primaryLight.withValues(alpha: 0.6)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4);
+    canvas.drawCircle(particleOffset, 5.r, nodeGlow);
+
+    final nodePaint = Paint()..color = Colors.white;
+    canvas.drawCircle(particleOffset, 2.5.r, nodePaint);
+  }
+
+  @override
+  bool shouldRepaint(covariant _RegisterBadgePainter oldDelegate) {
+    return oldDelegate.progress != progress || oldDelegate.isDark != isDark;
   }
 }

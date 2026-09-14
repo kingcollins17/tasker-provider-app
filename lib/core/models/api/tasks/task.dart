@@ -1,5 +1,6 @@
 import 'package:json_annotation/json_annotation.dart';
 import '../users/customer_lite.dart';
+import '../services/services.dart';
 import 'task_lite.dart';
 
 part 'task.g.dart';
@@ -95,6 +96,8 @@ class Task {
   final List<TaskAttachment>? attachments;
   final CustomerLite? customer;
   final TaskPayout? payout;
+  final Category? category;
+  final Service? service;
 
   Task({
     this.id,
@@ -127,6 +130,8 @@ class Task {
     this.attachments,
     this.customer,
     this.payout,
+    this.category,
+    this.service,
   });
 
   factory Task.fromJson(Map<String, dynamic> json) => _$TaskFromJson(json);

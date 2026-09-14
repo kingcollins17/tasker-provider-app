@@ -279,40 +279,37 @@ class _KycOnboardingScreenState extends ConsumerState<KycOnboardingScreen>
       ),
       body: SafeArea(
         child: Padding(
-          padding: EdgeInsets.symmetric(horizontal: 24.w),
+          padding: EdgeInsets.symmetric(horizontal: 20.w),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              SizedBox(height: 8.h),
+              SizedBox(height: 4.h),
 
               // Title
               Text(
                 'Identity Verification',
-                style:
-                    (theme.textTheme.titleLarge?.copyWith(
-                      fontSize: 28.sp,
-                      fontWeight: FontWeight.bold,
-                    )) ??
-                    AppTextStyles.h2.copyWith(fontSize: 28.sp),
+                style: AppTextStyles.h3.copyWith(
+                  fontSize: 20.sp,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
-              SizedBox(height: 8.h),
+              SizedBox(height: 4.h),
 
               // Subtitle
               Text(
                 'Complete the steps below to verify your identity and unlock full access.',
-                style:
-                    (theme.textTheme.bodyMedium?.copyWith(
-                      color: isDark
-                          ? AppColors.textSecondary
-                          : AppColors.textMuted,
-                    )) ??
-                    AppTextStyles.bodyMedium,
+                style: AppTextStyles.bodyMedium.copyWith(
+                  fontSize: 13.sp,
+                  color: isDark
+                      ? AppColors.textSecondary
+                      : AppColors.textMuted,
+                ),
               ),
-              SizedBox(height: 24.h),
+              SizedBox(height: 16.h),
 
               // Progress bar
               _buildProgressIndicator(isDark, progress),
-              SizedBox(height: 32.h),
+              SizedBox(height: 16.h),
 
               // Steps
               Expanded(
@@ -322,7 +319,7 @@ class _KycOnboardingScreenState extends ConsumerState<KycOnboardingScreen>
                     children: [
                       if (isLoading) ...[
                         _buildShimmerStepCard(isDark, theme),
-                        SizedBox(height: 16.h),
+                        SizedBox(height: 12.h),
                         _buildShimmerStepCard(isDark, theme),
                       ] else ...[
                         _buildStepCard(
@@ -337,7 +334,7 @@ class _KycOnboardingScreenState extends ConsumerState<KycOnboardingScreen>
                           statusBadgeText: isSelfieDone ? 'COMPLETED' : null,
                           onTap: isSelfieDone ? null : _handleSelfieTap,
                         ),
-                        SizedBox(height: 16.h),
+                        SizedBox(height: 12.h),
                         _buildStepCard(
                           isDark: isDark,
                           stepNumber: 2,
@@ -366,7 +363,7 @@ class _KycOnboardingScreenState extends ConsumerState<KycOnboardingScreen>
                               : _handleDocumentTap,
                         ),
                       ],
-                      SizedBox(height: 32.h),
+                      SizedBox(height: 20.h),
                     ],
                   ),
                 ),
@@ -375,7 +372,7 @@ class _KycOnboardingScreenState extends ConsumerState<KycOnboardingScreen>
               // Continue button
               if (!hideButton)
                 Padding(
-                  padding: EdgeInsets.only(bottom: 20.h),
+                  padding: EdgeInsets.only(bottom: 16.h),
                   child: PrimaryButton(
                     text: buttonText,
                     onPressed: buttonAction,
@@ -399,8 +396,9 @@ class _KycOnboardingScreenState extends ConsumerState<KycOnboardingScreen>
             Text(
               'Verification Progress',
               style: AppTextStyles.label.copyWith(
-                color: isDark ? AppColors.textMuted : AppColors.textMuted,
+                color: AppColors.textMuted,
                 fontWeight: FontWeight.w600,
+                fontSize: 11.5.sp,
               ),
             ),
             Text(
@@ -408,40 +406,41 @@ class _KycOnboardingScreenState extends ConsumerState<KycOnboardingScreen>
               style: AppTextStyles.label.copyWith(
                 color: AppColors.primary,
                 fontWeight: FontWeight.bold,
+                fontSize: 11.5.sp,
               ),
             ),
           ],
         ),
-        SizedBox(height: 8.h),
+        SizedBox(height: 6.h),
         ClipRRect(
-          borderRadius: BorderRadius.circular(6.r),
+          borderRadius: BorderRadius.circular(4.r),
           child: Stack(
             children: [
               // Track
               Container(
-                height: 8.h,
+                height: 6.h,
                 decoration: BoxDecoration(
                   color: Theme.of(context).colorScheme.surface,
-                  borderRadius: BorderRadius.circular(6.r),
+                  borderRadius: BorderRadius.circular(4.r),
                 ),
               ),
               // Fill
               AnimatedContainer(
                 duration: const Duration(milliseconds: 600),
                 curve: Curves.easeInOutCubic,
-                height: 8.h,
-                width: (MediaQuery.of(context).size.width - 48.w) * progress,
+                height: 6.h,
+                width: (MediaQuery.of(context).size.width - 40.w) * progress,
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
                     colors: [AppColors.primary, AppColors.primaryLight],
                     begin: Alignment.centerLeft,
                     end: Alignment.centerRight,
                   ),
-                  borderRadius: BorderRadius.circular(6.r),
+                  borderRadius: BorderRadius.circular(4.r),
                   boxShadow: [
                     BoxShadow(
-                      color: AppColors.primary.withValues(alpha: 0.4),
-                      blurRadius: 8.r,
+                      color: AppColors.primary.withValues(alpha: 0.3),
+                      blurRadius: 6.r,
                       offset: const Offset(0, 2),
                     ),
                   ],
@@ -466,7 +465,6 @@ class _KycOnboardingScreenState extends ConsumerState<KycOnboardingScreen>
     String? statusBadgeText,
     VoidCallback? onTap,
   }) {
-    final theme = Theme.of(context);
     final isActive = !isCompleted && !isSubmitted && !isRejected;
 
     final Color stateColor = isCompleted
@@ -482,7 +480,7 @@ class _KycOnboardingScreenState extends ConsumerState<KycOnboardingScreen>
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeInOut,
-        padding: EdgeInsets.all(20.r),
+        padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 12.h),
         decoration: BoxDecoration(
           color: Theme.of(context).colorScheme.surface,
           borderRadius: AppDecorations.radiusLg,
@@ -493,20 +491,18 @@ class _KycOnboardingScreenState extends ConsumerState<KycOnboardingScreen>
                 ? AppColors.primary.withValues(alpha: 0.4)
                 : AppColors.border,
             width: (isCompleted || isRejected || isSubmitted || isActive)
-                ? 1.5.r
+                ? 1.2.r
                 : 1.r,
           ),
           boxShadow: [
             BoxShadow(
               color: stateColor.withValues(
-                alpha: (isCompleted || isRejected || isSubmitted) ? 0.06 : 0.08,
+                alpha: (isCompleted || isRejected || isSubmitted) ? 0.05 : 0.06,
               ),
               blurRadius: (isCompleted || isRejected || isSubmitted)
-                  ? 16.r
-                  : 20.r,
-              offset: (isCompleted || isRejected || isSubmitted)
-                  ? const Offset(0, 4)
-                  : const Offset(0, 8),
+                  ? 12.r
+                  : 14.r,
+              offset: const Offset(0, 4),
             ),
           ],
         ),
@@ -515,23 +511,23 @@ class _KycOnboardingScreenState extends ConsumerState<KycOnboardingScreen>
             // Icon container
             AnimatedContainer(
               duration: const Duration(milliseconds: 300),
-              width: 56.r,
-              height: 56.r,
+              width: 44.r,
+              height: 44.r,
               decoration: BoxDecoration(
                 color: stateColor.withValues(
                   alpha: (isCompleted || isRejected || isSubmitted)
-                      ? 0.15
-                      : 0.1,
+                      ? 0.14
+                      : 0.08,
                 ),
                 borderRadius: AppDecorations.radiusMd,
               ),
               child: Icon(
                 isCompleted ? Icons.check_rounded : icon,
                 color: stateColor,
-                size: 28.r,
+                size: 22.r,
               ),
             ),
-            SizedBox(width: 16.w),
+            SizedBox(width: 12.w),
 
             // Text content
             Expanded(
@@ -544,15 +540,15 @@ class _KycOnboardingScreenState extends ConsumerState<KycOnboardingScreen>
                         'Step $stepNumber',
                         style: AppTextStyles.labelUppercase.copyWith(
                           color: stateColor,
-                          fontSize: 10.sp,
+                          fontSize: 9.5.sp,
                         ),
                       ),
                       if (statusBadgeText != null) ...[
-                        SizedBox(width: 8.w),
+                        SizedBox(width: 6.w),
                         Container(
                           padding: EdgeInsets.symmetric(
-                            horizontal: 8.w,
-                            vertical: 2.h,
+                            horizontal: 6.w,
+                            vertical: 1.5.h,
                           ),
                           decoration: BoxDecoration(
                             color: stateColor.withValues(alpha: 0.15),
@@ -562,30 +558,30 @@ class _KycOnboardingScreenState extends ConsumerState<KycOnboardingScreen>
                             statusBadgeText,
                             style: AppTextStyles.labelUppercase.copyWith(
                               color: stateColor,
-                              fontSize: 9.sp,
+                              fontSize: 8.5.sp,
                             ),
                           ),
                         ),
                       ],
                     ],
                   ),
-                  SizedBox(height: 4.h),
+                  SizedBox(height: 2.h),
                   Text(
                     title,
                     style: AppTextStyles.h3.copyWith(
-                      fontSize: 16.sp,
+                      fontSize: 14.5.sp,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
-                  SizedBox(height: 4.h),
+                  SizedBox(height: 2.h),
                   Text(
                     description,
                     style: AppTextStyles.bodySmall.copyWith(
                       color: isRejected
                           ? AppColors.error
-                          : isDark
-                          ? AppColors.textMuted
                           : AppColors.textMuted,
-                      height: 1.4,
+                      fontSize: 11.5.sp,
+                      height: 1.3,
                     ),
                   ),
                 ],
@@ -593,7 +589,7 @@ class _KycOnboardingScreenState extends ConsumerState<KycOnboardingScreen>
             ),
 
             // Chevron / check
-            SizedBox(width: 8.w),
+            SizedBox(width: 6.w),
             Icon(
               isCompleted
                   ? Icons.check_circle_rounded
@@ -605,7 +601,7 @@ class _KycOnboardingScreenState extends ConsumerState<KycOnboardingScreen>
               color: (isCompleted || isRejected || isSubmitted)
                   ? stateColor
                   : AppColors.textMuted,
-              size: 24.r,
+              size: 20.r,
             ),
           ],
         ),
@@ -621,7 +617,7 @@ class _KycOnboardingScreenState extends ConsumerState<KycOnboardingScreen>
       baseColor: baseColor,
       highlightColor: highlightColor,
       child: Container(
-        padding: EdgeInsets.all(20.r),
+        padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 12.h),
         decoration: BoxDecoration(
           color: baseColor,
           borderRadius: AppDecorations.radiusLg,
@@ -634,14 +630,14 @@ class _KycOnboardingScreenState extends ConsumerState<KycOnboardingScreen>
           children: [
             // Icon placeholder
             Container(
-              width: 56.r,
-              height: 56.r,
+              width: 44.r,
+              height: 44.r,
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: AppDecorations.radiusMd,
               ),
             ),
-            SizedBox(width: 16.w),
+            SizedBox(width: 12.w),
 
             // Content placeholder
             Expanded(
@@ -649,26 +645,20 @@ class _KycOnboardingScreenState extends ConsumerState<KycOnboardingScreen>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Container(
-                    width: 50.w,
-                    height: 10.h,
+                    width: 44.w,
+                    height: 9.h,
                     color: Colors.white,
                   ),
-                  SizedBox(height: 8.h),
+                  SizedBox(height: 6.h),
                   Container(
-                    width: 120.w,
-                    height: 16.h,
+                    width: 110.w,
+                    height: 14.h,
                     color: Colors.white,
                   ),
-                  SizedBox(height: 8.h),
+                  SizedBox(height: 6.h),
                   Container(
                     width: double.infinity,
-                    height: 12.h,
-                    color: Colors.white,
-                  ),
-                  SizedBox(height: 4.h),
-                  Container(
-                    width: 180.w,
-                    height: 12.h,
+                    height: 10.h,
                     color: Colors.white,
                   ),
                 ],

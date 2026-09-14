@@ -19,11 +19,13 @@ class ProviderProfile {
   @JsonKey(name: 'selfie_url')
   final String? selfieUrl;
   final String? gender;
+  @JsonKey(name: 'kyc_status')
+  final String? kycStatus;
   final String? status;
   @JsonKey(name: 'provider_reference')
   final String? providerReference;
   @JsonKey(name: 'liveness_score')
-  final double? livenessScore;
+  final num? livenessScore;
   @JsonKey(name: 'rejection_reason')
   final String? rejectionReason;
   @JsonKey(name: 'verified_at')
@@ -39,6 +41,10 @@ class ProviderProfile {
   @JsonKey(name: 'total_tasks_completed')
   final int? totalTasksCompleted;
   final List<Service>? services;
+  @JsonKey(name: 'kyc_documents')
+  final List<dynamic>? kycDocuments;
+
+  String? get effectiveStatus => kycStatus ?? status;
 
   ProviderProfile({
     this.id,
@@ -49,6 +55,7 @@ class ProviderProfile {
     this.idDocUrl,
     this.selfieUrl,
     this.gender,
+    this.kycStatus,
     this.status,
     this.providerReference,
     this.livenessScore,
@@ -60,6 +67,7 @@ class ProviderProfile {
     this.lastHeartbeatAt,
     this.totalTasksCompleted,
     this.services,
+    this.kycDocuments,
   });
 
   factory ProviderProfile.fromJson(Map<String, dynamic> json) =>

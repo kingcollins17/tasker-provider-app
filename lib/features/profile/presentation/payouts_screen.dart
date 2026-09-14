@@ -64,7 +64,6 @@ class _PayoutsScreenState extends ConsumerState<PayoutsScreen> {
       body: RefreshIndicator(
         color: AppColors.primary,
         onRefresh: () async {
-          ref.invalidate(providerEarningsStatsProvider);
           await ref
               .read(providerPayoutsProvider(_selectedStatus).notifier)
               .refresh();
@@ -78,10 +77,6 @@ class _PayoutsScreenState extends ConsumerState<PayoutsScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Hero Balance Card
-              _HeroBalanceCard(isDark: isDark),
-              SizedBox(height: 20.h),
-
               // Status Filter Chips
               _FilterChips(
                 selectedStatus: _selectedStatus,
@@ -94,39 +89,6 @@ class _PayoutsScreenState extends ConsumerState<PayoutsScreen> {
               ),
               SizedBox(height: 24.h),
 
-              // Section Header
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Recent Payouts',
-                    style: AppTextStyles.h3.copyWith(
-                      fontSize: 16.sp,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  if (payoutsAsync.value != null)
-                    Container(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: 8.w,
-                        vertical: 2.h,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppColors.primary.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(12.r),
-                      ),
-                      child: Text(
-                        '${payoutsAsync.value!.length} Items',
-                        style: AppTextStyles.label.copyWith(
-                          color: AppColors.primary,
-                          fontSize: 11.sp,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-              SizedBox(height: 12.h),
 
               // Content Area
               payoutsAsync.when(
@@ -137,6 +99,10 @@ class _PayoutsScreenState extends ConsumerState<PayoutsScreen> {
                       isDark: isDark,
                     );
                   }
+
+                  final isLoadingMore = ref
+                      .read(providerPayoutsProvider(_selectedStatus).notifier)
+                      .isLoadingMore;
 
                   return Column(
                     children: [
@@ -158,7 +124,7 @@ class _PayoutsScreenState extends ConsumerState<PayoutsScreen> {
                           );
                         },
                       ),
-                      if (payoutsAsync.isLoading) ...[
+                      if (isLoadingMore) ...[
                         SizedBox(height: 20.h),
                         const Center(
                           child: CircularProgressIndicator(
@@ -174,7 +140,9 @@ class _PayoutsScreenState extends ConsumerState<PayoutsScreen> {
                   error: error,
                   onRetry: () {
                     ref
-                        .read(providerPayoutsProvider(_selectedStatus).notifier)
+                        .read(
+                          providerPayoutsProvider(_selectedStatus).notifier,
+                        )
                         .refresh();
                   },
                 ),
@@ -183,109 +151,6 @@ class _PayoutsScreenState extends ConsumerState<PayoutsScreen> {
             ],
           ),
         ),
-      ),
-    );
-  }
-}
-
-// ── HERO BALANCE CARD WIDGET ────────────────────────────────────────
-
-class _HeroBalanceCard extends ConsumerWidget {
-  final bool isDark;
-
-  const _HeroBalanceCard({required this.isDark});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final earningsAsync = ref.watch(providerEarningsStatsProvider(null));
-
-    return Container(
-      padding: EdgeInsets.all(20.r),
-      decoration: BoxDecoration(
-        borderRadius: AppDecorations.radiusLg,
-        gradient: LinearGradient(
-          colors: isDark
-              ? [const Color(0xFF0F382B), const Color(0xFF00241B)]
-              : [const Color(0xFFD8F3E5), const Color(0xFFB7EAD0)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: (isDark ? Colors.black : const Color(0xFF007D5A)).withValues(
-              alpha: 0.1,
-            ),
-            blurRadius: 16.r,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'TOTAL PAYOUTS',
-            style: AppTextStyles.labelUppercase.copyWith(
-              color: isDark ? AppColors.textSecondary : const Color(0xFF1E523F),
-              fontSize: 11.sp,
-              letterSpacing: 1.2,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          SizedBox(height: 8.h),
-          earningsAsync.when(
-            data: (earnings) => Text(
-              (earnings.totalEarnings ?? 0.0).toNaira(2),
-              style: AppTextStyles.h1.copyWith(
-                color: isDark ? Colors.white : const Color(0xFF063828),
-                fontSize: 32.sp,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            loading: () => Shimmer.fromColors(
-              baseColor: isDark ? const Color(0xFF0F382B) : Colors.white30,
-              highlightColor: isDark ? Colors.white12 : Colors.white60,
-              child: Container(
-                width: 160.w,
-                height: 36.h,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(8.r),
-                ),
-              ),
-            ),
-            error: (e, st) => Text(
-              0.0.toNaira(2),
-              style: AppTextStyles.h1.copyWith(
-                color: isDark ? Colors.white : const Color(0xFF063828),
-                fontSize: 32.sp,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-          SizedBox(height: 12.h),
-          Row(
-            children: [
-              Icon(
-                Icons.shield_outlined,
-                size: 14.r,
-                color: isDark
-                    ? AppColors.primaryLight
-                    : const Color(0xFF007D5A),
-              ),
-              SizedBox(width: 4.w),
-              Text(
-                'Direct Provider Settlement Queue',
-                style: AppTextStyles.bodySmall.copyWith(
-                  color: isDark
-                      ? AppColors.textSecondary
-                      : const Color(0xFF1E523F),
-                  fontSize: 12.sp,
-                ),
-              ),
-            ],
-          ),
-        ],
       ),
     );
   }

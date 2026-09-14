@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:shimmer/shimmer.dart';
@@ -90,7 +89,6 @@ class ProfileScreen extends ConsumerWidget {
 
                   // ── My Services ──────────────────────────────────
                   const _ServicesSection(),
-                  SizedBox(height: 20.h),
 
                   // ── Stats Dashboard ─────────────────────────────
                   const _SectionLabel(label: 'DASHBOARD'),
@@ -140,153 +138,133 @@ class _ServicesSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
     final userServicesAsync = ref.watch(userServicesProvider);
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        // ── Header row: label + count badge + edit icon ──
-        Row(
-          children: [
-            const _SectionLabel(label: 'MY SERVICES'),
-            SizedBox(width: 8.w),
-            // Service count badge
-            userServicesAsync.maybeWhen(
-              data: (services) => services.isNotEmpty
-                  ? Container(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: 7.w,
-                        vertical: 2.h,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppColors.primary.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(10.r),
-                      ),
-                      child: Text(
-                        '${services.length}',
-                        style: AppTextStyles.label.copyWith(
+    if (userServicesAsync.hasError) {
+      return const SizedBox.shrink();
+    }
+
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Padding(
+      padding: EdgeInsets.only(bottom: 20.h),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // ── Header row: label + count badge + edit icon ──
+          Row(
+            children: [
+              const _SectionLabel(label: 'MY SERVICES'),
+              SizedBox(width: 8.w),
+              // Service count badge
+              userServicesAsync.maybeWhen(
+                data: (services) => services.isNotEmpty
+                    ? Container(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 7.w,
+                          vertical: 2.h,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(10.r),
+                        ),
+                        child: Text(
+                          '${services.length}',
+                          style: AppTextStyles.label.copyWith(
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 11.sp,
+                          ),
+                        ),
+                      )
+                    : const SizedBox.shrink(),
+                orElse: () => const SizedBox.shrink(),
+              ),
+              const Spacer(),
+              Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () => context.pushNamed(ProfileRoutes.editServicesRoute),
+                  borderRadius: BorderRadius.circular(16.r),
+                  child: Padding(
+                    padding: EdgeInsets.all(4.r),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.edit_rounded,
+                          size: 14.r,
                           color: AppColors.primary,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 11.sp,
+                        ),
+                        SizedBox(width: 4.w),
+                        Text(
+                          'Edit',
+                          style: AppTextStyles.label.copyWith(
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 12.sp,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 8.h),
+
+          // ── Service chips / states ──
+          userServicesAsync.when(
+            loading: () {
+              final baseColor = isDark
+                  ? theme.colorScheme.surface
+                  : Colors.grey[200]!;
+              final highlightColor = isDark
+                  ? AppColors.border
+                  : Colors.grey[100]!;
+
+              return Shimmer.fromColors(
+                baseColor: baseColor,
+                highlightColor: highlightColor,
+                child: SizedBox(
+                  height: 30.h,
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 90.w,
+                        height: 30.h,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(14.r),
                         ),
                       ),
-                    )
-                  : const SizedBox.shrink(),
-              orElse: () => const SizedBox.shrink(),
-            ),
-            const Spacer(),
-            Material(
-              color: Colors.transparent,
-              child: InkWell(
-                onTap: () => context.pushNamed(ProfileRoutes.editServicesRoute),
-                borderRadius: BorderRadius.circular(16.r),
-                child: Padding(
-                  padding: EdgeInsets.all(4.r),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.edit_rounded,
-                        size: 14.r,
-                        color: AppColors.primary,
+                      SizedBox(width: 6.w),
+                      Container(
+                        width: 110.w,
+                        height: 30.h,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(14.r),
+                        ),
                       ),
-                      SizedBox(width: 4.w),
-                      Text(
-                        'Edit',
-                        style: AppTextStyles.label.copyWith(
-                          color: AppColors.primary,
-                          fontWeight: FontWeight.w600,
-                          fontSize: 12.sp,
+                      SizedBox(width: 6.w),
+                      Container(
+                        width: 80.w,
+                        height: 30.h,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(14.r),
                         ),
                       ),
                     ],
                   ),
                 ),
-              ),
-            ),
-          ],
-        ),
-        SizedBox(height: 8.h),
-
-        // ── Service chips / states ──
-        userServicesAsync.when(
-          loading: () {
-            final baseColor = isDark
-                ? theme.colorScheme.surface
-                : Colors.grey[200]!;
-            final highlightColor = isDark
-                ? AppColors.border
-                : Colors.grey[100]!;
-
-            return Shimmer.fromColors(
-              baseColor: baseColor,
-              highlightColor: highlightColor,
-              child: SizedBox(
-                height: 30.h,
-                child: Row(
-                  children: [
-                    Container(
-                      width: 90.w,
-                      height: 30.h,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(14.r),
-                      ),
-                    ),
-                    SizedBox(width: 6.w),
-                    Container(
-                      width: 110.w,
-                      height: 30.h,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(14.r),
-                      ),
-                    ),
-                    SizedBox(width: 6.w),
-                    Container(
-                      width: 80.w,
-                      height: 30.h,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(14.r),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          },
-          error: (err, _) => GestureDetector(
-            onTap: () => ref.invalidate(userServicesProvider),
-            child: Row(
-              children: [
-                Icon(
-                  Icons.error_outline_rounded,
-                  color: AppColors.error,
-                  size: 14.r,
-                ),
-                SizedBox(width: 6.w),
-                Text(
-                  'Failed to load',
-                  style: AppTextStyles.bodySmall.copyWith(
-                    color: AppColors.error,
-                    fontSize: 11.sp,
-                  ),
-                ),
-                SizedBox(width: 4.w),
-                Text(
-                  '· Tap to retry',
-                  style: AppTextStyles.bodySmall.copyWith(
-                    color: AppColors.textMuted,
-                    fontSize: 11.sp,
-                  ),
-                ),
-              ],
-            ),
-          ),
+              );
+            },
+            error: (err, _) => const SizedBox.shrink(),
           data: (services) {
             if (services.isEmpty) {
               return GestureDetector(
@@ -362,8 +340,9 @@ class _ServicesSection extends ConsumerWidget {
           },
         ),
       ],
-    );
-  }
+    ),
+  );
+}
 }
 
 // ── Preferences Section ─────────────────────────────────────────────
@@ -517,6 +496,112 @@ class _PreferencesSection extends ConsumerWidget {
           ),
           orElse: () => const SizedBox.shrink(),
         ),
+
+        // Professional Reference / Guarantor Verification
+        Consumer(
+          builder: (context, ref, child) {
+            final guarantorAsync = ref.watch(guarantorProvider);
+            return guarantorAsync.maybeWhen(
+              data: (guarantor) {
+                final status = guarantor?.verificationStatus;
+                final String subtitle;
+                final Color iconColor;
+                final Widget? trailing;
+
+                if (guarantor == null) {
+                  subtitle = 'Add professional reference for vetting';
+                  iconColor = AppColors.primary;
+                  trailing = null;
+                } else if (status == VerificationStatus.passed) {
+                  subtitle = 'Guarantor verified';
+                  iconColor = AppColors.success;
+                  trailing = Container(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: 8.w,
+                      vertical: 3.h,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.success.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(6.r),
+                    ),
+                    child: Text(
+                      'Verified',
+                      style: AppTextStyles.label.copyWith(
+                        color: AppColors.success,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 11.sp,
+                      ),
+                    ),
+                  );
+                } else if (status == VerificationStatus.failed) {
+                  subtitle = 'Verification failed - Tap to resubmit';
+                  iconColor = AppColors.error;
+                  trailing = Container(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: 8.w,
+                      vertical: 3.h,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.error.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(6.r),
+                    ),
+                    child: Text(
+                      'Action Needed',
+                      style: AppTextStyles.label.copyWith(
+                        color: AppColors.error,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 11.sp,
+                      ),
+                    ),
+                  );
+                } else {
+                  subtitle = 'Reference under review';
+                  iconColor = AppColors.warning;
+                  trailing = Container(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: 8.w,
+                      vertical: 3.h,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.warning.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(6.r),
+                    ),
+                    child: Text(
+                      'Pending',
+                      style: AppTextStyles.label.copyWith(
+                        color: AppColors.warning,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 11.sp,
+                      ),
+                    ),
+                  );
+                }
+
+                return OptionTile(
+                  icon: Icons.assignment_ind_outlined,
+                  iconColor: iconColor,
+                  title: 'Professional Reference',
+                  subtitle: subtitle,
+                  trailing: trailing,
+                  onTap: () => context.pushNamed(
+                    ProfileRoutes.guarantorRoute,
+                    queryParameters: status == VerificationStatus.failed
+                        ? {'is_resubmission': 'true'}
+                        : const <String, String>{},
+                  ),
+                );
+              },
+              orElse: () => OptionTile(
+                icon: Icons.assignment_ind_outlined,
+                iconColor: AppColors.primary,
+                title: 'Professional Reference',
+                subtitle: 'Add professional reference for vetting',
+                onTap: () => context.pushNamed(ProfileRoutes.guarantorRoute),
+              ),
+            );
+          },
+        ),
+        AppSpacing.hSm,
 
         // Update Profile
         OptionTile(

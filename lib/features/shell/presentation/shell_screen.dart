@@ -62,10 +62,16 @@ class ShellScreen extends StatelessWidget {
                   onTap: () => _onTap(1),
                 ),
                 _NavBarItem(
-                  icon: HugeIcons.strokeRoundedUser,
-                  label: 'Account',
+                  icon: HugeIcons.strokeRoundedTag01,
+                  label: 'Offers',
                   isSelected: navigationShell.currentIndex == 2,
                   onTap: () => _onTap(2),
+                ),
+                _NavBarItem(
+                  icon: HugeIcons.strokeRoundedUser,
+                  label: 'Account',
+                  isSelected: navigationShell.currentIndex == 3,
+                  onTap: () => _onTap(3),
                 ),
               ],
             ),
@@ -109,7 +115,7 @@ class _NavBarItem extends StatelessWidget {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 220),
         curve: Curves.easeInOut,
-        padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(
           color: isSelected
               ? AppColors.primary.withValues(alpha: 0.16)

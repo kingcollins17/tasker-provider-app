@@ -14,8 +14,6 @@ User _$UserFromJson(Map<String, dynamic> json) => User(
   isActive: json['is_active'] as bool?,
   emailVerified: json['email_verified'] as bool?,
   phoneVerified: json['phone_verified'] as bool?,
-  credibilityScore: json['credibility_score'] as num?,
-  averageRatings: json['average_ratings'] as num?,
   createdAt: json['created_at'] == null
       ? null
       : DateTime.parse(json['created_at'] as String),
@@ -23,6 +21,15 @@ User _$UserFromJson(Map<String, dynamic> json) => User(
       ? null
       : DateTime.parse(json['updated_at'] as String),
   regionId: json['region_id'] as String?,
+  metaData: json['meta_data'] as Map<String, dynamic>?,
+  stats: json['stats'] == null
+      ? null
+      : UserStats.fromJson(json['stats'] as Map<String, dynamic>),
+  customerProfile: json['customer_profile'] == null
+      ? null
+      : CustomerProfile.fromJson(
+          json['customer_profile'] as Map<String, dynamic>,
+        ),
   providerProfile: json['provider_profile'] == null
       ? null
       : ProviderProfile.fromJson(
@@ -47,11 +54,12 @@ Map<String, dynamic> _$UserToJson(User instance) => <String, dynamic>{
   'is_active': instance.isActive,
   'email_verified': instance.emailVerified,
   'phone_verified': instance.phoneVerified,
-  'credibility_score': instance.credibilityScore,
-  'average_ratings': instance.averageRatings,
   'created_at': instance.createdAt?.toIso8601String(),
   'updated_at': instance.updatedAt?.toIso8601String(),
   'region_id': instance.regionId,
+  'meta_data': instance.metaData,
+  'stats': instance.stats,
+  'customer_profile': instance.customerProfile,
   'provider_profile': instance.providerProfile,
   'devices': instance.devices,
   'location': instance.location,

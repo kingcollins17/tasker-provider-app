@@ -1,8 +1,10 @@
 import 'package:json_annotation/json_annotation.dart';
 import '../services/service.dart';
+import 'customer_profile.dart';
 import 'provider_profile.dart';
 import 'user_location.dart';
 import 'payment_account.dart';
+import 'user_stats.dart';
 
 part 'user.g.dart';
 
@@ -19,16 +21,17 @@ class User {
   final bool? emailVerified;
   @JsonKey(name: 'phone_verified')
   final bool? phoneVerified;
-  @JsonKey(name: 'credibility_score')
-  final num? credibilityScore;
-  @JsonKey(name: 'average_ratings')
-  final num? averageRatings;
   @JsonKey(name: 'created_at')
   final DateTime? createdAt;
   @JsonKey(name: 'updated_at')
   final DateTime? updatedAt;
   @JsonKey(name: 'region_id')
   final String? regionId;
+  @JsonKey(name: 'meta_data')
+  final Map<String, dynamic>? metaData;
+  final UserStats? stats;
+  @JsonKey(name: 'customer_profile')
+  final CustomerProfile? customerProfile;
   @JsonKey(name: 'provider_profile')
   final ProviderProfile? providerProfile;
   final List<dynamic>? devices;
@@ -36,6 +39,8 @@ class User {
   @JsonKey(name: 'payment_account')
   final PaymentAccount? paymentAccount;
 
+  num? get credibilityScore => stats?.credibilityScore;
+  num? get averageRatings => stats?.averageRatings;
   List<Service>? get services => providerProfile?.services;
 
   User({
@@ -46,11 +51,12 @@ class User {
     this.isActive,
     this.emailVerified,
     this.phoneVerified,
-    this.credibilityScore,
-    this.averageRatings,
     this.createdAt,
     this.updatedAt,
     this.regionId,
+    this.metaData,
+    this.stats,
+    this.customerProfile,
     this.providerProfile,
     this.devices,
     this.location,

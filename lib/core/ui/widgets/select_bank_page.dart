@@ -35,7 +35,7 @@ class _SelectBankPageState extends ConsumerState<SelectBankPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Select Bank'),
+        title: Text('Select Bank', style: AppTextStyles.h3.copyWith(fontSize: 18.sp)),
         centerTitle: true,
         leading: const BackButton(),
       ),

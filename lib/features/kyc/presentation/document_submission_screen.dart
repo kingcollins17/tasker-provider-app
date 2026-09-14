@@ -127,14 +127,13 @@ class _DocumentSubmissionScreenState extends State<DocumentSubmissionScreen> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        leading: BackButton(
-        ),
+        leading: const BackButton(),
         title: Text(
-          'ID Document',
-          style:
-              (theme.textTheme.titleMedium?.copyWith(
-              )) ??
-              AppTextStyles.h3,
+          'ID Document Verification',
+          style: AppTextStyles.h3.copyWith(
+            fontSize: 18.sp,
+            fontWeight: FontWeight.bold,
+          ),
         ),
         centerTitle: true,
       ),
@@ -145,104 +144,82 @@ class _DocumentSubmissionScreenState extends State<DocumentSubmissionScreen> {
             Expanded(
               child: SingleChildScrollView(
                 physics: const BouncingScrollPhysics(),
-                padding: EdgeInsets.symmetric(horizontal: 24.w),
+                padding: EdgeInsets.symmetric(horizontal: 20.w),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    SizedBox(height: 8.h),
+                    SizedBox(height: 4.h),
 
-                    // Instructions
-                    Text(
-                      'Upload Your ID Document',
-                      style:
-                          (theme.textTheme.titleLarge?.copyWith(
-                            fontSize: 24.sp,
-                            fontWeight: FontWeight.bold,
-                          )) ??
-                          AppTextStyles.h2.copyWith(fontSize: 24.sp),
-                    ),
-                    SizedBox(height: 8.h),
-                    Text(
-                      'Take a clear photo of your ID or select an existing image from your files.',
-                      style:
-                          (theme.textTheme.bodyMedium?.copyWith(
-                            color: isDark
-                                ? AppColors.textSecondary
-                                : AppColors.textMuted,
-                          )) ??
-                          AppTextStyles.bodyMedium,
-                    ),
-                    SizedBox(height: 20.h),
-
-                    // Name match warning
+                    // Compact Name Match Warning Banner
                     _buildNameMatchWarning(isDark),
-                    SizedBox(height: 20.h),
+                    SizedBox(height: 14.h),
 
                     // Document Type
                     Text(
                       'Document Type',
                       style: AppTextStyles.label.copyWith(
                         fontWeight: FontWeight.w600,
+                        fontSize: 12.sp,
                         color: isDark
                             ? AppColors.textSecondary
-                            : AppColors.border,
+                            : AppColors.textMuted,
                       ),
                     ),
-                    SizedBox(height: 8.h),
+                    SizedBox(height: 4.h),
                     DropdownButtonFormField<String>(
                       value: _selectedDocumentType,
                       decoration: InputDecoration(
                         hintText: 'Select document type',
                         hintStyle: AppTextStyles.bodyMedium.copyWith(
-                          color: isDark
-                              ? AppColors.textMuted
-                              : AppColors.textMuted,
+                          color: AppColors.textMuted,
+                          fontSize: 13.sp,
                         ),
                         prefixIcon: Icon(
                           Icons.badge_outlined,
-                          color: isDark
-                              ? AppColors.textMuted
-                              : AppColors.textMuted,
-                          size: 20.r,
+                          color: AppColors.textMuted,
+                          size: 18.r,
                         ),
                         filled: true,
                         fillColor: Theme.of(context).colorScheme.surface,
                         contentPadding: EdgeInsets.symmetric(
-                          horizontal: 16.w,
-                          vertical: 16.h,
+                          horizontal: 14.w,
+                          vertical: 12.h,
                         ),
                         border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12.r),
+                          borderRadius: BorderRadius.circular(10.r),
                           borderSide: BorderSide(
                             color: AppColors.border,
                             width: 1.r,
                           ),
                         ),
                         enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12.r),
+                          borderRadius: BorderRadius.circular(10.r),
                           borderSide: BorderSide(
                             color: AppColors.border,
                             width: 1.r,
                           ),
                         ),
                         focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12.r),
+                          borderRadius: BorderRadius.circular(10.r),
                           borderSide: BorderSide(
                             color: isDark
                                 ? AppColors.accent
                                 : AppColors.primary,
-                            width: 1.5.r,
+                            width: 1.2.r,
                           ),
                         ),
                       ),
                       dropdownColor: Theme.of(context).colorScheme.surface,
                       icon: Icon(
                         Icons.keyboard_arrow_down_rounded,
-                        color: isDark
-                            ? AppColors.textMuted
-                            : AppColors.textMuted,
+                        color: AppColors.textMuted,
+                        size: 20.r,
                       ),
                       style: AppTextStyles.bodyMedium.copyWith(
+                        fontSize: 13.5.sp,
+                        color: isDark
+                            ? AppColors.textPrimary
+                            : const Color(0xFF0F172A),
                       ),
                       items: _documentTypes.map((type) {
                         return DropdownMenuItem<String>(
@@ -256,7 +233,7 @@ class _DocumentSubmissionScreenState extends State<DocumentSubmissionScreen> {
                         });
                       },
                     ),
-                    SizedBox(height: 20.h),
+                    SizedBox(height: 14.h),
 
                     // Document ID field
                     AppTextField(
@@ -265,13 +242,11 @@ class _DocumentSubmissionScreenState extends State<DocumentSubmissionScreen> {
                       hintText: 'e.g. A12345678',
                       prefixIcon: Icon(
                         Icons.numbers_rounded,
-                        color: isDark
-                            ? AppColors.textMuted
-                            : AppColors.textMuted,
-                        size: 20.r,
+                        color: AppColors.textMuted,
+                        size: 18.r,
                       ),
                     ),
-                    SizedBox(height: 24.h),
+                    SizedBox(height: 16.h),
 
                     // Preview or options
                     _selectedFile != null
@@ -282,10 +257,10 @@ class _DocumentSubmissionScreenState extends State<DocumentSubmissionScreen> {
               ),
             ),
 
-            // Submi
+            // Submit Button
             if (_selectedFile != null)
               Padding(
-                padding: EdgeInsets.fromLTRB(24.w, 8.h, 24.w, 10.h),
+                padding: EdgeInsets.fromLTRB(20.w, 6.h, 20.w, 12.h),
                 child: PrimaryButton(
                   text: 'Submit Document',
                   onPressed: _handleSubmit,
@@ -300,102 +275,94 @@ class _DocumentSubmissionScreenState extends State<DocumentSubmissionScreen> {
 
   Widget _buildOptions(bool isDark) {
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // Camera option
-        _buildOptionCard(
-          isDark: isDark,
-          icon: Icons.camera_alt_rounded,
-          title: 'Take Photo',
-          description: 'Use your camera to capture your ID document.',
-          gradient: const [AppColors.primary, AppColors.primaryDark],
-          onTap: _captureFromCamera,
+        Text(
+          'Upload Document Photo',
+          style: AppTextStyles.label.copyWith(
+            fontWeight: FontWeight.w600,
+            fontSize: 12.sp,
+            color: isDark ? AppColors.textSecondary : AppColors.textMuted,
+          ),
+        ),
+        SizedBox(height: 8.h),
+        // Side by side action tiles
+        Row(
+          children: [
+            Expanded(
+              child: _buildOptionTile(
+                isDark: isDark,
+                icon: Icons.camera_alt_rounded,
+                title: 'Take Photo',
+                color: AppColors.primary,
+                onTap: _captureFromCamera,
+              ),
+            ),
+            SizedBox(width: 12.w),
+            Expanded(
+              child: _buildOptionTile(
+                isDark: isDark,
+                icon: Icons.folder_open_rounded,
+                title: 'Choose File',
+                color: AppColors.secondary,
+                onTap: _pickFromFiles,
+              ),
+            ),
+          ],
         ),
         SizedBox(height: 16.h),
 
-        // File picker option
-        _buildOptionCard(
-          isDark: isDark,
-          icon: Icons.folder_open_rounded,
-          title: 'Choose from Files',
-          description: 'Select an existing image from your device.',
-          gradient: const [AppColors.secondary, AppColors.secondaryDark],
-          onTap: _pickFromFiles,
-        ),
-        SizedBox(height: 24.h),
-
-        // Tips
+        // Compact tips banner
         _buildTipsCard(isDark),
-        SizedBox(height: 20.h),
+        SizedBox(height: 16.h),
       ],
     );
   }
 
-  Widget _buildOptionCard({
+  Widget _buildOptionTile({
     required bool isDark,
     required IconData icon,
     required String title,
-    required String description,
-    required List<Color> gradient,
+    required Color color,
     required VoidCallback onTap,
   }) {
-    final theme = Theme.of(context);
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: EdgeInsets.all(20.r),
+        padding: EdgeInsets.symmetric(vertical: 16.h, horizontal: 12.w),
         decoration: BoxDecoration(
           color: Theme.of(context).colorScheme.surface,
           borderRadius: AppDecorations.radiusLg,
-          border: Border.all(color: AppColors.border, width: 1.r),
+          border: Border.all(
+            color: color.withValues(alpha: 0.3),
+            width: 1.r,
+          ),
           boxShadow: [
             BoxShadow(
-              color: gradient[0].withValues(alpha: 0.06),
-              blurRadius: 16.r,
-              offset: const Offset(0, 6),
+              color: color.withValues(alpha: 0.05),
+              blurRadius: 10.r,
+              offset: const Offset(0, 4),
             ),
           ],
         ),
-        child: Row(
+        child: Column(
           children: [
-            // Icon container with gradient
             Container(
-              width: 56.r,
-              height: 56.r,
+              width: 40.r,
+              height: 40.r,
               decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: gradient,
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
+                color: color.withValues(alpha: 0.12),
                 borderRadius: AppDecorations.radiusMd,
               ),
-              child: Icon(icon, color: AppColors.textPrimary, size: 28.r),
+              child: Icon(icon, color: color, size: 20.r),
             ),
-            SizedBox(width: 16.w),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: AppTextStyles.h3.copyWith(
-                      fontSize: 16.sp,
-                    ),
-                  ),
-                  SizedBox(height: 4.h),
-                  Text(
-                    description,
-                    style: AppTextStyles.bodySmall.copyWith(
-                      color: isDark ? AppColors.textMuted : AppColors.textMuted,
-                    ),
-                  ),
-                ],
+            SizedBox(height: 8.h),
+            Text(
+              title,
+              style: AppTextStyles.buttonMedium.copyWith(
+                fontSize: 13.sp,
+                color: isDark ? AppColors.textPrimary : const Color(0xFF0F172A),
               ),
-            ),
-            Icon(
-              Icons.chevron_right_rounded,
-              color: AppColors.textMuted,
-              size: 24.r,
             ),
           ],
         ),
@@ -415,13 +382,13 @@ class _DocumentSubmissionScreenState extends State<DocumentSubmissionScreen> {
             borderRadius: AppDecorations.radiusLg,
             border: Border.all(
               color: AppColors.success.withValues(alpha: 0.4),
-              width: 1.5.r,
+              width: 1.2.r,
             ),
             boxShadow: [
               BoxShadow(
-                color: AppColors.success.withValues(alpha: 0.06),
-                blurRadius: 16.r,
-                offset: const Offset(0, 6),
+                color: AppColors.success.withValues(alpha: 0.05),
+                blurRadius: 12.r,
+                offset: const Offset(0, 4),
               ),
             ],
           ),
@@ -429,31 +396,31 @@ class _DocumentSubmissionScreenState extends State<DocumentSubmissionScreen> {
             children: [
               // Image
               ClipRRect(
-                borderRadius: BorderRadius.vertical(top: Radius.circular(16.r)),
+                borderRadius: BorderRadius.vertical(top: Radius.circular(14.r)),
                 child: Image.file(
                   _selectedFile!,
                   width: double.infinity,
-                  height: 240.h,
+                  height: 160.h,
                   fit: BoxFit.cover,
                 ),
               ),
 
               // Status bar
               Container(
-                padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 14.h),
+                padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 10.h),
                 decoration: BoxDecoration(
                   color: isDark
                       ? Theme.of(context).colorScheme.surface
                       : theme.scaffoldBackgroundColor,
                   borderRadius: BorderRadius.vertical(
-                    bottom: Radius.circular(16.r),
+                    bottom: Radius.circular(14.r),
                   ),
                 ),
                 child: Row(
                   children: [
                     Container(
-                      width: 36.r,
-                      height: 36.r,
+                      width: 28.r,
+                      height: 28.r,
                       decoration: BoxDecoration(
                         color: AppColors.success.withValues(alpha: 0.15),
                         borderRadius: AppDecorations.radiusSm,
@@ -461,10 +428,10 @@ class _DocumentSubmissionScreenState extends State<DocumentSubmissionScreen> {
                       child: Icon(
                         Icons.check_rounded,
                         color: AppColors.success,
-                        size: 20.r,
+                        size: 16.r,
                       ),
                     ),
-                    SizedBox(width: 12.w),
+                    SizedBox(width: 10.w),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -472,13 +439,14 @@ class _DocumentSubmissionScreenState extends State<DocumentSubmissionScreen> {
                           Text(
                             'Document Selected',
                             style: AppTextStyles.buttonMedium.copyWith(
+                              fontSize: 12.5.sp,
                             ),
                           ),
-                          SizedBox(height: 2.h),
                           Text(
                             'Ready to submit',
                             style: AppTextStyles.bodySmall.copyWith(
                               color: AppColors.success,
+                              fontSize: 11.sp,
                             ),
                           ),
                         ],
@@ -490,7 +458,7 @@ class _DocumentSubmissionScreenState extends State<DocumentSubmissionScreen> {
             ],
           ),
         ),
-        SizedBox(height: 20.h),
+        SizedBox(height: 14.h),
 
         // Retake / Reselect buttons
         Row(
@@ -503,7 +471,7 @@ class _DocumentSubmissionScreenState extends State<DocumentSubmissionScreen> {
                 onTap: _captureFromCamera,
               ),
             ),
-            SizedBox(width: 12.w),
+            SizedBox(width: 10.w),
             Expanded(
               child: _buildSecondaryAction(
                 isDark: isDark,
@@ -512,7 +480,7 @@ class _DocumentSubmissionScreenState extends State<DocumentSubmissionScreen> {
                 onTap: _pickFromFiles,
               ),
             ),
-            SizedBox(width: 12.w),
+            SizedBox(width: 10.w),
             Expanded(
               child: _buildSecondaryAction(
                 isDark: isDark,
@@ -524,7 +492,7 @@ class _DocumentSubmissionScreenState extends State<DocumentSubmissionScreen> {
             ),
           ],
         ),
-        SizedBox(height: 20.h),
+        SizedBox(height: 14.h),
       ],
     );
   }
@@ -541,16 +509,17 @@ class _DocumentSubmissionScreenState extends State<DocumentSubmissionScreen> {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: EdgeInsets.symmetric(vertical: 12.h),
+        padding: EdgeInsets.symmetric(vertical: 8.h),
         decoration: BoxDecoration(
           color: color.withValues(alpha: 0.08),
           borderRadius: AppDecorations.radiusMd,
           border: Border.all(color: color.withValues(alpha: 0.2), width: 1.r),
         ),
-        child: Column(
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, color: color, size: 20.r),
-            SizedBox(height: 4.h),
+            Icon(icon, color: color, size: 16.r),
+            SizedBox(width: 6.w),
             Text(
               label,
               style: AppTextStyles.label.copyWith(
@@ -567,7 +536,7 @@ class _DocumentSubmissionScreenState extends State<DocumentSubmissionScreen> {
 
   Widget _buildTipsCard(bool isDark) {
     return Container(
-      padding: EdgeInsets.all(16.r),
+      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
       decoration: BoxDecoration(
         color: AppColors.primary.withValues(alpha: 0.06),
         borderRadius: AppDecorations.radiusMd,
@@ -576,89 +545,53 @@ class _DocumentSubmissionScreenState extends State<DocumentSubmissionScreen> {
           width: 1.r,
         ),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: [
-          Row(
-            children: [
-              Icon(
-                Icons.lightbulb_outline_rounded,
-                color: AppColors.primary,
-                size: 18.r,
-              ),
-              SizedBox(width: 8.w),
-              Text(
-                'Tips for a Clear Photo',
-                style: AppTextStyles.buttonMedium.copyWith(
-                  color: AppColors.primary,
-                ),
-              ),
-            ],
+          Icon(
+            Icons.lightbulb_outline_rounded,
+            color: AppColors.primary,
+            size: 16.r,
           ),
-          SizedBox(height: 12.h),
-          _buildTipItem(isDark, 'Place your ID on a flat, dark surface'),
-          SizedBox(height: 6.h),
-          _buildTipItem(isDark, 'Ensure all text is clearly visible'),
-          SizedBox(height: 6.h),
-          _buildTipItem(isDark, 'Avoid glare and shadows'),
-          SizedBox(height: 6.h),
-          _buildTipItem(isDark, 'Capture the entire document'),
+          SizedBox(width: 8.w),
+          Expanded(
+            child: Text(
+              'Tips: Ensure bright lighting, no glare, and clear text.',
+              style: AppTextStyles.bodySmall.copyWith(
+                color: isDark ? AppColors.textSecondary : AppColors.textMuted,
+                fontSize: 11.5.sp,
+              ),
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildTipItem(bool isDark, String text) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: EdgeInsets.only(top: 2.h),
-          child: Icon(
-            Icons.check_circle_outline_rounded,
-            color: AppColors.success,
-            size: 14.r,
-          ),
-        ),
-        SizedBox(width: 8.w),
-        Expanded(
-          child: Text(
-            text,
-            style: AppTextStyles.bodySmall.copyWith(
-              color: isDark ? AppColors.textSecondary : AppColors.textMuted,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
   Widget _buildNameMatchWarning(bool isDark) {
     return Container(
-      padding: EdgeInsets.all(14.r),
+      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
       decoration: BoxDecoration(
         color: AppColors.warning.withValues(alpha: 0.08),
         borderRadius: AppDecorations.radiusMd,
         border: Border.all(
-          color: AppColors.warning.withValues(alpha: 0.3),
+          color: AppColors.warning.withValues(alpha: 0.25),
           width: 1.r,
         ),
       ),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Icon(
-            Icons.warning_amber_rounded,
+            Icons.info_outline_rounded,
             color: AppColors.warning,
-            size: 20.r,
+            size: 16.r,
           ),
-          SizedBox(width: 10.w),
+          SizedBox(width: 8.w),
           Expanded(
             child: Text(
-              'The name on your document must match your registered name, otherwise your submission will be rejected.',
+              'Name on document must match your registered profile name.',
               style: AppTextStyles.bodySmall.copyWith(
                 color: isDark ? AppColors.textSecondary : AppColors.warning,
-                height: 1.4,
+                fontSize: 11.5.sp,
               ),
             ),
           ),
