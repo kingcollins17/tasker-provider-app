@@ -359,6 +359,31 @@ class _PreferencesSection extends ConsumerWidget {
 
     return Column(
       children: [
+        // Account Setup & Eligibility Steps Option Tile
+        OptionTile(
+          icon: Icons.checklist_rtl_rounded,
+          iconColor: AppColors.primary,
+          title: 'Account Setup & Eligibility Steps',
+          subtitle: 'Complete steps to be eligible for task offers',
+          trailing: Container(
+            padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 3.h),
+            decoration: BoxDecoration(
+              color: AppColors.primary.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(6.r),
+            ),
+            child: Text(
+              '4 Steps',
+              style: AppTextStyles.label.copyWith(
+                color: AppColors.primary,
+                fontWeight: FontWeight.bold,
+                fontSize: 11.sp,
+              ),
+            ),
+          ),
+          onTap: () => context.pushNamed(ProfileRoutes.onboardingStepsRoute),
+        ),
+        AppSpacing.hSm,
+
         // My Services Option Tile
         OptionTile(
           icon: Icons.miscellaneous_services_rounded,

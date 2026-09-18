@@ -6,7 +6,7 @@ import '../../../core/ui/designs/designs.dart';
 /// Extension on [BuildContext] to show highly customized Flushbars and Toasts.
 extension FlushbarContextExt on BuildContext {
   /// Displays a generic message banner.
-  void showMessage(String message, {String? title}) {
+  void showMessage(String message, {String? title, VoidCallback? onComplete}) {
     final isDark = Theme.of(this).brightness == Brightness.dark;
     Flushbar(
       titleText: title != null
@@ -32,11 +32,11 @@ extension FlushbarContextExt on BuildContext {
       duration: const Duration(seconds: 3),
       flushbarPosition: FlushbarPosition.TOP,
       animationDuration: const Duration(milliseconds: 400),
-    ).show(this);
+    ).show(this).whenComplete(() => onComplete?.call());;
   }
 
   /// Displays an error banner.
-  void showError(String message, {String? title}) {
+  void showError(String message, {String? title, VoidCallback? onComplete}) {
     final isDark = Theme.of(this).brightness == Brightness.dark;
     Flushbar(
       titleText: title != null
@@ -67,11 +67,11 @@ extension FlushbarContextExt on BuildContext {
       duration: const Duration(seconds: 4),
       flushbarPosition: FlushbarPosition.TOP,
       animationDuration: const Duration(milliseconds: 400),
-    ).show(this);
+    ).show(this).whenComplete(() => onComplete?.call());
   }
 
   /// Displays an informational banner.
-  void showInfo(String message, {String? title}) {
+  void showInfo(String message, {String? title, VoidCallback? onComplete}) {
     final isDark = Theme.of(this).brightness == Brightness.dark;
     Flushbar(
       titleText: title != null
@@ -102,11 +102,11 @@ extension FlushbarContextExt on BuildContext {
       duration: const Duration(seconds: 3),
       flushbarPosition: FlushbarPosition.TOP,
       animationDuration: const Duration(milliseconds: 400),
-    ).show(this);
+    ).show(this).whenComplete(() => onComplete?.call());
   }
 
   /// Displays a simple bottom toast notification.
-  void showToast(String message) {
+  void showToast(String message, {VoidCallback? onComplete}) {
     Flushbar(
       messageText: Center(
         child: Text(
@@ -124,6 +124,6 @@ extension FlushbarContextExt on BuildContext {
       duration: const Duration(seconds: 2),
       flushbarPosition: FlushbarPosition.BOTTOM,
       animationDuration: const Duration(milliseconds: 300),
-    ).show(this);
+    ).show(this).whenComplete(() => onComplete?.call());
   }
 }

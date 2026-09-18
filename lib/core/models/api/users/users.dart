@@ -29,3 +29,4 @@ export 'update_availability_request.dart';
 export 'guarantor_request.dart';
 export 'guarantor.dart';
 export 'interview.dart';
+export 'kyc_document.dart';

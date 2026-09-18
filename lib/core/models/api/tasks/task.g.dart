@@ -98,6 +98,12 @@ Task _$TaskFromJson(Map<String, dynamic> json) => Task(
   payout: json['payout'] == null
       ? null
       : TaskPayout.fromJson(json['payout'] as Map<String, dynamic>),
+  category: json['category'] == null
+      ? null
+      : Category.fromJson(json['category'] as Map<String, dynamic>),
+  service: json['service'] == null
+      ? null
+      : Service.fromJson(json['service'] as Map<String, dynamic>),
 );
 
 Map<String, dynamic> _$TaskToJson(Task instance) => <String, dynamic>{
@@ -131,6 +137,8 @@ Map<String, dynamic> _$TaskToJson(Task instance) => <String, dynamic>{
   'attachments': instance.attachments?.map((e) => e.toJson()).toList(),
   'customer': instance.customer?.toJson(),
   'payout': instance.payout?.toJson(),
+  'category': instance.category?.toJson(),
+  'service': instance.service?.toJson(),
 };
 
 TaskLocation _$TaskLocationFromJson(Map<String, dynamic> json) => TaskLocation(

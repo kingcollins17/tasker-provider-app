@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../core/models/models.dart';
 import '../../../core/providers/providers.dart';
@@ -13,13 +14,11 @@ import '../../../core/utils/extensions/loading_context_ext.dart';
 class GuarantorFormScreen extends ConsumerStatefulWidget {
   final bool isResubmission;
 
-  const GuarantorFormScreen({
-    super.key,
-    this.isResubmission = false,
-  });
+  const GuarantorFormScreen({super.key, this.isResubmission = false});
 
   @override
-  ConsumerState<GuarantorFormScreen> createState() => _GuarantorFormScreenState();
+  ConsumerState<GuarantorFormScreen> createState() =>
+      _GuarantorFormScreenState();
 }
 
 class _GuarantorFormScreenState extends ConsumerState<GuarantorFormScreen> {
@@ -60,7 +59,8 @@ class _GuarantorFormScreenState extends ConsumerState<GuarantorFormScreen> {
       }
       _phoneController.text = phone;
     }
-    if (_relationshipController.text.isEmpty && guarantor.relationship != null) {
+    if (_relationshipController.text.isEmpty &&
+        guarantor.relationship != null) {
       _relationshipController.text = guarantor.relationship!;
     }
   }
@@ -85,7 +85,10 @@ class _GuarantorFormScreenState extends ConsumerState<GuarantorFormScreen> {
       relationship: relationship.isNotEmpty ? relationship : null,
     );
 
-    context.showLoading(null, isResubmitting ? 'Resubmitting details...' : 'Submitting details...');
+    context.showLoading(
+      null,
+      isResubmitting ? 'Resubmitting details...' : 'Submitting details...',
+    );
 
     final notifier = ref.read(guarantorNotifierProvider.notifier);
 
@@ -95,7 +98,12 @@ class _GuarantorFormScreenState extends ConsumerState<GuarantorFormScreen> {
         onSuccess: () {
           if (!mounted) return;
           context.hideLoading();
-          context.showInfo('Professional reference resubmitted successfully!');
+          context.showInfo(
+            'Professional reference resubmitted successfully!',
+            onComplete: () {
+              context.pop();
+            },
+          );
           setState(() {
             _isEditing = false;
           });
@@ -198,8 +206,12 @@ class _GuarantorFormScreenState extends ConsumerState<GuarantorFormScreen> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 PrimaryButton(
-                  text: resubmitting ? 'Resubmit Guarantor Form' : 'Submit Guarantor Form',
-                  icon: resubmitting ? Icons.refresh_rounded : Icons.send_rounded,
+                  text: resubmitting
+                      ? 'Resubmit Guarantor Form'
+                      : 'Submit Guarantor Form',
+                  icon: resubmitting
+                      ? Icons.refresh_rounded
+                      : Icons.send_rounded,
                   onPressed: () => _submitForm(resubmitting),
                 ),
                 if (_isEditing) ...[
@@ -247,7 +259,11 @@ class _GuarantorFormScreenState extends ConsumerState<GuarantorFormScreen> {
           ),
           error: (err, _) => SingleChildScrollView(
             padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 16.h),
-            child: _buildForm(context, isDark, isResubmitting: widget.isResubmission),
+            child: _buildForm(
+              context,
+              isDark,
+              isResubmitting: widget.isResubmission,
+            ),
           ),
           data: (guarantor) {
             if (guarantor != null && !isResubmitting) {
@@ -325,7 +341,9 @@ class _GuarantorFormScreenState extends ConsumerState<GuarantorFormScreen> {
                         ? 'Update your guarantor details to request a new verification review.'
                         : 'Provide details of a trusted professional reference or guarantor to verify your profile.',
                     style: AppTextStyles.bodySmall.copyWith(
-                      color: isDark ? AppColors.textSecondary : AppColors.textMuted,
+                      color: isDark
+                          ? AppColors.textSecondary
+                          : AppColors.textMuted,
                       fontSize: 12.sp,
                       height: 1.4,
                     ),
@@ -373,7 +391,9 @@ class _GuarantorFormScreenState extends ConsumerState<GuarantorFormScreen> {
                   Text(
                     '🇳🇬 +234',
                     style: AppTextStyles.bodyMedium.copyWith(
-                      color: isDark ? AppColors.textPrimary : const Color(0xFF0F172A),
+                      color: isDark
+                          ? AppColors.textPrimary
+                          : const Color(0xFF0F172A),
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -439,26 +459,30 @@ class _GuarantorFormScreenState extends ConsumerState<GuarantorFormScreen> {
         statusColor = AppColors.success;
         statusIcon = Icons.check_circle_rounded;
         title = 'Guarantor Verified';
-        description = 'Your professional reference has been verified and approved.';
+        description =
+            'Your professional reference has been verified and approved.';
         break;
       case VerificationStatus.failed:
         statusColor = AppColors.error;
         statusIcon = Icons.cancel_rounded;
         title = 'Verification Failed';
-        description = guarantor.failureReason ??
+        description =
+            guarantor.failureReason ??
             'Verification of your reference was not successful. Please review details and resubmit.';
         break;
       case VerificationStatus.underReview:
         statusColor = AppColors.warning;
         statusIcon = Icons.pending_actions_rounded;
         title = 'Under Review';
-        description = 'Your guarantor information is currently being reviewed by our verification team.';
+        description =
+            'Your guarantor information is currently being reviewed by our verification team.';
         break;
       case VerificationStatus.pending:
         statusColor = AppColors.warning;
         statusIcon = Icons.hourglass_empty_rounded;
         title = 'Pending Verification';
-        description = 'Your guarantor submission has been received and is waiting for verification.';
+        description =
+            'Your guarantor submission has been received and is waiting for verification.';
         break;
     }
 
@@ -492,11 +516,7 @@ class _GuarantorFormScreenState extends ConsumerState<GuarantorFormScreen> {
                   color: statusColor.withValues(alpha: 0.15),
                   shape: BoxShape.circle,
                 ),
-                child: Icon(
-                  statusIcon,
-                  color: statusColor,
-                  size: 22.r,
-                ),
+                child: Icon(statusIcon, color: statusColor, size: 22.r),
               ),
               SizedBox(width: 12.w),
               Expanded(
@@ -515,7 +535,9 @@ class _GuarantorFormScreenState extends ConsumerState<GuarantorFormScreen> {
                     Text(
                       status.label,
                       style: AppTextStyles.label.copyWith(
-                        color: isDark ? AppColors.textSecondary : AppColors.textMuted,
+                        color: isDark
+                            ? AppColors.textSecondary
+                            : AppColors.textMuted,
                         fontSize: 11.sp,
                       ),
                     ),
@@ -525,10 +547,7 @@ class _GuarantorFormScreenState extends ConsumerState<GuarantorFormScreen> {
             ],
           ),
           SizedBox(height: 12.h),
-          Divider(
-            color: statusColor.withValues(alpha: 0.2),
-            height: 1.h,
-          ),
+          Divider(color: statusColor.withValues(alpha: 0.2), height: 1.h),
           SizedBox(height: 12.h),
           Text(
             description,
@@ -538,7 +557,8 @@ class _GuarantorFormScreenState extends ConsumerState<GuarantorFormScreen> {
               height: 1.4,
             ),
           ),
-          if (status == VerificationStatus.failed && guarantor.failureReason != null) ...[
+          if (status == VerificationStatus.failed &&
+              guarantor.failureReason != null) ...[
             SizedBox(height: 10.h),
             Container(
               padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 8.h),
@@ -657,11 +677,7 @@ class _GuarantorFormScreenState extends ConsumerState<GuarantorFormScreen> {
             color: AppColors.primary.withValues(alpha: 0.1),
             borderRadius: AppDecorations.radiusSm,
           ),
-          child: Icon(
-            icon,
-            color: AppColors.primary,
-            size: 16.r,
-          ),
+          child: Icon(icon, color: AppColors.primary, size: 16.r),
         ),
         SizedBox(width: 12.w),
         Expanded(
@@ -681,7 +697,9 @@ class _GuarantorFormScreenState extends ConsumerState<GuarantorFormScreen> {
                 style: AppTextStyles.bodyMedium.copyWith(
                   fontWeight: FontWeight.w600,
                   fontSize: 13.5.sp,
-                  color: isDark ? AppColors.textPrimary : const Color(0xFF0F172A),
+                  color: isDark
+                      ? AppColors.textPrimary
+                      : const Color(0xFF0F172A),
                 ),
               ),
             ],

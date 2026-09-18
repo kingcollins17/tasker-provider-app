@@ -102,6 +102,9 @@ abstract class UsersClient {
     @Part(name: "id_doc") required File idDoc,
   });
 
+  @GET("users/kyc")
+  Future<BaseApiResponse<KycDocument>> getLatestKycDocument();
+
   @GET("users/provider/availability")
   Future<BaseApiResponse<List<ProviderAvailability>>> getProviderAvailability();
 

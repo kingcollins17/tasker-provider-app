@@ -8,6 +8,7 @@ import 'presentation/update_payout_account_screen.dart';
 import 'presentation/view_payout_account_screen.dart';
 import 'presentation/edit_services_screen.dart';
 import 'presentation/guarantor_form_screen.dart';
+import 'presentation/onboarding_steps_screen.dart';
 
 class ProfileRoutes {
   static const String profileRoute = 'profile';
@@ -18,6 +19,7 @@ class ProfileRoutes {
   static const String updateAvailabilityRoute = 'update-availability';
   static const String editServicesRoute = 'edit-services';
   static const String guarantorRoute = 'guarantor';
+  static const String onboardingStepsRoute = 'onboarding-steps';
 
   static final routes = [
     GoRoute(
@@ -25,6 +27,13 @@ class ProfileRoutes {
       name: profileRoute,
       builder: (context, state) => const ProfileScreen(),
       routes: [
+        GoRoute(
+          parentNavigatorKey: NavigatorKeys.rootNavigatorKey,
+          path: 'onboarding-steps',
+          name: onboardingStepsRoute,
+          builder: (context, state) => const OnboardingStepsScreen(),
+        ),
+
         GoRoute(
           parentNavigatorKey: NavigatorKeys.rootNavigatorKey,
           path: 'payouts',

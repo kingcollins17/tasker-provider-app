@@ -386,6 +386,27 @@ final documentRejectionReasonProvider = FutureProvider<String?>((ref) async {
   return reason;
 });
 
+/// Fetches the latest KYC document submission details of the authenticated provider.
+final getKycStatusProvider = FutureProvider<KycDocument?>((ref) async {
+  try {
+    debugLog('[getKycStatusProvider] Fetching latest KYC document status...');
+    final client = ref.watch(usersClientProvider);
+    final response = await client.getLatestKycDocument();
+
+    if (response.isSuccessful && response.hasData) {
+      debugLog('[getKycStatusProvider] KYC document status fetched successfully');
+      return response.data;
+    }
+  } catch (e, st) {
+    debugLog(
+      '[getKycStatusProvider] Error fetching KYC document: $e',
+      level: DebugLevel.error,
+    );
+    AppExceptionHandler.instance.handleError(e, st);
+  }
+  return null;
+}, retry: retryFunc(3));
+
 final userServicesProvider = FutureProvider<List<Service>>((ref) async {
   debugLog('[userServicesProvider] Reading user services...');
   final services = await ref.watch(
