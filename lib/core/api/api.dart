@@ -5,3 +5,4 @@ export 'tasks_client.dart';
 export 'payouts_client.dart';
 export 'payments_client.dart';
 export 'reviews_client.dart';
+export 'support_client.dart';

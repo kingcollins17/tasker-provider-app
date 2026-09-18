@@ -7,3 +7,4 @@ export 'services/services.dart';
 export 'tasks/tasks.dart';
 export 'users/users.dart';
 export 'reviews/reviews.dart';
+export 'support/support.dart';

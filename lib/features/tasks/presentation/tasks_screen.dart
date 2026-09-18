@@ -94,7 +94,6 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
         backgroundColor: theme.scaffoldBackgroundColor,
         elevation: 0,
         scrolledUnderElevation: 0,
-        leading: context.canPop() ? const BackButton() : null,
         title: Text(
           'My Tasks',
           style: AppTextStyles.h3.copyWith(
@@ -464,7 +463,7 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
                 ),
                 SizedBox(width: 10.w),
                 Text(
-                  'Filter Assignments',
+                  'Filter',
                   style: AppTextStyles.h2.copyWith(
                     fontSize: 17.sp,
                     fontWeight: FontWeight.bold,

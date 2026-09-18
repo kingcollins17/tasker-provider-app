@@ -13,5 +13,6 @@ export 'reviews_provider.dart';
 export 'interview_provider.dart';
 export 'guarantor_providers.dart';
 export 'offers_providers.dart';
+export 'support_provider.dart';
 export '../utils/retry_util.dart';
 

@@ -559,7 +559,7 @@ class _PreferencesSection extends ConsumerWidget {
                     ),
                   );
                 } else if (status == VerificationStatus.failed) {
-                  subtitle = 'Verification failed - Tap to resubmit';
+                  subtitle =guarantor.metadata?['reason']?.toString() ?? guarantor.metadata?['notes']?.toString()?? 'Verification failed - Tap to resubmit';
                   iconColor = AppColors.error;
                   trailing = Container(
                     padding: EdgeInsets.symmetric(
@@ -574,6 +574,7 @@ class _PreferencesSection extends ConsumerWidget {
                       'Action Needed',
                       style: AppTextStyles.label.copyWith(
                         color: AppColors.error,
+                        overflow: TextOverflow.ellipsis,
                         fontWeight: FontWeight.bold,
                         fontSize: 11.sp,
                       ),

@@ -359,7 +359,7 @@ enum KycStatus { pending, submitted, underReview, approved, rejected }
 final kycStatusProvider = FutureProvider<KycStatus>((ref) async {
   debugLog('[kycStatusProvider] Resolving KYC status...');
   final user = await ref.watch(userProvider.future);
-  final status = user.providerProfile?.status;
+  final status = user.providerProfile?.kycStatus;
   final kycStatus = switch (status?.toLowerCase().trim()) {
     "pending_submission" || "pending" => KycStatus.pending,
     "submitted" => KycStatus.submitted,

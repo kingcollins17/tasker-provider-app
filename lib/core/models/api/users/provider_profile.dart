@@ -21,7 +21,6 @@ class ProviderProfile {
   final String? gender;
   @JsonKey(name: 'kyc_status')
   final String? kycStatus;
-  final String? status;
   @JsonKey(name: 'provider_reference')
   final String? providerReference;
   @JsonKey(name: 'liveness_score')
@@ -44,7 +43,7 @@ class ProviderProfile {
   @JsonKey(name: 'kyc_documents')
   final List<dynamic>? kycDocuments;
 
-  String? get effectiveStatus => kycStatus ?? status;
+  String? get effectiveStatus => kycStatus;
 
   ProviderProfile({
     this.id,
@@ -56,7 +55,6 @@ class ProviderProfile {
     this.selfieUrl,
     this.gender,
     this.kycStatus,
-    this.status,
     this.providerReference,
     this.livenessScore,
     this.rejectionReason,

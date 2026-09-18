@@ -70,17 +70,13 @@ class Guarantor {
   /// Maps string [status] to [VerificationStatus] enum for easy status checks.
   VerificationStatus get verificationStatus {
     final s = status?.toUpperCase().trim();
-    switch (s) {
-      case 'PASSED':
-        return VerificationStatus.passed;
-      case 'FAILED':
-        return VerificationStatus.failed;
-      case 'UNDER_REVIEW':
-        return VerificationStatus.underReview;
-      case 'PENDING':
-      default:
-        return VerificationStatus.pending;
-    }
+    return switch (s) {
+      'PASSED' || 'COMPLETED' => VerificationStatus.passed,
+      'UNDER_REVIEW' || 'PENDING_ADMIN_REVIEW' => VerificationStatus.underReview,
+      'FAILED' || 'REJECTED' || 'CANCELLED' => VerificationStatus.failed,
+      _ => VerificationStatus.pending
+    };
+    
   }
 
   factory Guarantor.fromJson(Map<String, dynamic> json) =>

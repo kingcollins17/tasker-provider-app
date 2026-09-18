@@ -3,10 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:shimmer/shimmer.dart';
 
+import 'package:tasker_app/core/models/models.dart';
 import 'package:tasker_app/core/providers/providers.dart';
 import 'package:tasker_app/core/utils/debug_logger.dart';
 import 'package:tasker_app/core/utils/extensions/loading_context_ext.dart';
 
+import '../../../core/models/api/users/users.dart';
 import '../../../core/ui/designs/colors.dart';
 import '../../../core/ui/designs/text_styles.dart';
 import '../../../core/ui/designs/decorations.dart';
@@ -132,6 +134,14 @@ class HomeScreen extends ConsumerWidget {
                   ),
 
                   SliverToBoxAdapter(child: AppSpacing.hLg),
+
+                  // ─── ACCOUNT SETUP BANNER ───
+                  SliverPadding(
+                    padding: AppSpacing.pHorsMd,
+                    sliver: const SliverToBoxAdapter(
+                      child: _AccountSetupSection(),
+                    ),
+                  ),
 
                   // ─── ACCOUNT ISSUES ───
                   SliverPadding(
@@ -1414,6 +1424,209 @@ class _PerformanceSnapshotShimmer extends StatelessWidget {
 }
 
 
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ACCOUNT SETUP BANNER SECTION
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _AccountSetupSection extends ConsumerWidget {
+  const _AccountSetupSection();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final hasSelfieAsync = ref.watch(hasSelfieProvider);
+    final kycDocAsync = ref.watch(getKycStatusProvider);
+    final kycStatusAsync = ref.watch(kycStatusProvider);
+    final guarantorAsync = ref.watch(guarantorProvider);
+    final interviewAsync = ref.watch(interviewProvider);
+
+    final isLoading = hasSelfieAsync.isLoading ||
+        kycDocAsync.isLoading ||
+        kycStatusAsync.isLoading ||
+        guarantorAsync.isLoading ||
+        interviewAsync.isLoading;
+
+    if (isLoading) {
+      return const SizedBox.shrink();
+    }
+
+    final hasSelfie = hasSelfieAsync.value ?? false;
+    final kycDoc = kycDocAsync.value;
+    final kycEnum = kycDoc?.verificationStatus ??
+        (kycStatusAsync.value == KycStatus.approved
+            ? VerificationStatus.passed
+            : VerificationStatus.pending);
+    final isDocApproved = kycEnum == VerificationStatus.passed;
+    final guarantor = guarantorAsync.value;
+    final isGuarantorPassed =
+        guarantor?.verificationStatus == VerificationStatus.passed;
+    final interview = interviewAsync.value;
+    final rawInterviewStatus = interview?.status?.toUpperCase().trim();
+    final isInterviewPassed =
+        rawInterviewStatus == 'PASSED' || rawInterviewStatus == 'COMPLETED';
+
+    int completedCount = 0;
+    if (hasSelfie) completedCount++;
+    if (isDocApproved) completedCount++;
+    if (isGuarantorPassed) completedCount++;
+    if (isInterviewPassed) completedCount++;
+
+    if (completedCount >= 4) {
+      return const SizedBox.shrink();
+    }
+
+    final double progress = completedCount / 4.0;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Padding(
+      padding: EdgeInsets.only(bottom: 16.h),
+      child: GestureDetector(
+        onTap: () => context.pushNamed(ProfileRoutes.onboardingStepsRoute),
+        child: Container(
+          padding: EdgeInsets.all(16.r),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: isDark
+                  ? [
+                      AppColors.primary.withValues(alpha: 0.25),
+                      theme.colorScheme.surface,
+                    ]
+                  : [
+                      AppColors.primary.withValues(alpha: 0.1),
+                      AppColors.primary.withValues(alpha: 0.03),
+                    ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: AppDecorations.radiusLg,
+            border: Border.all(
+              color: AppColors.primary.withValues(alpha: isDark ? 0.4 : 0.25),
+              width: 1.2.r,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.primary.withValues(alpha: isDark ? 0.15 : 0.06),
+                blurRadius: 12.r,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 40.r,
+                    height: 40.r,
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(10.r),
+                    ),
+                    child: Icon(
+                      Icons.checklist_rtl_rounded,
+                      color: AppColors.primary,
+                      size: 22.r,
+                    ),
+                  ),
+                  SizedBox(width: 12.w),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                'Complete Account Setup',
+                                style: AppTextStyles.h3.copyWith(
+                                  fontSize: 13.5.sp,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            SizedBox(width: 4.w),
+                            Container(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: 6.w,
+                                vertical: 2.h,
+                              ),
+                              decoration: BoxDecoration(
+                                color: AppColors.primary.withValues(alpha: 0.15),
+                                borderRadius: BorderRadius.circular(6.r),
+                              ),
+                              child: Text(
+                                '$completedCount/4 Done',
+                                style: AppTextStyles.label.copyWith(
+                                  color: AppColors.primary,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 9.5.sp,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        SizedBox(height: 2.h),
+                        Text(
+                          'Complete 4 steps to become eligible for task offers.',
+                          style: AppTextStyles.bodySmall.copyWith(
+                            color: isDark
+                                ? AppColors.textSecondary
+                                : AppColors.textMuted,
+                            fontSize: 11.sp,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ),
+                  SizedBox(width: 4.w),
+                  Icon(
+                    Icons.chevron_right_rounded,
+                    color: AppColors.primary,
+                    size: 20.r,
+                  ),
+                ],
+              ),
+              SizedBox(height: 10.h),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(4.r),
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    return Stack(
+                      children: [
+                        Container(
+                          height: 6.h,
+                          width: constraints.maxWidth,
+                          color: isDark ? AppColors.border : Colors.grey[200]!,
+                        ),
+                        AnimatedContainer(
+                          duration: const Duration(milliseconds: 500),
+                          height: 6.h,
+                          width: constraints.maxWidth * progress,
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              colors: [AppColors.primary, AppColors.primaryLight],
+                            ),
+                            borderRadius: BorderRadius.circular(4.r),
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ACCOUNT ISSUES SECTION
