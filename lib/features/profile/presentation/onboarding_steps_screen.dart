@@ -16,6 +16,7 @@ import '../../../core/utils/extensions/flushbar_context_ext.dart';
 import '../../../core/utils/extensions/loading_context_ext.dart';
 import '../../kyc/presentation/document_submission_screen.dart';
 import '../profile_routes.dart';
+import 'widgets/interview_schedule_sheet.dart';
 
 /// Screen displaying the required setup and verification steps for providers
 /// to become eligible to receive task offers.
@@ -196,6 +197,10 @@ class _OnboardingStepsScreenState
         context.showError('Could not open meeting link');
       }
     }
+  }
+
+  void _handleInterviewTap(Interview? interview) {
+    InterviewScheduleSheet.show(context, interview: interview);
   }
 
   @override
@@ -449,7 +454,7 @@ class _OnboardingStepsScreenState
                                     ),
                                   )
                                 : null,
-                            onTap: null,
+                            onTap: () => _handleInterviewTap(interview),
                           ),
                         ],
                         SizedBox(height: 24.h),

@@ -1,5 +1,5 @@
 import 'package:go_router/go_router.dart';
-import 'presentation/kyc_onboarding_screen.dart';
+import '../profile/presentation/onboarding_steps_screen.dart';
 import 'presentation/document_submission_screen.dart';
 
 /// Route definitions for KYC feature screens.
@@ -13,7 +13,7 @@ class KycRoutes {
     GoRoute(
       path: '/kyc-onboarding',
       name: kycOnboardingRoute,
-      builder: (context, state) => const KycOnboardingScreen(),
+      builder: (context, state) => const OnboardingStepsScreen(),
     ),
     GoRoute(
       path: '/document-submission',
