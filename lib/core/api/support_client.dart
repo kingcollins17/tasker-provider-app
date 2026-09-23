@@ -21,6 +21,7 @@ abstract class SupportClient {
   Future<BaseApiResponse<PaginatedData<SupportCase>>> getUserCases({
     @Query("page") int page = 1,
     @Query("per_page") int perPage = 20,
+    @Query("status") String? status,
     @Query("task_id") String? taskId,
   });
 
@@ -44,6 +45,13 @@ abstract class SupportClient {
 
   @GET("support/cases/{case_id}/timeline")
   Future<BaseApiResponse<PaginatedData<SupportTimelineItem>>> getCaseTimeline(
+    @Path("case_id") String caseId, {
+    @Query("page") int page = 1,
+    @Query("per_page") int perPage = 20,
+  });
+
+  @GET("support/cases/{case_id}/attachments")
+  Future<BaseApiResponse<PaginatedData<SupportAttachment>>> getCaseAttachments(
     @Path("case_id") String caseId, {
     @Query("page") int page = 1,
     @Query("per_page") int perPage = 20,

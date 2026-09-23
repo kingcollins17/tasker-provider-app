@@ -41,20 +41,15 @@ class _OnboardingStepsScreenState
 
   Future<void> _refreshData() async {
     ref.invalidate(userProvider);
-    ref.invalidate(hasSelfieProvider);
-    ref.invalidate(kycStatusProvider);
     ref.invalidate(getKycStatusProvider);
-    ref.invalidate(guarantorProvider);
     ref.invalidate(guarantorNotifierProvider);
     ref.invalidate(interviewProvider);
 
     try {
       await Future.wait([
         ref.read(userProvider.future),
-        ref.read(hasSelfieProvider.future),
-        ref.read(kycStatusProvider.future),
         ref.read(getKycStatusProvider.future),
-        ref.read(guarantorProvider.future),
+        ref.read(guarantorNotifierProvider.future),
         ref.read(interviewProvider.future),
       ]);
     } catch (_) {}
@@ -237,8 +232,10 @@ class _OnboardingStepsScreenState
     final guarantor = guarantorAsync.value;
     final guarantorStatus = guarantor?.verificationStatus;
     final isGuarantorPassed = guarantorStatus == VerificationStatus.passed;
-    final isGuarantorUnderReview = guarantorStatus == VerificationStatus.underReview;
     final isGuarantorFailed = guarantorStatus == VerificationStatus.failed;
+    final isGuarantorUnderReview =
+        (guarantor != null && !isGuarantorPassed && !isGuarantorFailed) ||
+            guarantorStatus == VerificationStatus.underReview;
 
     // Interview State
     final interview = interviewAsync.value;
@@ -262,10 +259,11 @@ class _OnboardingStepsScreenState
     if (isInterviewPassed) completedCount++;
 
     final progress = (completedCount / 4.0).clamp(0.0, 1.0);
-    final isLoading = hasSelfieAsync.isLoading ||
-        kycDocAsync.isLoading ||
-        guarantorAsync.isLoading ||
-        interviewAsync.isLoading;
+    final isInitialLoading =
+        (hasSelfieAsync.isLoading && !hasSelfieAsync.hasValue) ||
+        (kycDocAsync.isLoading && !kycDocAsync.hasValue) ||
+        (guarantorAsync.isLoading && !guarantorAsync.hasValue) ||
+        (interviewAsync.isLoading && !interviewAsync.hasValue);
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
@@ -314,7 +312,7 @@ class _OnboardingStepsScreenState
                     ),
                     child: Column(
                       children: [
-                        if (isLoading) ...[
+                        if (isInitialLoading) ...[
                           _buildShimmerStepCard(isDark),
                           SizedBox(height: 12.h),
                           _buildShimmerStepCard(isDark),
@@ -390,7 +388,7 @@ class _OnboardingStepsScreenState
                                     : (isGuarantorUnderReview
                                         ? 'UNDER REVIEW'
                                         : null),
-                            onTap: isGuarantorPassed
+                            onTap: (isGuarantorPassed || isGuarantorUnderReview)
                                 ? null
                                 : () => _handleReferenceTap(guarantorStatus),
                           ),

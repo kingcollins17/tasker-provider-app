@@ -7,7 +7,6 @@ import 'package:uuid/uuid.dart';
 import '../api/api.dart';
 import '../models/models.dart';
 import 'region_provider.dart';
-import 'location_provider.dart';
 import '../utils/app_exception_handler.dart';
 import '../utils/debug_logger.dart';
 import '../utils/extensions/error_ext.dart';

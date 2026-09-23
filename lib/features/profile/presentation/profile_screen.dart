@@ -10,6 +10,7 @@ import 'package:tasker_app/core/router/navigator_keys.dart';
 import '../../../core/ui/designs/designs.dart';
 import '../../../core/providers/providers.dart';
 import '../../../features/kyc/kyc_routes.dart';
+import '../../../features/support/support_routes.dart';
 import '../../../features/auth/providers/auth_provider.dart';
 import '../../../core/utils/extensions/flushbar_context_ext.dart';
 import '../../../core/utils/extensions/loading_context_ext.dart';
@@ -682,9 +683,8 @@ class _PreferencesSection extends ConsumerWidget {
           icon: Icons.support_agent_rounded,
           iconColor: AppColors.primaryLight,
           title: 'Customer Support',
-          subtitle: 'Get help with your account',
-          onTap: () =>
-              context.showToast('Customer Support feature coming soon!'),
+          subtitle: 'Get help with your account or report an issue',
+          onTap: () => context.pushNamed(SupportRoutes.supportCasesRoute),
         ),
         AppSpacing.hSm,
 

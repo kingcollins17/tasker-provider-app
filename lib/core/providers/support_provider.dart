@@ -14,6 +14,10 @@ class CustomerSupportNotifier extends AsyncNotifier<List<SupportCase>> {
   int _total = 0;
   bool _isLoadingMore = false;
 
+  final String? status;
+
+  CustomerSupportNotifier({this.status});
+
   bool get isLoadingMore => _isLoadingMore;
   bool get hasMore => (state.value?.length ?? 0) < _total;
 
@@ -27,9 +31,13 @@ class CustomerSupportNotifier extends AsyncNotifier<List<SupportCase>> {
 
   Future<List<SupportCase>> _fetchInitial() async {
     try {
-      debugLog('[CustomerSupportNotifier] Fetching initial support cases...');
+      debugLog('[CustomerSupportNotifier] Fetching initial support cases (status: $status)...');
       final client = ref.watch(supportClientProvider);
-      final response = await client.getUserCases(page: 1, perPage: 20);
+      final response = await client.getUserCases(
+        page: 1,
+        perPage: 20,
+        status: status,
+      );
 
       if (response.isSuccessful && response.hasData) {
         _total = response.data?.total ?? 0;
@@ -59,9 +67,13 @@ class CustomerSupportNotifier extends AsyncNotifier<List<SupportCase>> {
     _isLoadingMore = true;
     try {
       final nextPage = _page + 1;
-      debugLog('[CustomerSupportNotifier] Fetching cases page $nextPage...');
+      debugLog('[CustomerSupportNotifier] Fetching cases page $nextPage (status: $status)...');
       final client = ref.read(supportClientProvider);
-      final response = await client.getUserCases(page: nextPage, perPage: 20);
+      final response = await client.getUserCases(
+        page: nextPage,
+        perPage: 20,
+        status: status,
+      );
 
       if (response.isSuccessful && response.hasData) {
         final newItems = response.data?.items ?? [];
@@ -187,6 +199,7 @@ class CustomerSupportNotifier extends AsyncNotifier<List<SupportCase>> {
         ref.invalidate(caseMessagesProvider(caseId));
         ref.invalidate(userCaseDetailsProvider(caseId));
         ref.invalidate(caseTimelineProvider(caseId));
+        ref.invalidate(caseAttachmentsProvider(caseId));
         onSuccess?.call();
       } else {
         throw (response.errorMessage ??
@@ -278,10 +291,12 @@ class CustomerSupportNotifier extends AsyncNotifier<List<SupportCase>> {
   }
 }
 
-/// Main Provider for [CustomerSupportNotifier].
-final customerSupportNotifierProvider =
-    AsyncNotifierProvider<CustomerSupportNotifier, List<SupportCase>>(
-  () => CustomerSupportNotifier(),
+/// Main Family Provider for [CustomerSupportNotifier] filtering by optional status ('open', 'closed', or null for all).
+final customerSupportNotifierProvider = AsyncNotifierProvider.family<
+    CustomerSupportNotifier,
+    List<SupportCase>,
+    String?>(
+  (status) => CustomerSupportNotifier(status: status),
   retry: retryFunc(3),
 );
 
@@ -374,6 +389,8 @@ final userCasesProvider = AsyncNotifierProvider.family<
   (taskId) => TaskUserCasesNotifier(taskId: taskId),
   retry: retryFunc(3),
 );
+
+
 
 /// Provider to retrieve detailed information for a single support case.
 final userCaseDetailsProvider =
@@ -567,5 +584,97 @@ final caseTimelineProvider = AsyncNotifierProvider.family<
     List<SupportTimelineItem>,
     String>(
   (caseId) => CaseTimelineNotifier(caseId: caseId),
+  retry: retryFunc(3),
+);
+
+/// Paginated AsyncNotifier for retrieving file attachments for a specific support case.
+class CaseAttachmentsNotifier extends AsyncNotifier<List<SupportAttachment>> {
+  int _page = 1;
+  int _total = 0;
+  bool _isLoadingMore = false;
+
+  final String caseId;
+
+  CaseAttachmentsNotifier({required this.caseId});
+
+  bool get isLoadingMore => _isLoadingMore;
+  bool get hasMore => (state.value?.length ?? 0) < _total;
+
+  @override
+  Future<List<SupportAttachment>> build() async {
+    _page = 1;
+    _total = 0;
+    _isLoadingMore = false;
+    return _fetchInitial();
+  }
+
+  Future<List<SupportAttachment>> _fetchInitial() async {
+    try {
+      debugLog(
+        '[CaseAttachmentsNotifier] Fetching attachments for case ID: $caseId...',
+      );
+      final client = ref.watch(supportClientProvider);
+      final response =
+          await client.getCaseAttachments(caseId, page: 1, perPage: 20);
+
+      if (response.isSuccessful && response.hasData) {
+        _total = response.data?.total ?? 0;
+        _page = response.data?.page ?? 1;
+        return response.data?.items ?? [];
+      }
+    } catch (e, st) {
+      debugLog('[CaseAttachmentsNotifier] Error: $e', level: DebugLevel.error);
+      AppExceptionHandler.instance.handleError(e, st);
+    }
+    return [];
+  }
+
+  Future<void> fetchMore() async {
+    final currentList = state.value;
+    if (currentList == null || _isLoadingMore || currentList.length >= _total) {
+      return;
+    }
+
+    _isLoadingMore = true;
+    try {
+      final nextPage = _page + 1;
+      final client = ref.read(supportClientProvider);
+      final response = await client.getCaseAttachments(
+        caseId,
+        page: nextPage,
+        perPage: 20,
+      );
+
+      if (response.isSuccessful && response.hasData) {
+        final newItems = response.data?.items ?? [];
+        _page = response.data?.page ?? nextPage;
+        _total = response.data?.total ?? _total;
+        state = AsyncData(
+          List<SupportAttachment>.from(currentList)..addAll(newItems),
+        );
+      }
+    } catch (e, st) {
+      debugLog(
+        '[CaseAttachmentsNotifier] Error fetching more: $e',
+        level: DebugLevel.error,
+      );
+      AppExceptionHandler.instance.handleError(e, st);
+    } finally {
+      _isLoadingMore = false;
+    }
+  }
+
+  Future<void> refresh() async {
+    ref.invalidateSelf();
+    await future;
+  }
+}
+
+/// Provider to retrieve paginated file attachments for a specific support case.
+final caseAttachmentsProvider = AsyncNotifierProvider.family<
+    CaseAttachmentsNotifier,
+    List<SupportAttachment>,
+    String>(
+  (caseId) => CaseAttachmentsNotifier(caseId: caseId),
   retry: retryFunc(3),
 );

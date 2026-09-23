@@ -557,37 +557,6 @@ class _GuarantorFormScreenState extends ConsumerState<GuarantorFormScreen> {
               height: 1.4,
             ),
           ),
-          if (status == VerificationStatus.failed &&
-              guarantor.failureReason != null) ...[
-            SizedBox(height: 10.h),
-            Container(
-              padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 8.h),
-              decoration: BoxDecoration(
-                color: AppColors.error.withValues(alpha: 0.1),
-                borderRadius: AppDecorations.radiusSm,
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.info_outline_rounded,
-                    color: AppColors.error,
-                    size: 16.r,
-                  ),
-                  SizedBox(width: 8.w),
-                  Expanded(
-                    child: Text(
-                      'Reason: ${guarantor.failureReason}',
-                      style: AppTextStyles.bodySmall.copyWith(
-                        color: AppColors.error,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 11.5.sp,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
         ],
       ),
     );

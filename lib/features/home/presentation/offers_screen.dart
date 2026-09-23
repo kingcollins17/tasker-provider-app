@@ -4,6 +4,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hugeicons/hugeicons.dart';
 import 'package:shimmer/shimmer.dart';
+import 'package:tasker_app/core/utils/extensions/error_ext.dart';
 
 import '../../../core/models/models.dart';
 import '../../../core/providers/providers.dart';
@@ -292,7 +293,7 @@ class _OffersScreenState extends ConsumerState<OffersScreen> {
                     ),
                     SizedBox(height: 8.h),
                     Text(
-                      error,
+                      error.toFriendlyString(),
                       style: AppTextStyles.bodySmall.copyWith(
                         color: AppColors.textMuted,
                       ),

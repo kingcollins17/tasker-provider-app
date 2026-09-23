@@ -13,6 +13,7 @@ import 'features/auth/presentation/register_screen.dart';
 import 'features/auth/presentation/onboard_categories_screen.dart';
 import 'features/auth/presentation/onboard_services_screen.dart';
 import 'features/notifications/notifications_routes.dart';
+import 'features/support/support_routes.dart';
 
 class AppRoutes {
   AppRoutes._();
@@ -77,6 +78,7 @@ class AppRoutes {
       ...KycRoutes.routes,
       ...NotificationsRoutes.routes,
       ...ChatsRoutes.routes,
+      ...SupportRoutes.routes,
     ],
   );
 

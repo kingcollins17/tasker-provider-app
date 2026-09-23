@@ -71,12 +71,17 @@ class Guarantor {
   VerificationStatus get verificationStatus {
     final s = status?.toUpperCase().trim();
     return switch (s) {
-      'PASSED' || 'COMPLETED' => VerificationStatus.passed,
-      'UNDER_REVIEW' || 'PENDING_ADMIN_REVIEW' => VerificationStatus.underReview,
+      'PASSED' || 'APPROVED' || 'VERIFIED' || 'COMPLETED' => VerificationStatus.passed,
+      'UNDER_REVIEW' ||
+      'PENDING_ADMIN_REVIEW' ||
+      'PENDING' ||
+      'SUBMITTED' ||
+      'PENDING_VERIFICATION' ||
+      'REVIEW' =>
+        VerificationStatus.underReview,
       'FAILED' || 'REJECTED' || 'CANCELLED' => VerificationStatus.failed,
       _ => VerificationStatus.pending
     };
-    
   }
 
   factory Guarantor.fromJson(Map<String, dynamic> json) =>
