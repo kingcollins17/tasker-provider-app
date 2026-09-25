@@ -34,7 +34,7 @@ android {
     defaultConfig {
         applicationId = "com.tasker.app.tasker_app"
         minSdk = 26
-        targetSdk = flutter.targetSdkVersion
+        targetSdk = 36
         versionCode = flutter.versionCode
         versionName = flutter.versionName
     }
