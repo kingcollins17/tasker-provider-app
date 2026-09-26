@@ -89,13 +89,15 @@ class Guarantor {
 
   Map<String, dynamic> toJson() => _$GuarantorToJson(this);
 
-  /// Extract rejection or failure reason from [metadata] if present.
+  /// Extract rejection or failure reason from [metadata] if present (strictly excluding notes).
   String? get failureReason {
     if (metadata == null) return null;
-    final reason = metadata!['reason'] ??
+    final val = metadata!['reason'] ??
         metadata!['rejection_reason'] ??
         metadata!['message'] ??
         metadata!['detail'];
-    return reason?.toString();
+    if (val == null) return null;
+    final str = val.toString().trim();
+    return str.isNotEmpty ? str : null;
   }
 }

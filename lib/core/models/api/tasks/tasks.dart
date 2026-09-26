@@ -7,4 +7,5 @@ export 'task.dart';
 export 'assignment.dart';
 export 'dispatch.dart';
 export 'offer.dart';
+export 'task_price_adjustment.dart';
 

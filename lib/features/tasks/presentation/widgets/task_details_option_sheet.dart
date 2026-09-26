@@ -125,7 +125,7 @@ class TaskDetailsOptionSheet extends ConsumerWidget {
 
             // Request Price Adjustment option for assigned provider
             _OptionTile(
-              icon: Icons.request_quote_outlined,
+              icon: Icons.tune_rounded,
               title: 'Request Price Adjustment',
               onTap: () {
                 Navigator.of(context).pop(TaskOptionAction.adjustPrice);

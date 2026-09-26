@@ -218,7 +218,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       text: 'Create Account',
                       onPressed: _handleRegister,
                     ),
-                    SizedBox(height: 24.h),
+                    SizedBox(height: 8.h),
 
                     // Already have an account text
                     Row(

@@ -116,7 +116,7 @@ class TaskManagementNotifier extends Notifier<AsyncValue<void>> {
       final client = ref.read(tasksClientProvider);
       final response = await client.completeTask(
         taskId,
-        CompleteTaskRequest(pin: pin, paymentMode: paymentMode),
+        CompleteTaskRequest(pin: pin, paymentMode: paymentMode.toUpperCase()),
       );
 
       if (response.isError) {
@@ -472,6 +472,29 @@ final assignmentFilterProvider =
     NotifierProvider<AssignmentFilterNotifier, AssignmentFilterState>(
       AssignmentFilterNotifier.new,
     );
+
+typedef TaskPriceAdjustmentsParam = ({
+  String taskId,
+  List<String>? status,
+});
+
+/// Fetches price adjustments for a task with optional status filter.
+final taskPriceAdjustmentsProvider = FutureProvider.family<
+    List<TaskPriceAdjustment>,
+    TaskPriceAdjustmentsParam>((ref, arg) async {
+  final client = ref.watch(tasksClientProvider);
+  final response = await client.getTaskPriceAdjustments(
+    arg.taskId,
+    status: arg.status,
+  );
+  if (response.isError || response.data == null) {
+    throw Exception(
+      response.detail ?? 'Failed to fetch task price adjustments',
+    );
+  }
+  return response.data!;
+});
+
 
 
 

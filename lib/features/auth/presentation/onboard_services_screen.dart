@@ -6,6 +6,7 @@ import '../../../core/ui/designs/designs.dart';
 import '../../../core/ui/widgets/primary_button.dart';
 import '../../../core/providers/services_provider.dart';
 import '../../../core/providers/user_provider.dart';
+import '../providers/onboard_services_provider.dart';
 import '../../../core/models/models.dart';
 import '../../../core/utils/extensions/loading_context_ext.dart';
 import '../../../core/utils/extensions/flushbar_context_ext.dart';
@@ -325,7 +326,10 @@ class _OnboardServicesScreenState extends ConsumerState<OnboardServicesScreen>
         .read(userProvider.notifier)
         .bulkAddServices(
           _selectedServiceIds.toList(),
-          onSuccess: () {
+          onSuccess: () async {
+            await ref
+                .read(onboardedServicesProvider.notifier)
+                .setHasOnboardedServices(true);
             if (!mounted) return;
             context.hideLoading();
             setState(() => _isSubmitting = false);
@@ -333,7 +337,10 @@ class _OnboardServicesScreenState extends ConsumerState<OnboardServicesScreen>
             // Navigate to home / dashboard
             context.go('/');
           },
-          onError: (error) {
+          onError: (error) async {
+            await ref
+                .read(onboardedServicesProvider.notifier)
+                .setHasOnboardedServices(false);
             if (!mounted) return;
             context.hideLoading();
             setState(() => _isSubmitting = false);

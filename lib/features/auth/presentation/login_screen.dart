@@ -165,7 +165,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
                     // Sign In Button
                     PrimaryButton(text: 'Sign In', onPressed: _handleLogin),
-                    SizedBox(height: 32.h),
+                    SizedBox(height: 8.h),
 
                     // Don't have an account text
                     Row(

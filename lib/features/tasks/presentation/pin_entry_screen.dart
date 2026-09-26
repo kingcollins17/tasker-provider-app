@@ -78,7 +78,7 @@ class _PinEntryScreenState extends ConsumerState<PinEntryScreen> {
             },
           );
     } else if (mode == 'completePin') {
-      final paymentMode = _isCash ? 'cash' : 'online';
+      final paymentMode = (_isCash ? 'cash' : 'online').toUpperCase();
       await ref
           .read(taskManagementProvider.notifier)
           .completeTask(
@@ -122,7 +122,7 @@ class _PinEntryScreenState extends ConsumerState<PinEntryScreen> {
     final displayShowPaymentMode = isCompleteMode;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -234,7 +234,9 @@ class _PinEntryScreenState extends ConsumerState<PinEntryScreen> {
                                                 ? AppColors.primary.withValues(
                                                     alpha: 0.5,
                                                   )
-                                                : AppColors.border),
+                                                : (isDark
+                                                    ? AppColors.border
+                                                    : const Color(0xFFE2E8F0))),
                                       width: isCurrentFocus ? 2.r : 1.r,
                                     ),
                                     boxShadow: isCurrentFocus
@@ -370,7 +372,9 @@ class _PaymentModeCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final borderColor = isSelected ? AppColors.primary : AppColors.border;
+    final borderColor = isSelected
+        ? AppColors.primary
+        : (isDark ? AppColors.border : const Color(0xFFE2E8F0));
     final bgColor = isSelected
         ? AppColors.primary.withValues(alpha: isDark ? 0.15 : 0.08)
         : (isDark
@@ -394,12 +398,16 @@ class _PaymentModeCard extends StatelessWidget {
               decoration: BoxDecoration(
                 color: isSelected
                     ? AppColors.primary.withValues(alpha: 0.2)
-                    : (isDark ? Colors.white10 : Colors.grey.shade200),
+                    : (isDark
+                          ? Colors.white10
+                          : const Color(0xFFE2E8F0).withValues(alpha: 0.5)),
                 shape: BoxShape.circle,
               ),
               child: Icon(
                 icon,
-                color: isSelected ? AppColors.primary : AppColors.textMuted,
+                color: isSelected
+                    ? AppColors.primary
+                    : (isDark ? AppColors.textMuted : const Color(0xFF64748B)),
                 size: 20.r,
               ),
             ),

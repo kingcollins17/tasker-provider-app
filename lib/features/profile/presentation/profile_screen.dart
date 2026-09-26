@@ -560,7 +560,8 @@ class _PreferencesSection extends ConsumerWidget {
                     ),
                   );
                 } else if (status == VerificationStatus.failed) {
-                  subtitle =guarantor.metadata?['reason']?.toString() ?? guarantor.metadata?['notes']?.toString()?? 'Verification failed - Tap to resubmit';
+                  subtitle = guarantor.failureReason ??
+                      'Verification failed - Resubmit';
                   iconColor = AppColors.error;
                   trailing = Container(
                     padding: EdgeInsets.symmetric(

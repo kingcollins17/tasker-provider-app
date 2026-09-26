@@ -80,6 +80,14 @@ abstract class TasksClient {
     @Body() CreatePriceAdjustmentRequest request,
   );
 
+  @GET("tasks/{taskId}/price-adjustments")
+  Future<BaseApiResponse<List<TaskPriceAdjustment>>> getTaskPriceAdjustments(
+    @Path("taskId") String taskId, {
+    @Query("status") List<String>? status,
+    @Query("requested_by") String? requestedBy,
+    @Query("sort_desc") bool sortDesc = true,
+  });
+
   @GET("offers")
   Future<BaseApiResponse<PaginatedData<Offer>>> getMyOffers({
     @Query("page") int page = 1,

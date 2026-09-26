@@ -46,7 +46,7 @@ class AuthNotifier extends AsyncNotifier<User?> {
         await future;
         onSuccess?.call();
       } else {
-        final errMsg = 'Access token missing in response payload.';
+        final errMsg = response.detail ?? 'Access token missing in response payload.';
         throw (errMsg);
       }
     } catch (e, st) {

@@ -235,7 +235,6 @@ class _AdjustTaskPriceSheetState extends ConsumerState<AdjustTaskPriceSheet> {
     final enteredAmount = double.tryParse(rawAmountText) ?? 0.0;
     final bool hasInput = rawAmountText.isNotEmpty;
     final bool isValidAmount = enteredAmount > currentPrice;
-    final double additionalAmount = enteredAmount - currentPrice;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -377,7 +376,7 @@ class _AdjustTaskPriceSheetState extends ConsumerState<AdjustTaskPriceSheet> {
               ? 'Must be greater than current payout of ${currentPrice.toNaira(2)}'
               : !isValidAmount
                   ? 'Price must be higher than current payout of ${currentPrice.toNaira(2)}'
-                  : 'Additional price adjustment: +${additionalAmount.toNaira(2)}',
+                  : 'Requested total price: ${enteredAmount.toNaira(2)}',
           style: AppTextStyles.bodySmall.copyWith(
             fontSize: 11.5.sp,
             fontWeight: isValidAmount ? FontWeight.bold : FontWeight.w500,
@@ -455,7 +454,7 @@ class _AdjustTaskPriceSheetState extends ConsumerState<AdjustTaskPriceSheet> {
           onPressed: !isValidAmount
               ? null
               : () {
-                  final finalAmountToPass = enteredAmount - currentPrice;
+                  final finalAmountToPass = enteredAmount;
 
                   final description =
                       _descriptionController.text.trim().isEmpty

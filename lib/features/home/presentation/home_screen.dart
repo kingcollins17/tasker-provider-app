@@ -26,6 +26,7 @@ import 'package:tasker_app/core/utils/extensions/num_ext.dart';
 import 'package:tasker_app/features/tasks/tasks_routes.dart';
 import '../../../app_routes.dart';
 import '../../auth/providers/auth_provider.dart';
+import '../../auth/providers/onboard_services_provider.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -140,6 +141,14 @@ class HomeScreen extends ConsumerWidget {
                     padding: AppSpacing.pHorsMd,
                     sliver: const SliverToBoxAdapter(
                       child: _AccountSetupSection(),
+                    ),
+                  ),
+
+                  // ─── SERVICES ONBOARDING BANNER ───
+                  SliverPadding(
+                    padding: AppSpacing.pHorsMd,
+                    sliver: const SliverToBoxAdapter(
+                      child: _OnboardServicesSection(),
                     ),
                   ),
 
@@ -1426,6 +1435,104 @@ class _PerformanceSnapshotShimmer extends StatelessWidget {
 
 
 // ─────────────────────────────────────────────────────────────────────────────
+// SERVICES ONBOARDING SECTION
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _OnboardServicesSection extends ConsumerWidget {
+  const _OnboardServicesSection();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final hasOnboardedAsync = ref.watch(onboardedServicesProvider);
+    final hasOnboarded = hasOnboardedAsync.value ?? true;
+
+    if (hasOnboarded) {
+      return const SizedBox.shrink();
+    }
+
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Padding(
+      padding: EdgeInsets.only(bottom: 12.h),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => context.pushNamed(AppRoutes.onboardCategoriesRoute),
+          borderRadius: BorderRadius.circular(12.r),
+          child: Ink(
+            padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
+            decoration: BoxDecoration(
+              color: isDark ? AppColors.surface : const Color(0xFFF8FAFC),
+              borderRadius: BorderRadius.circular(12.r),
+              border: Border.all(
+                color: isDark ? AppColors.border : const Color(0xFFE2E8F0),
+                width: 1.r,
+              ),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 36.r,
+                  height: 36.r,
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.12),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.home_repair_service_rounded,
+                    color: AppColors.primary,
+                    size: 18.r,
+                  ),
+                ),
+                SizedBox(width: 12.w),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Set Up Offered Services',
+                        style: AppTextStyles.bodyMedium.copyWith(
+                          fontSize: 13.5.sp,
+                          fontWeight: FontWeight.w600,
+                          color: isDark
+                              ? AppColors.textPrimary
+                              : const Color(0xFF0F172A),
+                        ),
+                      ),
+                      SizedBox(height: 2.h),
+                      Text(
+                        'Select the services you offer to start receiving task requests.',
+                        style: AppTextStyles.bodySmall.copyWith(
+                          fontSize: 11.5.sp,
+                          color: isDark
+                              ? AppColors.textMuted
+                              : const Color(0xFF64748B),
+                          height: 1.25,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+                SizedBox(width: 8.w),
+                Icon(
+                  Icons.arrow_forward_ios_rounded,
+                  size: 13.r,
+                  color:
+                      isDark ? AppColors.textMuted : const Color(0xFF94A3B8),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // ACCOUNT SETUP BANNER SECTION
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -1440,6 +1547,16 @@ class _AccountSetupSection extends ConsumerWidget {
     final guarantorAsync = ref.watch(guarantorProvider);
     final interviewAsync = ref.watch(interviewProvider);
 
+    final hasError = hasSelfieAsync.hasError ||
+        kycDocAsync.hasError ||
+        kycStatusAsync.hasError ||
+        guarantorAsync.hasError ||
+        interviewAsync.hasError;
+
+    if (hasError) {
+      return const SizedBox.shrink();
+    }
+
     final isLoading = hasSelfieAsync.isLoading ||
         kycDocAsync.isLoading ||
         kycStatusAsync.isLoading ||
@@ -1447,7 +1564,7 @@ class _AccountSetupSection extends ConsumerWidget {
         interviewAsync.isLoading;
 
     if (isLoading) {
-      return const SizedBox.shrink();
+      return _buildShimmer(context);
     }
 
     final hasSelfie = hasSelfieAsync.value ?? false;
@@ -1621,6 +1738,29 @@ class _AccountSetupSection extends ConsumerWidget {
                 ),
               ),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildShimmer(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final baseColor = isDark ? theme.colorScheme.surface : Colors.grey[200]!;
+    final highlightColor = isDark ? AppColors.border : Colors.grey[100]!;
+
+    return Padding(
+      padding: EdgeInsets.only(bottom: 16.h),
+      child: Shimmer.fromColors(
+        baseColor: baseColor,
+        highlightColor: highlightColor,
+        child: Container(
+          height: 76.h,
+          width: double.infinity,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: AppDecorations.radiusLg,
           ),
         ),
       ),

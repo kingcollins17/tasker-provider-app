@@ -34,9 +34,18 @@ class TaskDetailScreen extends ConsumerWidget {
           ref.invalidate(taskDetailProvider(taskId));
           ref.invalidate(taskAssignmentProvider(taskId));
           ref.invalidate(isUserAssignedToTaskProvider(taskId));
+          ref.invalidate(
+            taskPriceAdjustmentsProvider((taskId: taskId, status: null)),
+          );
           try {
             await Future.wait([
               ref.read(taskDetailProvider(taskId).future),
+              ref.read(
+                taskPriceAdjustmentsProvider((
+                  taskId: taskId,
+                  status: null,
+                )).future,
+              ),
             ]);
           } catch (_) {}
         },
@@ -119,6 +128,10 @@ class _TaskDetailBody extends ConsumerWidget {
       isUserAssignedToTaskProvider(task.id ?? ''),
     );
     final isAssigned = isAssignedAsync.value ?? false;
+
+    final priceAdjustmentsAsync = ref.watch(
+      taskPriceAdjustmentsProvider((taskId: task.id ?? '', status: null)),
+    );
 
     // Location text
     String? primaryLocationText;
@@ -230,6 +243,7 @@ class _TaskDetailBody extends ConsumerWidget {
                     // ─── STATUS & PAYOUT ROW ───
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
                         _StatusDropdownPill(
                           status: task.status,
@@ -244,13 +258,31 @@ class _TaskDetailBody extends ConsumerWidget {
                             }
                           },
                         ),
-                        Text(
-                          payoutStr,
-                          style: AppTextStyles.h2.copyWith(
-                            fontSize: 20.sp,
-                            fontWeight: FontWeight.w800,
-                            color: const Color(0xFF10B981),
-                          ),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Text(
+                              payoutStr,
+                              style: AppTextStyles.h2.copyWith(
+                                fontSize: 20.sp,
+                                fontWeight: FontWeight.w800,
+                                color: const Color(0xFF10B981),
+                              ),
+                            ),
+                            if (task.customerTotalPrice != null &&
+                                task.providerPayout != null &&
+                                task.customerTotalPrice != task.providerPayout)
+                              Text(
+                                'Total: ${task.customerTotalPrice?.toNaira(2)}',
+                                style: AppTextStyles.bodySmall.copyWith(
+                                  fontSize: 11.5.sp,
+                                  color: isDark
+                                      ? AppColors.textMuted
+                                      : Colors.grey[600],
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                          ],
                         ),
                       ],
                     ),
@@ -295,6 +327,21 @@ class _TaskDetailBody extends ConsumerWidget {
                       SizedBox(height: 14.h),
                     ],
 
+                    // ─── PRICE & FEE BREAKDOWN CARD ───
+                    _PriceBreakdownCard(
+                      task: task,
+                      isDark: isDark,
+                    ),
+
+                    // ─── PRICE ADJUSTMENTS ───
+                    if (priceAdjustmentsAsync.value != null &&
+                        priceAdjustmentsAsync.value!.isNotEmpty) ...[
+                      _PriceAdjustmentsSection(
+                        adjustments: priceAdjustmentsAsync.value!,
+                        isDark: isDark,
+                      ),
+                    ],
+
                     // ─── ATTACHMENTS (NON-IMAGE FILES) ───
                     if (otherAttachments.isNotEmpty) ...[
                       Text(
@@ -302,6 +349,8 @@ class _TaskDetailBody extends ConsumerWidget {
                         style: AppTextStyles.h3.copyWith(
                           fontSize: 14.sp,
                           fontWeight: FontWeight.bold,
+                          color:
+                              isDark ? AppColors.textPrimary : Colors.black87,
                         ),
                       ),
                       SizedBox(height: 6.h),
@@ -324,6 +373,8 @@ class _TaskDetailBody extends ConsumerWidget {
                         style: AppTextStyles.h3.copyWith(
                           fontSize: 14.sp,
                           fontWeight: FontWeight.bold,
+                          color:
+                              isDark ? AppColors.textPrimary : Colors.black87,
                         ),
                       ),
                       SizedBox(height: 6.h),
@@ -358,80 +409,27 @@ class _TaskDetailBody extends ConsumerWidget {
         ),
       ),
 
-      // ─── FIXED BOTTOM BAR (Compact & Reflective of Task Status) ───
-      bottomNavigationBar: Container(
-        padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 10.h),
-        decoration: BoxDecoration(
-          color: isDark ? theme.colorScheme.surface : Colors.white,
-          border: Border(
-            top: BorderSide(
-              color: isDark
-                  ? AppColors.border
-                  : Colors.grey.withValues(alpha: 0.15),
-              width: 1.r,
-            ),
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.04),
-              blurRadius: 10.r,
-              offset: const Offset(0, -3),
-            ),
-          ],
-        ),
-        child: SafeArea(
-          top: false,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              // Payout info
-              Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Task Payout',
-                    style: AppTextStyles.bodySmall.copyWith(
-                      color: AppColors.textMuted,
-                      fontSize: 10.5.sp,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  SizedBox(height: 2.h),
-                  Text(
-                    payoutStr,
-                    style: AppTextStyles.h2.copyWith(
-                      fontWeight: FontWeight.w800,
-                      fontSize: 17.sp,
-                      color: const Color(0xFF10B981),
-                    ),
-                  ),
-                ],
-              ),
-
-              // Action buttons row
-              Row(
-                children: [
-                  _buildPrimaryActionButton(
-                    context: context,
-                    task: task,
-                    isAssigned: isAssigned,
-                  ),
-                 
-                ],
-              ),
-            ],
-          ),
-        ),
+      bottomNavigationBar: _buildBottomBar(
+        context: context,
+        task: task,
+        isAssigned: isAssigned,
+        isDark: isDark,
+        theme: theme,
       ),
     );
   }
 
-  Widget _buildPrimaryActionButton({
+  Widget? _buildBottomBar({
     required BuildContext context,
     required Task task,
     required bool isAssigned,
+    required bool isDark,
+    required ThemeData theme,
   }) {
+    if (!isAssigned) {
+      return null;
+    }
+
     final statusLower = task.status?.toLowerCase() ?? '';
     final isInProgress = statusLower == 'in_progress';
     final isCompleted = statusLower == 'completed';
@@ -442,12 +440,8 @@ class _TaskDetailBody extends ConsumerWidget {
     Color buttonColor;
     VoidCallback? onPressed;
 
-    if (!isAssigned) {
-      return const SizedBox.shrink();
-    }
-
     if (isCompleted) {
-      label = 'Completed';
+      label = 'Task Completed';
       icon = Icons.task_alt_rounded;
       buttonColor = const Color(0xFF10B981);
       onPressed = null;
@@ -481,24 +475,53 @@ class _TaskDetailBody extends ConsumerWidget {
       };
     }
 
-    return ElevatedButton.icon(
-      onPressed: onPressed,
-      icon: Icon(icon, size: 17.r),
-      label: Text(
-        label,
-        style: AppTextStyles.buttonMedium.copyWith(
-          fontWeight: FontWeight.bold,
-          fontSize: 13.5.sp,
-          color: Colors.white,
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
+      decoration: BoxDecoration(
+        color: isDark ? theme.colorScheme.surface : Colors.white,
+        border: Border(
+          top: BorderSide(
+            color: isDark
+                ? AppColors.border
+                : Colors.grey.withValues(alpha: 0.15),
+            width: 1.r,
+          ),
         ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.04),
+            blurRadius: 10.r,
+            offset: const Offset(0, -3),
+          ),
+        ],
       ),
-      style: ElevatedButton.styleFrom(
-        backgroundColor: buttonColor,
-        foregroundColor: Colors.white,
-        elevation: 0,
-        padding: EdgeInsets.symmetric(horizontal: 18.w, vertical: 10.h),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20.r),
+      child: SafeArea(
+        top: false,
+        child: SizedBox(
+          width: double.infinity,
+          height: 48.h,
+          child: ElevatedButton.icon(
+            onPressed: onPressed,
+            icon: Icon(icon, size: 20.r),
+            label: Text(
+              label,
+              style: AppTextStyles.buttonLarge.copyWith(
+                fontWeight: FontWeight.bold,
+                fontSize: 15.sp,
+                color: Colors.white,
+              ),
+            ),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: buttonColor,
+              disabledBackgroundColor: buttonColor.withValues(alpha: 0.6),
+              disabledForegroundColor: Colors.white,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16.r),
+              ),
+            ),
+          ),
         ),
       ),
     );
@@ -1021,6 +1044,7 @@ class _DetailAppBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 8.h),
       child: Row(
@@ -1029,7 +1053,10 @@ class _DetailAppBar extends StatelessWidget {
           Expanded(
             child: Text(
               title,
-              style: AppTextStyles.h3.copyWith(fontSize: 18.sp),
+              style: AppTextStyles.h3.copyWith(
+                fontSize: 18.sp,
+                color: isDark ? AppColors.textPrimary : Colors.black87,
+              ),
               textAlign: TextAlign.center,
             ),
           ),
@@ -1150,6 +1177,7 @@ class _AssignmentCard extends StatelessWidget {
           style: AppTextStyles.h3.copyWith(
             fontSize: 15.sp,
             fontWeight: FontWeight.bold,
+            color: isDark ? AppColors.textPrimary : Colors.black87,
           ),
         ),
         SizedBox(height: 8.h),
@@ -1217,6 +1245,7 @@ class _InfoRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Padding(
       padding: EdgeInsets.symmetric(vertical: 8.h),
       child: Row(
@@ -1245,7 +1274,7 @@ class _InfoRow extends StatelessWidget {
                 Text(
                   value,
                   style: AppTextStyles.bodyMedium.copyWith(
-                    color: AppColors.textPrimary,
+                    color: isDark ? AppColors.textPrimary : Colors.black87,
                     fontWeight: FontWeight.w500,
                     fontSize: 13.sp,
                   ),
@@ -1663,3 +1692,435 @@ class _PaymentStatusPill extends StatelessWidget {
     );
   }
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PRICE ADJUSTMENTS WIDGET & BOTTOM SHEET
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _PriceAdjustmentsSection extends StatelessWidget {
+  final List<TaskPriceAdjustment> adjustments;
+  final bool isDark;
+
+  const _PriceAdjustmentsSection({
+    required this.adjustments,
+    required this.isDark,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (adjustments.isEmpty) return const SizedBox.shrink();
+
+    final first = adjustments.first;
+    final hasMultiple = adjustments.length > 1;
+
+    return Padding(
+      padding: EdgeInsets.only(bottom: 12.h),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    Icons.price_change_outlined,
+                    size: 15.r,
+                    color: AppColors.primary,
+                  ),
+                  SizedBox(width: 5.w),
+                  Text(
+                    'Price Adjustments',
+                    style: AppTextStyles.h3.copyWith(
+                      fontSize: 12.5.sp,
+                      fontWeight: FontWeight.bold,
+                      color: isDark ? AppColors.textPrimary : Colors.black87,
+                    ),
+                  ),
+                  SizedBox(width: 6.w),
+                  Container(
+                    padding:
+                        EdgeInsets.symmetric(horizontal: 6.w, vertical: 1.h),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(8.r),
+                    ),
+                    child: Text(
+                      '${adjustments.length}',
+                      style: AppTextStyles.bodySmall.copyWith(
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 10.sp,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              if (hasMultiple)
+                InkWell(
+                  onTap: () =>
+                      _showPriceAdjustmentsSheet(context, adjustments, isDark),
+                  borderRadius: BorderRadius.circular(6.r),
+                  child: Padding(
+                    padding:
+                        EdgeInsets.symmetric(horizontal: 4.w, vertical: 2.h),
+                    child: Text(
+                      'View all →',
+                      style: AppTextStyles.bodySmall.copyWith(
+                        fontSize: 11.5.sp,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          SizedBox(height: 6.h),
+          InkWell(
+            onTap: () =>
+                _showPriceAdjustmentsSheet(context, adjustments, isDark),
+            borderRadius: BorderRadius.circular(8.r),
+            child: Padding(
+              padding: EdgeInsets.symmetric(vertical: 4.h),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        first.amount?.toNaira(2) ?? '₦0.00',
+                        style: AppTextStyles.h2.copyWith(
+                          fontSize: 14.5.sp,
+                          fontWeight: FontWeight.w700,
+                          color: const Color(0xFF10B981),
+                        ),
+                      ),
+                      _PriceAdjustmentStatusPill(status: first.status),
+                    ],
+                  ),
+                  if (first.description != null &&
+                      first.description!.isNotEmpty) ...[
+                    SizedBox(height: 3.h),
+                    Text(
+                      first.description!,
+                      style: AppTextStyles.bodyMedium.copyWith(
+                        fontSize: 12.sp,
+                        color:
+                            isDark ? AppColors.textSecondary : Colors.grey[700],
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  static void _showPriceAdjustmentsSheet(
+    BuildContext context,
+    List<TaskPriceAdjustment> adjustments,
+    bool isDark,
+  ) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: isDark ? AppColors.surface : Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16.r)),
+      ),
+      builder: (context) {
+        return DraggableScrollableSheet(
+          initialChildSize: 0.6,
+          minChildSize: 0.3,
+          maxChildSize: 0.9,
+          expand: false,
+          builder: (context, scrollController) {
+            return Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 36.w,
+                      height: 4.h,
+                      margin: EdgeInsets.only(bottom: 10.h),
+                      decoration: BoxDecoration(
+                        color: isDark ? AppColors.border : Colors.grey[300],
+                        borderRadius: BorderRadius.circular(2.r),
+                      ),
+                    ),
+                  ),
+                  Text(
+                    'Price Adjustments (${adjustments.length})',
+                    style: AppTextStyles.h2.copyWith(
+                      fontSize: 16.sp,
+                      fontWeight: FontWeight.bold,
+                      color: isDark ? AppColors.textPrimary : Colors.black87,
+                    ),
+                  ),
+                  SizedBox(height: 10.h),
+                  Expanded(
+                    child: ListView.separated(
+                      controller: scrollController,
+                      itemCount: adjustments.length,
+                      separatorBuilder: (_, _) => Divider(
+                        height: 16.h,
+                        color: isDark
+                            ? AppColors.border.withValues(alpha: 0.5)
+                            : Colors.grey[200],
+                      ),
+                      itemBuilder: (context, index) {
+                        final item = adjustments[index];
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment:
+                                  MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  item.amount?.toNaira(2) ?? '₦0.00',
+                                  style: AppTextStyles.h2.copyWith(
+                                    fontSize: 14.5.sp,
+                                    fontWeight: FontWeight.bold,
+                                    color: const Color(0xFF10B981),
+                                  ),
+                                ),
+                                _PriceAdjustmentStatusPill(
+                                  status: item.status,
+                                ),
+                              ],
+                            ),
+                            if (item.description != null &&
+                                item.description!.isNotEmpty) ...[
+                              SizedBox(height: 3.h),
+                              Text(
+                                item.description!,
+                                style: AppTextStyles.bodyMedium.copyWith(
+                                  fontSize: 12.sp,
+                                  color: isDark
+                                      ? AppColors.textPrimary
+                                      : Colors.black87,
+                                ),
+                              ),
+                            ],
+                            if (item.createdAt != null) ...[
+                              SizedBox(height: 4.h),
+                              Align(
+                                alignment: Alignment.centerRight,
+                                child: Text(
+                                  DateFormat(
+                                    'MMM d, yyyy HH:mm',
+                                  ).format(item.createdAt!),
+                                  style: AppTextStyles.bodySmall.copyWith(
+                                    fontSize: 10.5.sp,
+                                    color: isDark
+                                        ? AppColors.textMuted
+                                        : Colors.grey[500],
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ],
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+}
+
+class _PriceAdjustmentStatusPill extends StatelessWidget {
+  final String? status;
+
+  const _PriceAdjustmentStatusPill({this.status});
+
+  @override
+  Widget build(BuildContext context) {
+    final s = status?.toUpperCase().trim() ?? 'PENDING';
+    Color bgColor;
+    Color textColor;
+
+    switch (s) {
+      case 'APPROVED':
+        bgColor = const Color(0xFF10B981).withValues(alpha: 0.15);
+        textColor = const Color(0xFF10B981);
+        break;
+      case 'REJECTED':
+        bgColor = Colors.red.withValues(alpha: 0.15);
+        textColor = Colors.red[600]!;
+        break;
+      case 'PENDING':
+      default:
+        bgColor = Colors.amber.withValues(alpha: 0.15);
+        textColor = Colors.orange[800]!;
+        break;
+    }
+
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 3.h),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(10.r),
+      ),
+      child: Text(
+        s,
+        style: AppTextStyles.bodySmall.copyWith(
+          color: textColor,
+          fontWeight: FontWeight.bold,
+          fontSize: 10.5.sp,
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PRICE BREAKDOWN CARD (PLATFORM TRANSPARENCY)
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _PriceBreakdownCard extends StatelessWidget {
+  final Task task;
+  final bool isDark;
+
+  const _PriceBreakdownCard({
+    required this.task,
+    required this.isDark,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final totalPrice = task.customerTotalPrice;
+    final payout = task.providerPayout;
+    final fee = task.platformFee ??
+        ((totalPrice != null && payout != null && totalPrice >= payout)
+            ? (totalPrice - payout)
+            : null);
+
+    if (totalPrice == null && payout == null) {
+      return const SizedBox.shrink();
+    }
+
+    return Padding(
+      padding: EdgeInsets.only(bottom: 12.h),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.account_balance_wallet_outlined,
+                size: 15.r,
+                color: AppColors.primary,
+              ),
+              SizedBox(width: 5.w),
+              Text(
+                'Price & Fee Breakdown',
+                style: AppTextStyles.h3.copyWith(
+                  fontSize: 12.5.sp,
+                  fontWeight: FontWeight.bold,
+                  color: isDark ? AppColors.textPrimary : Colors.black87,
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 8.h),
+
+          // Total Task Price
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Total Amount',
+                style: AppTextStyles.bodyMedium.copyWith(
+                  fontSize: 12.sp,
+                  color: isDark ? AppColors.textSecondary : Colors.grey[700],
+                ),
+              ),
+              Text(
+                totalPrice?.toNaira(2) ?? 'N/A',
+                style: AppTextStyles.bodyMedium.copyWith(
+                  fontSize: 12.5.sp,
+                  fontWeight: FontWeight.w600,
+                  color: isDark ? AppColors.textPrimary : Colors.black87,
+                ),
+              ),
+            ],
+          ),
+          if (fee != null && fee > 0) ...[
+            SizedBox(height: 5.h),
+
+            // Platform Fee
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Platform Service Fee',
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    fontSize: 12.sp,
+                    color: isDark ? AppColors.textMuted : Colors.grey[600],
+                  ),
+                ),
+                Text(
+                  '- ${fee.toNaira(2)}',
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    fontSize: 12.sp,
+                    fontWeight: FontWeight.w500,
+                    color: isDark ? AppColors.textMuted : Colors.grey[600],
+                  ),
+                ),
+              ],
+            ),
+          ],
+
+          SizedBox(height: 6.h),
+          Divider(
+            color: isDark
+                ? AppColors.border.withValues(alpha: 0.5)
+                : Colors.grey[200],
+            height: 1.h,
+          ),
+          SizedBox(height: 6.h),
+
+          // Your Net Payout
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Your Net Payout',
+                style: AppTextStyles.bodyMedium.copyWith(
+                  fontSize: 12.5.sp,
+                  fontWeight: FontWeight.bold,
+                  color: isDark ? AppColors.textPrimary : Colors.black87,
+                ),
+              ),
+              Text(
+                payout?.toNaira(2) ?? 'N/A',
+                style: AppTextStyles.h2.copyWith(
+                  fontSize: 14.5.sp,
+                  fontWeight: FontWeight.w800,
+                  color: const Color(0xFF10B981),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
