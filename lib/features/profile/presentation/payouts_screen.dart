@@ -275,7 +275,7 @@ class _PayoutTile extends StatelessWidget {
                   size: 20.r,
                 ),
               ),
-              SizedBox(width: 14.w),
+              SizedBox(width: 12.w),
 
               // Title and Date
               Expanded(
@@ -288,7 +288,7 @@ class _PayoutTile extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style: AppTextStyles.bodyMedium.copyWith(
                         fontWeight: FontWeight.w600,
-                        fontSize: 14.sp,
+                        fontSize: 13.5.sp,
                         color: isDark
                             ? AppColors.textPrimary
                             : const Color(0xFF0F172A),
@@ -297,29 +297,34 @@ class _PayoutTile extends StatelessWidget {
                     SizedBox(height: 4.h),
                     Row(
                       children: [
-                        Text(
-                          dateStr,
-                          style: AppTextStyles.bodySmall.copyWith(
-                            color: isDark
-                                ? AppColors.textMuted
-                                : AppColors.textSecondary,
-                            fontSize: 12.sp,
+                        Flexible(
+                          child: Text(
+                            dateStr,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: AppTextStyles.bodySmall.copyWith(
+                              color: isDark
+                                  ? AppColors.textMuted
+                                  : AppColors.textSecondary,
+                              fontSize: 11.5.sp,
+                            ),
                           ),
                         ),
-                        SizedBox(width: 8.w),
+                        SizedBox(width: 6.w),
                         _StatusBadge(status: payout.status),
                       ],
                     ),
                   ],
                 ),
               ),
+              SizedBox(width: 8.w),
 
               // Amount
               Text(
                 '+${amount.toNaira(2)}',
                 style: AppTextStyles.subtitle.copyWith(
                   fontWeight: FontWeight.bold,
-                  fontSize: 15.sp,
+                  fontSize: 14.sp,
                   color: AppColors.primary,
                 ),
               ),

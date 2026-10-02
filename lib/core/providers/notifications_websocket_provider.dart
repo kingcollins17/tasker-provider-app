@@ -52,30 +52,32 @@ final notificationsWebSocketProvider =
 final deviceTrayNotificationProvider = FutureProvider.autoDispose<void>((
   ref,
 ) async {
-  final event = await ref.watch(notificationEventsStream.future);
-  debugLog(event);
-  if (event.type != NotificationEventType.notification) return;
 
-  final raw = event.data;
-  if (raw is! Map<String, dynamic>) return;
+  // return;
+  // final event = await ref.watch(notificationEventsStream.future);
+  // debugLog(event);
+  // if (event.type != NotificationEventType.notification) return;
 
-  Map<String, dynamic> payload = raw;
+  // final raw = event.data;
+  // if (raw is! Map<String, dynamic>) return;
 
-  final title = payload['title'] as String?;
-  final body = payload['body'] as String?;
-  final id =
-      payload['notificationId'] ??
-      payload['id'] ??
-      DateTime.now().millisecondsSinceEpoch;
+  // Map<String, dynamic> payload = raw;
 
-  if (body != null && body.isNotEmpty) {
-    DeviceTray.instance.showNotification(
-      title: title ?? 'Taska',
-      body: body,
-      id: id.hashCode,
-    );
-    ref.invalidate(notificationsProvider);
-  }
+  // final title = payload['title'] as String?;
+  // final body = payload['body'] as String?;
+  // final id =
+  //     payload['notificationId'] ??
+  //     payload['id'] ??
+  //     DateTime.now().millisecondsSinceEpoch;
+
+  // if (body != null && body.isNotEmpty) {
+  //   DeviceTray.instance.showNotification(
+  //     title: title ?? 'Taska',
+  //     body: body,
+  //     id: id.hashCode,
+  //   );
+  //   ref.invalidate(notificationsProvider);
+  // }
 });
 
 /// Represents the type of notification received over the WebSocket.

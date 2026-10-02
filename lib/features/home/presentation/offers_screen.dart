@@ -75,7 +75,8 @@ class _OffersScreenState extends ConsumerState<OffersScreen> {
         backgroundColor: theme.scaffoldBackgroundColor,
         elevation: 0,
         scrolledUnderElevation: 0,
-        leading: context.canPop() ? const BackButton() : null,
+        leading: null,
+        automaticallyImplyLeading: false,
         centerTitle: false,
         title: Text(
           'Offers',

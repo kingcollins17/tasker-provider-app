@@ -230,42 +230,36 @@ class _EarningsCardState extends ConsumerState<EarningsCard>
           color: Colors.transparent,
           child: InkWell(
             onTap: () => SettleDebtSheet.show(context, debt),
-            borderRadius: BorderRadius.circular(16.r),
+            borderRadius: BorderRadius.circular(20.r),
             child: Container(
-              padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 3.h),
+              padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 5.h),
               decoration: BoxDecoration(
-                color: AppColors.error.withValues(alpha: 0.2),
-                borderRadius: BorderRadius.circular(16.r),
-                border: Border.all(
-                  color: AppColors.error.withValues(alpha: 0.35),
-                  width: 1,
-                ),
+                color: Colors.white.withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(20.r),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Icon(
                     Icons.account_balance_wallet_outlined,
-                    color: const Color(0xFFFF5252),
-                    size: 12.r,
+                    color: Colors.white,
+                    size: 15.r,
                   ),
-                  SizedBox(width: 3.w),
+                  SizedBox(width: 5.w),
                   Text(
                     'Debt: ${totalDebtOwed.toNaira(0)}',
-                    style: AppTextStyles.label.copyWith(
-                      color: const Color(0xFFFF5252),
-                      fontWeight: FontWeight.bold,
-                      fontSize: 10.5.sp,
+                    style: AppTextStyles.subtitle.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 12.5.sp,
                     ),
                   ),
-                  if (totalDebtOwed > 100) ...[
-                    SizedBox(width: 2.w),
-                    Icon(
-                      Icons.chevron_right_rounded,
-                      color: const Color(0xFFFF5252),
-                      size: 12.r,
-                    ),
-                  ],
+                  SizedBox(width: 3.w),
+                  Icon(
+                    Icons.keyboard_arrow_down_rounded,
+                    color: Colors.white.withValues(alpha: 0.9),
+                    size: 16.r,
+                  ),
                 ],
               ),
             ),

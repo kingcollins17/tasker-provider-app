@@ -3,26 +3,31 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shimmer/shimmer.dart';
+
 import 'package:tasker_app/core/models/models.dart';
 import 'package:tasker_app/core/providers/providers.dart';
-import 'package:tasker_app/core/providers/tasks_provider.dart';
+import 'package:tasker_app/core/providers/services_provider.dart';
 import 'package:tasker_app/core/router/navigator_keys.dart';
+import 'package:tasker_app/core/ui/designs/colors.dart';
 import 'package:tasker_app/core/ui/designs/decorations.dart';
 import 'package:tasker_app/core/ui/designs/text_styles.dart';
 import 'package:tasker_app/core/utils/extensions/flushbar_context_ext.dart';
 import 'package:tasker_app/core/utils/extensions/loading_context_ext.dart';
 import 'package:tasker_app/core/utils/extensions/num_ext.dart';
-import 'package:shimmer/shimmer.dart';
-import 'package:tasker_app/core/providers/services_provider.dart';
 import 'package:tasker_app/features/tasks/tasks_routes.dart' show TasksRoutes;
 
-/// A premium bottom sheet that presents an incoming dispatch ping for a task,
-/// allowing the provider to accept or decline within a 30-second window.
+/// A premium bottom sheet presenting an incoming dispatch ping for a task,
+/// allowing the provider to accept or decline the offer.
 class OfferPingBottomSheet extends ConsumerStatefulWidget {
   final String taskId;
-
   final DateTime? expiresAt;
-  const OfferPingBottomSheet({super.key, required this.taskId, this.expiresAt});
+
+  const OfferPingBottomSheet({
+    super.key,
+    required this.taskId,
+    this.expiresAt,
+  });
 
   /// Shows the offer-ping bottom sheet using the root navigator context.
   ///
@@ -108,6 +113,7 @@ class _OfferPingBottomSheetState extends ConsumerState<OfferPingBottomSheet>
             ref.invalidate(currentDispatchProvider);
             ref.invalidate(currentAssignmentProvider);
             ref.invalidate(userProvider);
+            ref.invalidate(taskDetailProvider(widget.taskId));
 
             context.hideLoading();
             if (mounted) {
@@ -125,7 +131,7 @@ class _OfferPingBottomSheetState extends ConsumerState<OfferPingBottomSheet>
             context.hideLoading();
             if (mounted) {
               setState(() => _isResponding = false);
-              // If already assigned, close  the sheet
+              // If already assigned, close the sheet
               final msg = err.toLowerCase();
               const kwds = ['already', 'assigned'];
               if (kwds.every((k) => msg.contains(k))) {
@@ -167,7 +173,7 @@ class _OfferPingBottomSheetState extends ConsumerState<OfferPingBottomSheet>
               _Header(
                 colorScheme: colorScheme,
                 isResponding: _isResponding,
-                onDecline: () => _respond('declined'),
+                onClose: () => Navigator.of(context).pop(null),
               ),
               _UrgencyBar(
                 colorScheme: colorScheme,
@@ -179,6 +185,7 @@ class _OfferPingBottomSheetState extends ConsumerState<OfferPingBottomSheet>
                   colorScheme: colorScheme,
                   isResponding: _isResponding,
                   onAccept: () => _respond('accepted'),
+                  onDecline: () => _respond('declined'),
                 ),
                 loading: () => _LoadingState(colorScheme: colorScheme),
                 error: (e, _) =>
@@ -218,12 +225,12 @@ class _DragHandle extends StatelessWidget {
 class _Header extends StatelessWidget {
   final ColorScheme colorScheme;
   final bool isResponding;
-  final VoidCallback onDecline;
+  final VoidCallback onClose;
 
   const _Header({
     required this.colorScheme,
     required this.isResponding,
-    required this.onDecline,
+    required this.onClose,
   });
 
   @override
@@ -238,10 +245,11 @@ class _Header extends StatelessWidget {
             style: AppTextStyles.h3.copyWith(
               color: colorScheme.onSurface,
               fontWeight: FontWeight.w600,
+              fontSize: 18.sp,
             ),
           ),
           IconButton(
-            onPressed: isResponding ? null : onDecline,
+            onPressed: isResponding ? null : onClose,
             icon: Icon(
               Icons.close_rounded,
               color: colorScheme.onSurfaceVariant,
@@ -275,7 +283,7 @@ class _UrgencyBar extends StatelessWidget {
             value: progress,
             backgroundColor: colorScheme.outlineVariant.withValues(alpha: 0.3),
             valueColor: AlwaysStoppedAnimation<Color>(
-              const Color(0xFF059669).withValues(alpha: 0.8),
+              AppColors.primary.withValues(alpha: 0.8),
             ),
             minHeight: 2.h,
           );
@@ -290,12 +298,14 @@ class _TaskDetails extends ConsumerWidget {
   final ColorScheme colorScheme;
   final bool isResponding;
   final VoidCallback onAccept;
+  final VoidCallback onDecline;
 
   const _TaskDetails({
     required this.task,
     required this.colorScheme,
     required this.isResponding,
     required this.onAccept,
+    required this.onDecline,
   });
 
   @override
@@ -307,7 +317,7 @@ class _TaskDetails extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(height: 16.h),
+          SizedBox(height: 12.h),
           Text(
             task.title ?? 'Untitled Task',
             style: AppTextStyles.subtitle.copyWith(
@@ -325,7 +335,7 @@ class _TaskDetails extends ConsumerWidget {
                     child: Text(
                       category.name ?? 'Unknown Category',
                       style: AppTextStyles.bodyMedium.copyWith(
-                        color: const Color(0xFF059669),
+                        color: AppColors.primary,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -345,7 +355,7 @@ class _TaskDetails extends ConsumerWidget {
                       ),
                     ),
                   ),
-                  error: (_, __) => const SizedBox.shrink(),
+                  error: (err, st) => const SizedBox.shrink(),
                 ),
           SizedBox(height: 12.h),
           Text(
@@ -357,7 +367,7 @@ class _TaskDetails extends ConsumerWidget {
             maxLines: 3,
             overflow: TextOverflow.ellipsis,
           ),
-          SizedBox(height: 24.h),
+          SizedBox(height: 20.h),
           _DetailListItem(
             icon: Icons.location_on_outlined,
             text: _getLocationString(task.locations),
@@ -365,7 +375,7 @@ class _TaskDetails extends ConsumerWidget {
             isChecked: false,
           ),
           if (distanceStr != null) ...[
-            SizedBox(height: 16.h),
+            SizedBox(height: 12.h),
             _DetailListItem(
               icon: Icons.directions_walk_rounded,
               text: distanceStr,
@@ -373,21 +383,113 @@ class _TaskDetails extends ConsumerWidget {
               isChecked: false,
             ),
           ],
-          SizedBox(height: 16.h),
+          SizedBox(height: 12.h),
           _DetailListItem(
             icon: Icons.access_time_rounded,
             text: _formatSchedule(task.scheduledStartAt),
             colorScheme: colorScheme,
             isChecked: false,
           ),
-          SizedBox(height: 32.h),
+          SizedBox(height: 20.h),
+
+          // Payout & Renegotiation Info Banner
+          Container(
+            padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 12.h),
+            decoration: BoxDecoration(
+              color: colorScheme.surfaceContainerHigh.withValues(alpha: 0.6),
+              borderRadius: AppDecorations.radiusLg,
+              border: Border.all(
+                color: colorScheme.outlineVariant.withValues(alpha: 0.3),
+                width: 1.r,
+              ),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: EdgeInsets.all(6.r),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.12),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.info_outline_rounded,
+                    size: 16.r,
+                    color: AppColors.primary,
+                  ),
+                ),
+                SizedBox(width: 10.w),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Estimated Payout',
+                            style: AppTextStyles.label.copyWith(
+                              fontSize: 11.sp,
+                              color: AppColors.textMuted,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          Text(
+                            _formatPayout(task.providerPayout),
+                            style: AppTextStyles.subtitle.copyWith(
+                              fontSize: 13.5.sp,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.primary,
+                            ),
+                          ),
+                        ],
+                      ),
+                      SizedBox(height: 4.h),
+                      Text(
+                        'Amount shown is an initial estimate and is subject to renegotiation with the customer once assigned.',
+                        style: AppTextStyles.bodySmall.copyWith(
+                          fontSize: 11.5.sp,
+                          color: colorScheme.onSurfaceVariant,
+                          height: 1.35,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          SizedBox(height: 20.h),
+
+          // Accept Offer Button (Primary Call to Action)
           _AcceptButton(
             task: task,
             colorScheme: colorScheme,
             isResponding: isResponding,
             onAccept: onAccept,
           ),
-          SizedBox(height: 24.h),
+          SizedBox(height: 8.h),
+
+          // Decline Button (Unemphasized text button)
+          Center(
+            child: TextButton(
+              onPressed: isResponding ? null : onDecline,
+              style: TextButton.styleFrom(
+                padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
+                minimumSize: Size.zero,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+              child: Text(
+                'Decline Offer',
+                style: AppTextStyles.label.copyWith(
+                  color: colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+                  fontWeight: FontWeight.w500,
+                  fontSize: 12.5.sp,
+                ),
+              ),
+            ),
+          ),
+          SizedBox(height: 16.h),
         ],
       ),
     );
@@ -415,7 +517,7 @@ class _DetailListItem extends StatelessWidget {
         Icon(
           icon,
           color: isChecked
-              ? const Color(0xFF059669)
+              ? AppColors.primary
               : colorScheme.onSurfaceVariant,
           size: 20.r,
         ),
@@ -451,54 +553,81 @@ class _AcceptButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
+    return Container(
       width: double.infinity,
+      decoration: BoxDecoration(
+        color: AppColors.primary,
+        borderRadius: BorderRadius.circular(16.r),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withValues(alpha: 0.35),
+            blurRadius: 12.r,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
           onTap: isResponding ? null : onAccept,
           borderRadius: BorderRadius.circular(16.r),
-          child: Ink(
-            decoration: BoxDecoration(
-              color: const Color(0xFF059669),
-              borderRadius: BorderRadius.circular(16.r),
-            ),
-            child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 16.h),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Row(
-                    children: [
-                      if (isResponding) ...[
-                        SizedBox(
-                          width: 18.r,
-                          height: 18.r,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2.r,
-                            color: colorScheme.onPrimary,
-                          ),
-                        ),
-                        SizedBox(width: 10.w),
-                      ],
-                      Text(
-                        'Accept Job',
-                        style: AppTextStyles.buttonLarge.copyWith(
-                          color: colorScheme.onPrimary,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
+          child: Padding(
+            padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 16.h),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                if (isResponding) ...[
+                  SizedBox(
+                    width: 20.r,
+                    height: 20.r,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2.5.r,
+                      color: Colors.white,
+                    ),
                   ),
+                  SizedBox(width: 10.w),
+                  Text(
+                    'Accepting Offer...',
+                    style: AppTextStyles.buttonLarge.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 15.sp,
+                    ),
+                  ),
+                ] else ...[
+                  Icon(
+                    Icons.check_circle_rounded,
+                    color: Colors.white,
+                    size: 20.r,
+                  ),
+                  SizedBox(width: 8.w),
+                  Text(
+                    'Accept Offer',
+                    style: AppTextStyles.buttonLarge.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 15.sp,
+                    ),
+                  ),
+                  SizedBox(width: 8.w),
+                  Text(
+                    '•',
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.6),
+                      fontSize: 14.sp,
+                    ),
+                  ),
+                  SizedBox(width: 8.w),
                   Text(
                     _formatPayout(task.providerPayout),
                     style: AppTextStyles.buttonLarge.copyWith(
-                      color: colorScheme.onPrimary,
-                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 15.sp,
                     ),
                   ),
                 ],
-              ),
+              ],
             ),
           ),
         ),
@@ -675,10 +804,10 @@ String? _formatDistance(List<TaskLocation>? locations) {
 }
 
 String _formatSchedule(DateTime? scheduledAt) {
-  if (scheduledAt == null) return 'Flexible Schedule';
+  if (scheduledAt == null) return 'As Soon As Possible';
   final now = DateTime.now();
   final diff = scheduledAt.difference(now);
-  if (diff.isNegative) return 'ASAP';
+  if (diff.isNegative) return 'As Soon As Possible';
   if (diff.inHours < 1) return 'Starts in ${diff.inMinutes}m';
   if (diff.inHours < 24) return 'Starts in ${diff.inHours}h';
   return 'Starts in ${diff.inDays}d';

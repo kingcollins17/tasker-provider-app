@@ -1,6 +1,7 @@
 import 'dart:ui';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tasker_app/core/utils/retry_util.dart';
+import 'package:tasker_app/features/auth/providers/auth_provider.dart';
 
 import '../api/users_client.dart';
 import '../models/models.dart';
@@ -12,6 +13,7 @@ import '../utils/extensions/error_ext.dart';
 class GuarantorNotifier extends AsyncNotifier<Guarantor?> {
   @override
   Future<Guarantor?> build() async {
+    ref.watch(isAuthenticatedProvider);
     return _fetchGuarantor();
   }
 

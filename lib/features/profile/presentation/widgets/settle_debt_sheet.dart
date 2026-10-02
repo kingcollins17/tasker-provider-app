@@ -8,7 +8,7 @@ import '../../../../core/ui/designs/designs.dart';
 import '../../../../core/utils/extensions/flushbar_context_ext.dart';
 import '../../../../core/utils/extensions/num_ext.dart';
 
-/// A bottom sheet for users to view and settle their outstanding commission debt.
+/// A compact bottom sheet for users to view and settle their outstanding commission debt.
 class SettleDebtSheet extends ConsumerWidget {
   final Debt debt;
 
@@ -17,13 +17,14 @@ class SettleDebtSheet extends ConsumerWidget {
     required this.debt,
   });
 
-  /// Shows the [SettleDebtSheet] modal bottom sheet.
+  /// Shows the [SettleDebtSheet] modal bottom sheet using root navigator.
   static Future<void> show([BuildContext? context, Debt? debt]) async {
     final ctx = context ?? NavigatorKeys.rootNavigatorKey.currentContext;
     if (ctx == null || debt == null) return;
 
     await showModalBottomSheet<void>(
       context: ctx,
+      useRootNavigator: true,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) => SettleDebtSheet(debt: debt),
@@ -37,7 +38,23 @@ class SettleDebtSheet extends ConsumerWidget {
     final isDark = theme.brightness == Brightness.dark;
 
     final totalDebt = debt.totalDebtOwed ?? 0.0;
-    final pendingCount = debt.pendingDebtsCount ?? 0;
+    final maxThreshold = ref.watch(maxDebtThresholdProvider);
+    final isOverThreshold = totalDebt >= maxThreshold;
+    final progress = (totalDebt / maxThreshold).clamp(0.0, 1.0);
+    final formattedThreshold = maxThreshold.toNaira(0);
+
+    // Dynamic UI visual distinctions for debt health status (without explicit text labels)
+    final Color statusColor = totalDebt < (maxThreshold * 0.5)
+        ? AppColors.success
+        : totalDebt <= (maxThreshold * 0.9)
+            ? AppColors.warning
+            : AppColors.error;
+
+    final IconData statusIcon = totalDebt < (maxThreshold * 0.5)
+        ? Icons.shield_outlined
+        : isOverThreshold
+            ? Icons.warning_amber_rounded
+            : Icons.info_outline_rounded;
 
     return Container(
       decoration: BoxDecoration(
@@ -47,7 +64,7 @@ class SettleDebtSheet extends ConsumerWidget {
       child: SafeArea(
         top: false,
         child: Padding(
-          padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 16.h),
+          padding: EdgeInsets.fromLTRB(20.w, 10.h, 20.w, 16.h),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -55,7 +72,7 @@ class SettleDebtSheet extends ConsumerWidget {
               // Drag Handle
               Center(
                 child: Container(
-                  width: 40.w,
+                  width: 36.w,
                   height: 4.h,
                   decoration: BoxDecoration(
                     color: colorScheme.outlineVariant.withValues(alpha: 0.5),
@@ -63,181 +80,196 @@ class SettleDebtSheet extends ConsumerWidget {
                   ),
                 ),
               ),
-              SizedBox(height: 16.h),
+              SizedBox(height: 12.h),
 
-              // Header
+              // Header Row
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Row(
-                    children: [
-                      Container(
-                        padding: EdgeInsets.all(8.r),
-                        decoration: BoxDecoration(
-                          color: AppColors.error.withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(10.r),
-                        ),
-                        child: Icon(
-                          Icons.account_balance_wallet_outlined,
-                          color: AppColors.error,
-                          size: 20.r,
-                        ),
+                  Container(
+                    padding: EdgeInsets.all(7.r),
+                    decoration: BoxDecoration(
+                      color: statusColor.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(8.r),
+                    ),
+                    child: Icon(
+                      Icons.account_balance_wallet_rounded,
+                      color: statusColor,
+                      size: 18.r,
+                    ),
+                  ),
+                  SizedBox(width: 10.w),
+                  Expanded(
+                    child: Text(
+                      'Settle Debt',
+                      style: AppTextStyles.h3.copyWith(
+                        color: colorScheme.onSurface,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16.sp,
                       ),
-                      SizedBox(width: 10.w),
-                      Text(
-                        'Settle Commission Debt',
-                        style: AppTextStyles.h3.copyWith(
-                          color: colorScheme.onSurface,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 18.sp,
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
                   IconButton(
-                    onPressed: () => Navigator.of(context).pop(),
+                    onPressed: () => Navigator.of(context, rootNavigator: true).pop(),
                     icon: Icon(
                       Icons.close_rounded,
                       color: colorScheme.onSurfaceVariant,
-                      size: 22.r,
+                      size: 20.r,
                     ),
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints(),
-                    splashRadius: 20.r,
                   ),
                 ],
               ),
-              SizedBox(height: 20.h),
+              SizedBox(height: 14.h),
 
-              // Summary Banner Card
-              Container(
-                padding: EdgeInsets.all(16.r),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      AppColors.primary,
-                      AppColors.primaryDark,
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: AppDecorations.radiusLg,
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppColors.primary.withValues(alpha: 0.3),
-                      blurRadius: 16.r,
-                      offset: const Offset(0, 8),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'TOTAL DEBT OWED',
-                      style: AppTextStyles.label.copyWith(
-                        color: Colors.white.withValues(alpha: 0.8),
-                        letterSpacing: 1.0,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    SizedBox(height: 6.h),
-                    Text(
-                      totalDebt.toNaira(2),
-                      style: AppTextStyles.h1.copyWith(
-                        color: Colors.white,
-                        fontSize: 28.sp,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    SizedBox(height: 10.h),
-                    Container(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: 10.w,
-                        vertical: 4.h,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(12.r),
-                      ),
-                      child: Text(
-                        '$pendingCount pending debt transaction${pendingCount == 1 ? '' : 's'}',
-                        style: AppTextStyles.bodySmall.copyWith(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              SizedBox(height: 16.h),
-
-              // Information Notice
+              // Debt Health & Balance Card
               Container(
                 padding: EdgeInsets.all(14.r),
                 decoration: BoxDecoration(
                   color: isDark
-                      ? colorScheme.surfaceContainerHighest.withValues(alpha: 0.3)
-                      : AppColors.warning.withValues(alpha: 0.08),
+                      ? colorScheme.surfaceContainerHighest.withValues(alpha: 0.4)
+                      : const Color(0xFFF8FAFC),
                   borderRadius: AppDecorations.radiusMd,
                   border: Border.all(
-                    color: AppColors.warning.withValues(alpha: 0.3),
+                    color: isOverThreshold
+                        ? AppColors.error.withValues(alpha: 0.5)
+                        : isDark
+                            ? colorScheme.outlineVariant.withValues(alpha: 0.2)
+                            : AppColors.border,
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.baseline,
+                      textBaseline: TextBaseline.alphabetic,
+                      children: [
+                        Text(
+                          'Total Balance Owed',
+                          style: AppTextStyles.bodySmall.copyWith(
+                            color: AppColors.textMuted,
+                            fontSize: 12.sp,
+                          ),
+                        ),
+                        Text(
+                          totalDebt.toNaira(2),
+                          style: AppTextStyles.h2.copyWith(
+                            color: isOverThreshold
+                                ? AppColors.error
+                                : colorScheme.onSurface,
+                            fontSize: 22.sp,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 12.h),
+
+                    // Visual Progress Bar towards threshold limit
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(4.r),
+                      child: LinearProgressIndicator(
+                        value: progress,
+                        minHeight: 6.h,
+                        backgroundColor: isDark
+                            ? Colors.white.withValues(alpha: 0.1)
+                            : Colors.black.withValues(alpha: 0.08),
+                        valueColor: AlwaysStoppedAnimation<Color>(statusColor),
+                      ),
+                    ),
+                    SizedBox(height: 6.h),
+
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          '₦0',
+                          style: AppTextStyles.bodySmall.copyWith(
+                            color: AppColors.textMuted,
+                            fontSize: 10.5.sp,
+                          ),
+                        ),
+                        Text(
+                          'Threshold: $formattedThreshold',
+                          style: AppTextStyles.bodySmall.copyWith(
+                            color: isOverThreshold ? AppColors.error : AppColors.textMuted,
+                            fontWeight: isOverThreshold ? FontWeight.bold : FontWeight.w500,
+                            fontSize: 10.5.sp,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(height: 12.h),
+
+              // Threshold Rule Notice
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
+                decoration: BoxDecoration(
+                  color: statusColor.withValues(alpha: 0.08),
+                  borderRadius: AppDecorations.radiusSm,
+                  border: Border.all(
+                    color: statusColor.withValues(alpha: 0.25),
                   ),
                 ),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Icon(
-                      Icons.info_outline_rounded,
-                      color: AppColors.warning,
-                      size: 20.r,
+                      statusIcon,
+                      color: statusColor,
+                      size: 16.r,
                     ),
-                    SizedBox(width: 10.w),
+                    SizedBox(width: 8.w),
                     Expanded(
                       child: Text(
-                        'Outstanding commission debt is accumulated from cash jobs or platform service fees. Settling your balance keeps your account in active status.',
-                        style: AppTextStyles.bodyMedium.copyWith(
-                          color: colorScheme.onSurface,
-                          fontSize: 13.sp,
-                          height: 1.4,
+                        isOverThreshold
+                            ? 'Your debt has reached the $formattedThreshold threshold. Settle immediately to restore offer dispatch and avoid account deactivation.'
+                            : 'Reaching the $formattedThreshold debt threshold will pause incoming offers until settled.',
+                        style: AppTextStyles.bodySmall.copyWith(
+                          color: isDark ? AppColors.textSecondary : colorScheme.onSurface,
+                          fontSize: 11.5.sp,
+                          height: 1.35,
                         ),
                       ),
                     ),
                   ],
                 ),
               ),
-              SizedBox(height: 24.h),
+              SizedBox(height: 16.h),
 
-              // Settle Debt Action Button
+              // Action Button
               SizedBox(
-                height: 50.h,
+                height: 46.h,
                 child: ElevatedButton(
                   onPressed: () {
-                    Navigator.of(context).pop();
+                    Navigator.of(context, rootNavigator: true).pop();
                     context.showInfo(
                       'Debt settlement request submitted. Invalidating debt summary...',
                     );
                     ref.invalidate(debtSummaryProvider);
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
+                    backgroundColor: isOverThreshold ? AppColors.error : AppColors.primary,
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
                       borderRadius: AppDecorations.radiusLg,
                     ),
-                    elevation: 2,
+                    elevation: 0,
                   ),
                   child: Text(
                     'Settle Debt (${totalDebt.toNaira(2)})',
                     style: AppTextStyles.buttonMedium.copyWith(
-                      fontSize: 15.sp,
+                      fontSize: 14.5.sp,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                 ),
               ),
-              SizedBox(height: 8.h),
             ],
           ),
         ),
@@ -245,3 +277,5 @@ class SettleDebtSheet extends ConsumerWidget {
     );
   }
 }
+
+

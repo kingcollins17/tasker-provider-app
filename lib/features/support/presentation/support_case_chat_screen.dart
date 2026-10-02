@@ -202,15 +202,7 @@ class _SupportCaseChatScreenState extends ConsumerState<SupportCaseChatScreen> {
             ),
           ],
         ),
-        actions: [
-          IconButton(
-            icon: Icon(Icons.refresh_rounded, color: AppColors.primary, size: 20.r),
-            onPressed: () {
-              ref.invalidate(caseMessagesProvider(widget.caseId));
-            },
-          ),
-          SizedBox(width: 4.w),
-        ],
+      
       ),
       body: SafeArea(
         child: Column(
@@ -279,8 +271,13 @@ class _SupportCaseChatScreenState extends ConsumerState<SupportCaseChatScreen> {
   }
 
   Widget _buildChatBubble(SupportMessage msg, bool isDark) {
-    final senderType = (msg.senderType ?? 'USER').toUpperCase().trim();
-    final isUser = senderType == 'USER' || senderType == 'CUSTOMER';
+    final theme = Theme.of(context);
+    final currentUser = ref.watch(userProvider).value;
+    final senderType = (msg.senderType ?? '').toUpperCase().trim();
+    final isUser = (currentUser?.id != null && msg.senderId == currentUser!.id) ||
+        senderType == 'PROVIDER' ||
+        senderType == 'USER' ||
+        senderType == 'CUSTOMER';
 
     final formattedTime = msg.createdAt != null
         ? DateFormat.jm().format(msg.createdAt!)
@@ -289,8 +286,8 @@ class _SupportCaseChatScreenState extends ConsumerState<SupportCaseChatScreen> {
     final bubbleBg = isUser
         ? AppColors.primary
         : isDark
-            ? AppColors.surface
-            : Colors.grey[200]!;
+            ? theme.colorScheme.surface
+            : const Color(0xFFF1F5F9);
 
     final textColor = isUser
         ? Colors.white
@@ -298,65 +295,190 @@ class _SupportCaseChatScreenState extends ConsumerState<SupportCaseChatScreen> {
             ? AppColors.textPrimary
             : const Color(0xFF0F172A);
 
-    return Align(
-      alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
-      child: Container(
-        constraints: BoxConstraints(
-          maxWidth: MediaQuery.of(context).size.width * 0.78,
-        ),
-        padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
-        decoration: BoxDecoration(
-          color: bubbleBg,
-          borderRadius: BorderRadius.only(
-            topLeft: Radius.circular(14.r),
-            topRight: Radius.circular(14.r),
-            bottomLeft: Radius.circular(isUser ? 14.r : 2.r),
-            bottomRight: Radius.circular(isUser ? 2.r : 14.r),
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
-              blurRadius: 4.r,
-              offset: const Offset(0, 2),
-            ),
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: 4.h),
+      child: Row(
+        mainAxisAlignment:
+            isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          if (!isUser) ...[
+            _buildAgentAvatar(isDark),
+            SizedBox(width: 8.w),
           ],
-        ),
-        child: Column(
-          crossAxisAlignment:
-              isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-          children: [
-            if (!isUser) ...[
-              Text(
-                'Support Agent',
-                style: AppTextStyles.label.copyWith(
-                  color: AppColors.primary,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 10.sp,
+          Flexible(
+            child: Container(
+              constraints: BoxConstraints(
+                maxWidth: MediaQuery.of(context).size.width * 0.72,
+              ),
+              padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 10.h),
+              decoration: BoxDecoration(
+                color: bubbleBg,
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(16.r),
+                  topRight: Radius.circular(16.r),
+                  bottomLeft: Radius.circular(isUser ? 16.r : 3.r),
+                  bottomRight: Radius.circular(isUser ? 3.r : 16.r),
+                ),
+                border: !isUser
+                    ? Border.all(
+                        color: isDark
+                            ? AppColors.border.withValues(alpha: 0.5)
+                            : const Color(0xFFE2E8F0),
+                        width: 1.r,
+                      )
+                    : null,
+                boxShadow: [
+                  BoxShadow(
+                    color: isUser
+                        ? AppColors.primary.withValues(alpha: 0.15)
+                        : Colors.black.withValues(alpha: 0.03),
+                    blurRadius: 6.r,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment:
+                    isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+                children: [
+                  if (!isUser) ...[
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          'Support Agent',
+                          style: AppTextStyles.label.copyWith(
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 10.sp,
+                          ),
+                        ),
+                        SizedBox(width: 4.w),
+                        Icon(
+                          Icons.verified_rounded,
+                          color: AppColors.primary,
+                          size: 11.r,
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 3.h),
+                  ],
+                  Text(
+                    msg.body ?? '',
+                    style: AppTextStyles.bodyMedium.copyWith(
+                      color: textColor,
+                      fontSize: 12.5.sp,
+                      height: 1.35,
+                    ),
+                  ),
+                  SizedBox(height: 4.h),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        formattedTime,
+                        style: AppTextStyles.bodySmall.copyWith(
+                          color: isUser
+                              ? Colors.white.withValues(alpha: 0.75)
+                              : isDark
+                                  ? AppColors.textMuted
+                                  : const Color(0xFF64748B),
+                          fontSize: 9.5.sp,
+                        ),
+                      ),
+                      if (isUser) ...[
+                        SizedBox(width: 3.w),
+                        Icon(
+                          Icons.done_all_rounded,
+                          color: Colors.white.withValues(alpha: 0.85),
+                          size: 13.r,
+                        ),
+                      ],
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+          if (isUser) ...[
+            SizedBox(width: 8.w),
+            _buildUserAvatar(currentUser, isDark),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildUserAvatar(User? currentUser, bool isDark) {
+    final selfieUrl = currentUser?.providerProfile?.selfieUrl;
+    final firstName = currentUser?.providerProfile?.firstName ?? '';
+    final lastName = currentUser?.providerProfile?.lastName ?? '';
+    final initial = (firstName.isNotEmpty
+            ? firstName[0]
+            : (lastName.isNotEmpty ? lastName[0] : 'P'))
+        .toUpperCase();
+
+    return Container(
+      width: 28.r,
+      height: 28.r,
+      decoration: BoxDecoration(
+        color: AppColors.primary,
+        shape: BoxShape.circle,
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withValues(alpha: 0.25),
+            blurRadius: 4.r,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: selfieUrl != null && selfieUrl.isNotEmpty
+          ? Image.network(
+              selfieUrl,
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) => Center(
+                child: Text(
+                  initial,
+                  style: AppTextStyles.label.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 11.sp,
+                  ),
                 ),
               ),
-              SizedBox(height: 2.h),
-            ],
-            Text(
-              msg.body ?? '',
-              style: AppTextStyles.bodyMedium.copyWith(
-                color: textColor,
-                fontSize: 12.5.sp,
-                height: 1.3,
+            )
+          : Center(
+              child: Text(
+                initial,
+                style: AppTextStyles.label.copyWith(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 11.sp,
+                ),
               ),
             ),
-            SizedBox(height: 3.h),
-            Text(
-              formattedTime,
-              style: AppTextStyles.bodySmall.copyWith(
-                color: isUser
-                    ? Colors.white70
-                    : isDark
-                        ? AppColors.textMuted
-                        : Colors.grey[600]!,
-                fontSize: 9.sp,
-              ),
-            ),
-          ],
+    );
+  }
+
+  Widget _buildAgentAvatar(bool isDark) {
+    return Container(
+      width: 28.r,
+      height: 28.r,
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.surface : const Color(0xFFE2E8F0),
+        shape: BoxShape.circle,
+        border: Border.all(
+          color: AppColors.primary.withValues(alpha: 0.3),
+          width: 1.r,
+        ),
+      ),
+      child: Center(
+        child: Icon(
+          Icons.support_agent_rounded,
+          color: AppColors.primary,
+          size: 16.r,
         ),
       ),
     );

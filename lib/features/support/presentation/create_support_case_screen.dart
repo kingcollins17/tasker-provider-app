@@ -471,8 +471,8 @@ class _CreateSupportCaseScreenState
           ),
           SizedBox(height: 10.h),
           PrimaryButton(
-            text: 'Continue to Details',
-            icon: Icons.arrow_forward_rounded,
+            text: 'Continue',
+           
             onPressed: () => _goToStep(1),
           ),
           SizedBox(height: 12.h),
@@ -614,8 +614,7 @@ class _CreateSupportCaseScreenState
 
             // Submit Button docked at bottom
             PrimaryButton(
-              text: 'Submit Support Ticket',
-              icon: Icons.send_rounded,
+              text: 'Request Support',
               onPressed: _submitCase,
             ),
             SizedBox(height: 12.h),

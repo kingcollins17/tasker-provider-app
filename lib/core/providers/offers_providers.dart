@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:tasker_app/features/auth/providers/auth_provider.dart';
 
 import '../api/tasks_client.dart';
 import '../models/models.dart';
@@ -18,6 +19,7 @@ class OffersNotifier extends AsyncNotifier<List<Offer>> {
 
   @override
   Future<List<Offer>> build() async {
+    ref.watch(isAuthenticatedProvider);
     _page = 1;
     _total = 0;
     _isLoadingMore = false;

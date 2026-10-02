@@ -1,6 +1,7 @@
 import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:tasker_app/features/auth/providers/auth_provider.dart';
 import '../../app_startup_binding.dart';
 import '../api/api.dart';
 import '../models/models.dart';
@@ -24,6 +25,7 @@ class PendingProviderReviewsNotifier
 
   @override
   Future<List<PendingProviderReviewItem>> build() async {
+    ref.watch(isAuthenticatedProvider);
     _page = 1;
     _hasMore = true;
     return _fetchPage(1);

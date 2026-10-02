@@ -83,88 +83,92 @@ class _SelectBankPageState extends ConsumerState<SelectBankPage> {
                     vertical: 8.h,
                   ),
                   itemCount: filteredBanks.length,
-                  separatorBuilder: (context, index) => SizedBox(height: 12.h),
+                  separatorBuilder: (context, index) => Divider(
+                    height: 1.h,
+                    thickness: 1.h,
+                    color: isDark
+                        ? AppColors.border.withValues(alpha: 0.5)
+                        : const Color(0xFFF1F5F9),
+                  ),
                   itemBuilder: (context, index) {
                     final bank = filteredBanks[index];
-                    final isSelected = _selectedBank?.bankCode == bank.bankCode;
+                    final isSelected =
+                        _selectedBank?.bankCode == bank.bankCode;
 
-                    return GestureDetector(
+                    return InkWell(
                       onTap: () {
                         setState(() {
                           _selectedBank = bank;
                         });
                       },
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.surface,
-                          borderRadius: BorderRadius.circular(16.r),
-                          border: Border.all(
-                            color: isSelected
-                                ? (isDark
-                                      ? AppColors.accent
-                                      : AppColors.primary)
-                                : (isDark
-                                      ? AppColors.border
-                                      : Colors.grey.shade200),
-                            width: isSelected ? 2.r : 1.r,
-                          ),
+                      borderRadius: BorderRadius.circular(10.r),
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 4.w,
+                          vertical: 12.h,
                         ),
-                        padding: EdgeInsets.all(16.r),
                         child: Row(
                           children: [
-                            if (bank.logoUrl != null &&
-                                bank.logoUrl!.isNotEmpty)
-                              Container(
-                                width: 40.r,
-                                height: 40.r,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: isDark
-                                      ? Theme.of(context).scaffoldBackgroundColor
-                                      : Colors.grey.shade100,
-                                ),
-                                clipBehavior: Clip.antiAlias,
-                                child: Image.network(
-                                  bank.logoUrl!,
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (context, error, stackTrace) {
-                                    return Icon(
-                                      Icons.account_balance,
+                            Container(
+                              width: 40.r,
+                              height: 40.r,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: isDark
+                                    ? AppColors.surface
+                                    : const Color(0xFFF8FAFC),
+                              ),
+                              clipBehavior: Clip.antiAlias,
+                              child: bank.logoUrl != null &&
+                                      bank.logoUrl!.isNotEmpty
+                                  ? Image.network(
+                                      bank.logoUrl!,
+                                      fit: BoxFit.cover,
+                                      errorBuilder:
+                                          (context, error, stackTrace) {
+                                        return Icon(
+                                          Icons.account_balance_rounded,
+                                          size: 20.r,
+                                          color: isDark
+                                              ? AppColors.textMuted
+                                              : const Color(0xFF94A3B8),
+                                        );
+                                      },
+                                    )
+                                  : Icon(
+                                      Icons.account_balance_rounded,
+                                      size: 20.r,
                                       color: isDark
                                           ? AppColors.textMuted
-                                          : Colors.grey.shade400,
-                                    );
-                                  },
-                                ),
-                              )
-                            else
-                              Container(
-                                width: 40.r,
-                                height: 40.r,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: isDark
-                                      ? Theme.of(context).scaffoldBackgroundColor
-                                      : Colors.grey.shade100,
-                                ),
-                                child: Icon(
-                                  Icons.account_balance,
-                                  color: isDark
-                                      ? AppColors.textMuted
-                                      : Colors.grey.shade400,
-                                ),
-                              ),
-                            SizedBox(width: 16.w),
+                                          : const Color(0xFF94A3B8),
+                                    ),
+                            ),
+                            SizedBox(width: 14.w),
                             Expanded(
                               child: Text(
                                 bank.name ?? 'Unknown Bank',
-                                style: AppTextStyles.bodyLarge.copyWith(
+                                style: AppTextStyles.bodyMedium.copyWith(
                                   fontWeight: isSelected
                                       ? FontWeight.w600
-                                      : FontWeight.w500,
+                                      : FontWeight.w400,
+                                  color: isSelected
+                                      ? (isDark
+                                          ? AppColors.accent
+                                          : AppColors.primary)
+                                      : (isDark
+                                          ? AppColors.textPrimary
+                                          : const Color(0xFF0F172A)),
                                 ),
                               ),
                             ),
+                            if (isSelected)
+                              Icon(
+                                Icons.check_circle_rounded,
+                                color: isDark
+                                    ? AppColors.accent
+                                    : AppColors.primary,
+                                size: 20.r,
+                              ),
                           ],
                         ),
                       ),
@@ -175,21 +179,26 @@ class _SelectBankPageState extends ConsumerState<SelectBankPage> {
               loading: () => ListView.separated(
                 padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
                 itemCount: 8,
-                separatorBuilder: (context, index) => SizedBox(height: 12.h),
+                separatorBuilder: (context, index) => Divider(
+                  height: 1.h,
+                  thickness: 1.h,
+                  color: isDark
+                      ? AppColors.border.withValues(alpha: 0.5)
+                      : const Color(0xFFF1F5F9),
+                ),
                 itemBuilder: (context, index) {
-                  return Container(
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.surface,
-                      borderRadius: BorderRadius.circular(16.r),
-                      border: Border.all(
-                        color: isDark ? AppColors.border : Colors.grey.shade200,
-                        width: 1.r,
-                      ),
+                  return Padding(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: 4.w,
+                      vertical: 12.h,
                     ),
-                    padding: EdgeInsets.all(16.r),
                     child: Shimmer.fromColors(
-                      baseColor: isDark ? AppColors.border : Colors.grey.shade300,
-                      highlightColor: Theme.of(context).colorScheme.surface,
+                      baseColor: isDark
+                          ? AppColors.border
+                          : Colors.grey.shade300,
+                      highlightColor: isDark
+                          ? AppColors.surface
+                          : Colors.grey.shade100,
                       child: Row(
                         children: [
                           Container(
@@ -200,10 +209,10 @@ class _SelectBankPageState extends ConsumerState<SelectBankPage> {
                               color: Colors.white,
                             ),
                           ),
-                          SizedBox(width: 16.w),
+                          SizedBox(width: 14.w),
                           Container(
                             height: 16.h,
-                            width: 150.w,
+                            width: 160.w,
                             decoration: BoxDecoration(
                               color: Colors.white,
                               borderRadius: BorderRadius.circular(4.r),

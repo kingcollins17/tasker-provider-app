@@ -320,12 +320,14 @@ class _TaskDetailBody extends ConsumerWidget {
 
                     // ─── CUSTOMER CARD ───
                     if (task.customer != null) ...[
+                      _SectionDivider(isDark: isDark),
                       _CustomerCard(
                         customer: task.customer,
                         isDark: isDark,
                       ),
-                      SizedBox(height: 14.h),
                     ],
+
+                    _SectionDivider(isDark: isDark),
 
                     // ─── PRICE & FEE BREAKDOWN CARD ───
                     _PriceBreakdownCard(
@@ -336,6 +338,7 @@ class _TaskDetailBody extends ConsumerWidget {
                     // ─── PRICE ADJUSTMENTS ───
                     if (priceAdjustmentsAsync.value != null &&
                         priceAdjustmentsAsync.value!.isNotEmpty) ...[
+                      SizedBox(height: 8.h),
                       _PriceAdjustmentsSection(
                         adjustments: priceAdjustmentsAsync.value!,
                         isDark: isDark,
@@ -344,10 +347,11 @@ class _TaskDetailBody extends ConsumerWidget {
 
                     // ─── ATTACHMENTS (NON-IMAGE FILES) ───
                     if (otherAttachments.isNotEmpty) ...[
+                      _SectionDivider(isDark: isDark),
                       Text(
                         'Attachments',
                         style: AppTextStyles.h3.copyWith(
-                          fontSize: 14.sp,
+                          fontSize: 13.5.sp,
                           fontWeight: FontWeight.bold,
                           color:
                               isDark ? AppColors.textPrimary : Colors.black87,
@@ -355,23 +359,20 @@ class _TaskDetailBody extends ConsumerWidget {
                       ),
                       SizedBox(height: 6.h),
                       ...otherAttachments.map(
-                        (att) => Padding(
-                          padding: EdgeInsets.only(bottom: 8.h),
-                          child: _WorkFileCard(
-                            attachment: att,
-                            isDark: isDark,
-                          ),
+                        (att) => _WorkFileCard(
+                          attachment: att,
+                          isDark: isDark,
                         ),
                       ),
-                      SizedBox(height: 14.h),
                     ],
 
                     // ─── LOCATION SECTION ───
                     if (task.locations != null && task.locations!.isNotEmpty) ...[
+                      _SectionDivider(isDark: isDark),
                       Text(
                         'Locations',
                         style: AppTextStyles.h3.copyWith(
-                          fontSize: 14.sp,
+                          fontSize: 13.5.sp,
                           fontWeight: FontWeight.bold,
                           color:
                               isDark ? AppColors.textPrimary : Colors.black87,
@@ -379,28 +380,24 @@ class _TaskDetailBody extends ConsumerWidget {
                       ),
                       SizedBox(height: 6.h),
                       ...task.locations!.map(
-                        (loc) => Padding(
-                          padding: EdgeInsets.only(bottom: 6.h),
-                          child: _LocationCard(
-                            location: loc,
-                            distance: distance,
-                            isDark: isDark,
-                          ),
+                        (loc) => _LocationCard(
+                          location: loc,
+                          distance: distance,
+                          isDark: isDark,
                         ),
                       ),
-                      SizedBox(height: 14.h),
                     ],
 
                     // ─── ASSIGNMENT CARD ───
                     if (task.assignment != null) ...[
+                      _SectionDivider(isDark: isDark),
                       _AssignmentCard(
                         assignment: task.assignment!,
                         isDark: isDark,
                       ),
-                      SizedBox(height: 14.h),
                     ],
 
-                    SizedBox(height: 12.h),
+                    SizedBox(height: 16.h),
                   ],
                 ),
               ),
@@ -436,18 +433,15 @@ class _TaskDetailBody extends ConsumerWidget {
     final taskId = task.id ?? '';
 
     String label;
-    IconData icon;
     Color buttonColor;
     VoidCallback? onPressed;
 
     if (isCompleted) {
       label = 'Task Completed';
-      icon = Icons.task_alt_rounded;
-      buttonColor = const Color(0xFF10B981);
+      buttonColor = isDark ? Colors.grey[800]! : Colors.grey[300]!;
       onPressed = null;
     } else if (isInProgress) {
       label = 'Complete Task';
-      icon = Icons.check_circle_rounded;
       buttonColor = const Color(0xFF10B981);
       onPressed = () {
         context.pushNamed(
@@ -461,7 +455,6 @@ class _TaskDetailBody extends ConsumerWidget {
       };
     } else {
       label = 'Start Task';
-      icon = Icons.play_circle_fill_rounded;
       buttonColor = AppColors.primary;
       onPressed = () {
         context.pushNamed(
@@ -478,47 +471,43 @@ class _TaskDetailBody extends ConsumerWidget {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
       decoration: BoxDecoration(
-        color: isDark ? theme.colorScheme.surface : Colors.white,
+        color: isDark ? theme.scaffoldBackgroundColor : Colors.white,
         border: Border(
           top: BorderSide(
             color: isDark
-                ? AppColors.border
+                ? AppColors.border.withValues(alpha: 0.3)
                 : Colors.grey.withValues(alpha: 0.15),
             width: 1.r,
           ),
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.04),
-            blurRadius: 10.r,
-            offset: const Offset(0, -3),
-          ),
-        ],
       ),
       child: SafeArea(
         top: false,
         child: SizedBox(
           width: double.infinity,
           height: 48.h,
-          child: ElevatedButton.icon(
+          child: ElevatedButton(
             onPressed: onPressed,
-            icon: Icon(icon, size: 20.r),
-            label: Text(
-              label,
-              style: AppTextStyles.buttonLarge.copyWith(
-                fontWeight: FontWeight.bold,
-                fontSize: 15.sp,
-                color: Colors.white,
-              ),
-            ),
             style: ElevatedButton.styleFrom(
               backgroundColor: buttonColor,
-              disabledBackgroundColor: buttonColor.withValues(alpha: 0.6),
-              disabledForegroundColor: Colors.white,
+              disabledBackgroundColor:
+                  isDark ? Colors.grey[800] : Colors.grey[300],
+              disabledForegroundColor:
+                  isDark ? Colors.grey[500] : Colors.grey[600],
               foregroundColor: Colors.white,
               elevation: 0,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16.r),
+              ),
+            ),
+            child: Text(
+              label,
+              style: AppTextStyles.buttonLarge.copyWith(
+                fontWeight: FontWeight.bold,
+                fontSize: 15.sp,
+                color: isCompleted
+                    ? (isDark ? Colors.grey[500] : Colors.grey[600])
+                    : Colors.white,
               ),
             ),
           ),
@@ -745,6 +734,33 @@ class _CircleOverlayButton extends StatelessWidget {
 // CUSTOMER CARD WIDGET
 // ─────────────────────────────────────────────────────────────────────────────
 
+// ─────────────────────────────────────────────────────────────────────────────
+// SECTION DIVIDER WIDGET
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _SectionDivider extends StatelessWidget {
+  final bool isDark;
+  const _SectionDivider({required this.isDark});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: 10.h),
+      child: Divider(
+        height: 1.h,
+        thickness: 1.r,
+        color: isDark
+            ? AppColors.border.withValues(alpha: 0.3)
+            : Colors.grey.withValues(alpha: 0.15),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CUSTOMER CARD WIDGET
+// ─────────────────────────────────────────────────────────────────────────────
+
 class _CustomerCard extends StatelessWidget {
   final CustomerLite? customer;
   final bool isDark;
@@ -761,105 +777,88 @@ class _CustomerCard extends StatelessWidget {
     final phoneNumber = customer?.phoneNumber;
     final hasPhone = phoneNumber != null && phoneNumber.trim().isNotEmpty;
 
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 10.h),
-      decoration: BoxDecoration(
-        color: isDark
-            ? Theme.of(context).colorScheme.surface
-            : Colors.grey[50],
-        borderRadius: BorderRadius.circular(16.r),
-        border: Border.all(
-          color: isDark ? AppColors.border : Colors.grey.withValues(alpha: 0.2),
+    return Row(
+      children: [
+        CircleAvatar(
+          radius: 18.r,
+          backgroundColor: AppColors.primary.withValues(alpha: 0.12),
+          child: Text(
+            displayName.isNotEmpty ? displayName[0].toUpperCase() : 'C',
+            style: AppTextStyles.h3.copyWith(
+              color: AppColors.primary,
+              fontSize: 15.sp,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
         ),
-      ),
-      child: Row(
-        children: [
-          CircleAvatar(
-            radius: 18.r,
-            backgroundColor: AppColors.primary.withValues(alpha: 0.12),
-            child: Text(
-              displayName.isNotEmpty ? displayName[0].toUpperCase() : 'C',
-              style: AppTextStyles.h3.copyWith(
-                color: AppColors.primary,
-                fontSize: 15.sp,
-                fontWeight: FontWeight.bold,
+        SizedBox(width: 10.w),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Customer',
+                style: AppTextStyles.label.copyWith(
+                  color: AppColors.textMuted,
+                  fontSize: 10.5.sp,
+                ),
               ),
-            ),
-          ),
-          SizedBox(width: 10.w),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  'Customer',
-                  style: AppTextStyles.label.copyWith(
-                    color: AppColors.textMuted,
-                    fontSize: 10.sp,
-                  ),
+              SizedBox(height: 2.h),
+              Text(
+                displayName,
+                style: AppTextStyles.bodyMedium.copyWith(
+                  color: isDark ? AppColors.textPrimary : Colors.black87,
+                  fontSize: 13.5.sp,
+                  fontWeight: FontWeight.w600,
                 ),
-                SizedBox(height: 2.h),
-                Text(
-                  displayName,
-                  style: AppTextStyles.bodyMedium.copyWith(
-                    color: isDark ? AppColors.textPrimary : Colors.black87,
-                    fontSize: 13.5.sp,
-                    fontWeight: FontWeight.w600,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-            ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
           ),
-          SizedBox(width: 8.w),
-          Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: () => _makePhoneCall(context, phoneNumber),
-              borderRadius: BorderRadius.circular(20.r),
-              child: Container(
-                padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
-                decoration: BoxDecoration(
-                  color: hasPhone
-                      ? const Color(0xFF10B981).withValues(alpha: 0.12)
-                      : (isDark ? Colors.white10 : Colors.grey[200]),
-                  borderRadius: BorderRadius.circular(20.r),
-                  border: Border.all(
+        ),
+        SizedBox(width: 8.w),
+        Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: () => _makePhoneCall(context, phoneNumber),
+            borderRadius: BorderRadius.circular(20.r),
+            child: Container(
+              padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
+              decoration: BoxDecoration(
+                color: hasPhone
+                    ? const Color(0xFF10B981).withValues(alpha: 0.12)
+                    : (isDark ? Colors.white10 : Colors.grey[200]),
+                borderRadius: BorderRadius.circular(20.r),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.phone_rounded,
+                    size: 14.r,
                     color: hasPhone
-                        ? const Color(0xFF10B981).withValues(alpha: 0.3)
-                        : Colors.transparent,
+                        ? const Color(0xFF10B981)
+                        : AppColors.textMuted,
                   ),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.phone_rounded,
-                      size: 14.r,
+                  SizedBox(width: 4.w),
+                  Text(
+                    'Call',
+                    style: AppTextStyles.label.copyWith(
                       color: hasPhone
                           ? const Color(0xFF10B981)
                           : AppColors.textMuted,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 11.5.sp,
                     ),
-                    SizedBox(width: 4.w),
-                    Text(
-                      'Call',
-                      style: AppTextStyles.label.copyWith(
-                        color: hasPhone
-                            ? const Color(0xFF10B981)
-                            : AppColors.textMuted,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 11.5.sp,
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
@@ -962,21 +961,12 @@ class _WorkFileCard extends StatelessWidget {
 
     return GestureDetector(
       onTap: () => _AttachmentPreviewDialog.show(context, attachment),
-      child: Container(
-        padding: EdgeInsets.all(12.r),
-        decoration: BoxDecoration(
-          color: isDark ? Theme.of(context).colorScheme.surface : Colors.white,
-          borderRadius: BorderRadius.circular(14.r),
-          border: Border.all(
-            color: isDark
-                ? AppColors.border
-                : Colors.grey.withValues(alpha: 0.2),
-          ),
-        ),
+      child: Padding(
+        padding: EdgeInsets.symmetric(vertical: 4.h),
         child: Row(
           children: [
             Container(
-              padding: EdgeInsets.all(10.r),
+              padding: EdgeInsets.all(8.r),
               decoration: BoxDecoration(
                 color: AppColors.primary.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(10.r),
@@ -986,10 +976,10 @@ class _WorkFileCard extends StatelessWidget {
                     ? Icons.image_outlined
                     : Icons.insert_drive_file_outlined,
                 color: AppColors.primary,
-                size: 20.r,
+                size: 18.r,
               ),
             ),
-            SizedBox(width: 12.w),
+            SizedBox(width: 10.w),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -997,8 +987,8 @@ class _WorkFileCard extends StatelessWidget {
                   Text(
                     title,
                     style: AppTextStyles.subtitle.copyWith(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14.sp,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13.5.sp,
                       color: isDark ? AppColors.textPrimary : Colors.black87,
                     ),
                     maxLines: 1,
@@ -1008,7 +998,7 @@ class _WorkFileCard extends StatelessWidget {
                   Text(
                     urlStr,
                     style: AppTextStyles.bodySmall.copyWith(
-                      fontSize: 12.sp,
+                      fontSize: 11.5.sp,
                       color: Colors.blue[600],
                     ),
                     maxLines: 1,
@@ -1020,8 +1010,8 @@ class _WorkFileCard extends StatelessWidget {
             SizedBox(width: 8.w),
             if (attachment.url != null && isImage)
               attachment.url.image(
-                width: 50.w,
-                height: 38.h,
+                width: 44.w,
+                height: 34.h,
                 fit: BoxFit.cover,
                 borderRadius: BorderRadius.circular(8.r),
                 errorWidget: (_, _, _) => const SizedBox.shrink(),
@@ -1092,32 +1082,23 @@ class _LocationCard extends StatelessWidget {
         ? addressParts.join(', ')
         : 'No location specified';
 
-    return Container(
-      padding: EdgeInsets.all(14.r),
-      decoration: BoxDecoration(
-        color: isDark ? Theme.of(context).colorScheme.surface : Colors.white,
-        borderRadius: BorderRadius.circular(16.r),
-        border: Border.all(
-          color: isDark
-              ? AppColors.border
-              : Colors.grey.withValues(alpha: 0.2),
-        ),
-      ),
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: 4.h),
       child: Row(
         children: [
           Container(
-            padding: EdgeInsets.all(10.r),
+            padding: EdgeInsets.all(8.r),
             decoration: BoxDecoration(
               color: const Color(0xFF3B82F6).withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(12.r),
+              borderRadius: BorderRadius.circular(10.r),
             ),
             child: Icon(
               Icons.location_on_rounded,
               color: const Color(0xFF3B82F6),
-              size: 20.r,
+              size: 18.r,
             ),
           ),
-          SizedBox(width: 12.w),
+          SizedBox(width: 10.w),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1133,11 +1114,12 @@ class _LocationCard extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
                 if (distance != null) ...[
-                  SizedBox(height: 4.h),
+                  SizedBox(height: 2.h),
                   Text(
                     '$distance km away',
                     style: AppTextStyles.bodySmall.copyWith(
                       color: AppColors.textMuted,
+                      fontSize: 11.5.sp,
                     ),
                   ),
                 ],
@@ -1175,51 +1157,37 @@ class _AssignmentCard extends StatelessWidget {
         Text(
           'Assignment Details',
           style: AppTextStyles.h3.copyWith(
-            fontSize: 15.sp,
+            fontSize: 13.5.sp,
             fontWeight: FontWeight.bold,
             color: isDark ? AppColors.textPrimary : Colors.black87,
           ),
         ),
-        SizedBox(height: 8.h),
-        Container(
-          padding: EdgeInsets.all(16.r),
-          decoration: BoxDecoration(
-            color: isDark ? Theme.of(context).colorScheme.surface : Colors.white,
-            borderRadius: BorderRadius.circular(16.r),
-            border: Border.all(
-              color: isDark
-                  ? AppColors.border
-                  : Colors.grey.withValues(alpha: 0.2),
+        SizedBox(height: 6.h),
+        Column(
+          children: [
+            _InfoRow(
+              icon: Icons.assignment_ind_rounded,
+              label: 'Status',
+              value: statusInfo.label,
+              color: statusInfo.color,
             ),
-          ),
-          child: Column(
-            children: [
+            if (assignment.acceptedPrice != null) ...[
               _InfoRow(
-                icon: Icons.assignment_ind_rounded,
-                label: 'Status',
-                value: statusInfo.label,
-                color: statusInfo.color,
+                icon: Icons.payments_rounded,
+                label: 'Accepted Price',
+                value: assignment.acceptedPrice!.toNaira(),
+                color: const Color(0xFF10B981),
               ),
-              if (assignment.acceptedPrice != null) ...[
-                Divider(color: AppColors.border, height: 1.h, thickness: 1.r),
-                _InfoRow(
-                  icon: Icons.payments_rounded,
-                  label: 'Accepted Price',
-                  value: assignment.acceptedPrice!.toNaira(),
-                  color: const Color(0xFF10B981),
-                ),
-              ],
-              if (assignment.assignedAt != null) ...[
-                Divider(color: AppColors.border, height: 1.h, thickness: 1.r),
-                _InfoRow(
-                  icon: Icons.event_available_rounded,
-                  label: 'Assigned Date',
-                  value: DateFormat('MMM d, yyyy • h:mm a').format(assignment.assignedAt!),
-                  color: const Color(0xFF3B82F6),
-                ),
-              ],
             ],
-          ),
+            if (assignment.assignedAt != null) ...[
+              _InfoRow(
+                icon: Icons.event_available_rounded,
+                label: 'Assigned Date',
+                value: DateFormat('MMM d, yyyy • h:mm a').format(assignment.assignedAt!),
+                color: const Color(0xFF3B82F6),
+              ),
+            ],
+          ],
         ),
       ],
     );
@@ -1247,18 +1215,18 @@ class _InfoRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Padding(
-      padding: EdgeInsets.symmetric(vertical: 8.h),
+      padding: EdgeInsets.symmetric(vertical: 4.h),
       child: Row(
         children: [
           Container(
-            padding: EdgeInsets.all(8.r),
+            padding: EdgeInsets.all(7.r),
             decoration: BoxDecoration(
               color: color.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(10.r),
+              borderRadius: BorderRadius.circular(8.r),
             ),
-            child: Icon(icon, color: color, size: 16.r),
+            child: Icon(icon, color: color, size: 15.r),
           ),
-          SizedBox(width: 12.w),
+          SizedBox(width: 10.w),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1267,16 +1235,16 @@ class _InfoRow extends StatelessWidget {
                   label,
                   style: AppTextStyles.label.copyWith(
                     color: AppColors.textMuted,
-                    fontSize: 11.sp,
+                    fontSize: 10.5.sp,
                   ),
                 ),
-                SizedBox(height: 2.h),
+                SizedBox(height: 1.h),
                 Text(
                   value,
                   style: AppTextStyles.bodyMedium.copyWith(
                     color: isDark ? AppColors.textPrimary : Colors.black87,
                     fontWeight: FontWeight.w500,
-                    fontSize: 13.sp,
+                    fontSize: 12.5.sp,
                   ),
                 ),
               ],
@@ -1831,113 +1799,139 @@ class _PriceAdjustmentsSection extends StatelessWidget {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: isDark ? AppColors.surface : Colors.white,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16.r)),
-      ),
+      backgroundColor: Colors.transparent,
       builder: (context) {
-        return DraggableScrollableSheet(
-          initialChildSize: 0.6,
-          minChildSize: 0.3,
-          maxChildSize: 0.9,
-          expand: false,
-          builder: (context, scrollController) {
-            return Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
+        return Container(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height * 0.85,
+          ),
+          decoration: BoxDecoration(
+            color: isDark ? AppColors.surface : Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20.r)),
+          ),
+          padding: EdgeInsets.fromLTRB(16.w, 12.h, 16.w, 24.h),
+          child: SafeArea(
+            top: false,
+            child: SingleChildScrollView(
+              physics: const BouncingScrollPhysics(),
               child: Column(
+                mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Center(
                     child: Container(
                       width: 36.w,
                       height: 4.h,
-                      margin: EdgeInsets.only(bottom: 10.h),
+                      margin: EdgeInsets.only(bottom: 12.h),
                       decoration: BoxDecoration(
                         color: isDark ? AppColors.border : Colors.grey[300],
                         borderRadius: BorderRadius.circular(2.r),
                       ),
                     ),
                   ),
-                  Text(
-                    'Price Adjustments (${adjustments.length})',
-                    style: AppTextStyles.h2.copyWith(
-                      fontSize: 16.sp,
-                      fontWeight: FontWeight.bold,
-                      color: isDark ? AppColors.textPrimary : Colors.black87,
-                    ),
-                  ),
-                  SizedBox(height: 10.h),
-                  Expanded(
-                    child: ListView.separated(
-                      controller: scrollController,
-                      itemCount: adjustments.length,
-                      separatorBuilder: (_, _) => Divider(
-                        height: 16.h,
-                        color: isDark
-                            ? AppColors.border.withValues(alpha: 0.5)
-                            : Colors.grey[200],
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Price Adjustments (${adjustments.length})',
+                        style: AppTextStyles.h2.copyWith(
+                          fontSize: 16.sp,
+                          fontWeight: FontWeight.bold,
+                          color:
+                              isDark ? AppColors.textPrimary : Colors.black87,
+                        ),
                       ),
-                      itemBuilder: (context, index) {
-                        final item = adjustments[index];
-                        return Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              mainAxisAlignment:
-                                  MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                  item.amount?.toNaira(2) ?? '₦0.00',
-                                  style: AppTextStyles.h2.copyWith(
-                                    fontSize: 14.5.sp,
-                                    fontWeight: FontWeight.bold,
-                                    color: const Color(0xFF10B981),
-                                  ),
-                                ),
-                                _PriceAdjustmentStatusPill(
-                                  status: item.status,
-                                ),
-                              ],
-                            ),
-                            if (item.description != null &&
-                                item.description!.isNotEmpty) ...[
-                              SizedBox(height: 3.h),
-                              Text(
-                                item.description!,
-                                style: AppTextStyles.bodyMedium.copyWith(
-                                  fontSize: 12.sp,
-                                  color: isDark
-                                      ? AppColors.textPrimary
-                                      : Colors.black87,
-                                ),
-                              ),
-                            ],
-                            if (item.createdAt != null) ...[
-                              SizedBox(height: 4.h),
-                              Align(
-                                alignment: Alignment.centerRight,
-                                child: Text(
-                                  DateFormat(
-                                    'MMM d, yyyy HH:mm',
-                                  ).format(item.createdAt!),
-                                  style: AppTextStyles.bodySmall.copyWith(
-                                    fontSize: 10.5.sp,
-                                    color: isDark
-                                        ? AppColors.textMuted
-                                        : Colors.grey[500],
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ],
-                        );
-                      },
+                      GestureDetector(
+                        onTap: () => Navigator.of(context).pop(),
+                        child: Container(
+                          padding: EdgeInsets.all(6.r),
+                          decoration: BoxDecoration(
+                            color: isDark
+                                ? Colors.white.withValues(alpha: 0.08)
+                                : Colors.grey.withValues(alpha: 0.1),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            Icons.close_rounded,
+                            size: 18.r,
+                            color: isDark
+                                ? AppColors.textSecondary
+                                : Colors.grey.shade700,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 12.h),
+                  ListView.separated(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: adjustments.length,
+                    separatorBuilder: (_, _) => Divider(
+                      height: 20.h,
+                      color: isDark
+                          ? AppColors.border.withValues(alpha: 0.5)
+                          : Colors.grey[200],
                     ),
+                    itemBuilder: (context, index) {
+                      final item = adjustments[index];
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                item.amount?.toNaira(2) ?? '₦0.00',
+                                style: AppTextStyles.h2.copyWith(
+                                  fontSize: 14.5.sp,
+                                  fontWeight: FontWeight.bold,
+                                  color: const Color(0xFF10B981),
+                                ),
+                              ),
+                              _PriceAdjustmentStatusPill(
+                                status: item.status,
+                              ),
+                            ],
+                          ),
+                          if (item.description != null &&
+                              item.description!.isNotEmpty) ...[
+                            SizedBox(height: 3.h),
+                            Text(
+                              item.description!,
+                              style: AppTextStyles.bodyMedium.copyWith(
+                                fontSize: 12.sp,
+                                color: isDark
+                                    ? AppColors.textPrimary
+                                    : Colors.black87,
+                              ),
+                            ),
+                          ],
+                          if (item.createdAt != null) ...[
+                            SizedBox(height: 4.h),
+                            Align(
+                              alignment: Alignment.centerRight,
+                              child: Text(
+                                DateFormat(
+                                  'MMM d, yyyy HH:mm',
+                                ).format(item.createdAt!),
+                                style: AppTextStyles.bodySmall.copyWith(
+                                  fontSize: 10.5.sp,
+                                  color: isDark
+                                      ? AppColors.textMuted
+                                      : Colors.grey[500],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
+                      );
+                    },
                   ),
                 ],
               ),
-            );
-          },
+            ),
+          ),
         );
       },
     );

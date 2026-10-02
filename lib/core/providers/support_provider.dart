@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:tasker_app/features/auth/providers/auth_provider.dart';
 import '../api/support_client.dart';
 import '../models/models.dart';
 import '../utils/app_exception_handler.dart';
@@ -23,6 +24,7 @@ class CustomerSupportNotifier extends AsyncNotifier<List<SupportCase>> {
 
   @override
   Future<List<SupportCase>> build() async {
+    ref.watch(isAuthenticatedProvider);
     _page = 1;
     _total = 0;
     _isLoadingMore = false;

@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:tasker_app/core/utils/debug_logger.dart';
 import 'package:tasker_app/core/utils/retry_util.dart';
+import 'package:tasker_app/features/auth/providers/auth_provider.dart';
 import '../api/api.dart';
 import '../models/models.dart';
 import '../services/local_storage_service.dart';
@@ -91,6 +92,7 @@ final providerEarningsStatsProvider =
       ref,
       dateRange,
     ) async {
+      ref.watch(isAuthenticatedProvider);
       final client = ref.watch(paymentsClientProvider);
       final response = await client.getProviderEarningsStats(
         startDate: dateRange?.startDate,
@@ -225,6 +227,7 @@ class ProviderPayoutsNotifier extends AsyncNotifier<List<Payout>> {
 
   @override
   Future<List<Payout>> build() async {
+    ref.watch(isAuthenticatedProvider);
     _page = 1;
     _hasMore = true;
     _isLoadingMore = false;
@@ -290,6 +293,7 @@ final providerPayoutsProvider =
 
 /// FutureProvider for fetching the provider's current outstanding commission debt summary.
 final debtSummaryProvider = FutureProvider<Debt>((ref) async {
+  ref.watch(isAuthenticatedProvider);
   final client = ref.watch(paymentsClientProvider);
   final response = await client.getDebtSummary();
   if (response.isError || response.data == null) {
@@ -301,4 +305,9 @@ final debtSummaryProvider = FutureProvider<Debt>((ref) async {
   debugLog(response.data!);
   return response.data!;
 }, retry: (_, __) => null);
+
+/// Provider for the maximum debt threshold limit (default ₦5,000.0).
+final maxDebtThresholdProvider = Provider<double>((ref) => 5000.0);
+
+
 

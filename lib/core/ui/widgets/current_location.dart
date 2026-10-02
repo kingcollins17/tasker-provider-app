@@ -16,6 +16,9 @@ class CurrentLocation extends ConsumerWidget {
     final isLive = ref.watch(useLiveLocationProvider);
     final iconColor = isLive ? AppColors.primary : AppColors.textMuted;
 
+    if(addressAsync.hasError) {
+      return SizedBox.shrink();
+    }
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onLongPress: () {

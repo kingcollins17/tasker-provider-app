@@ -260,7 +260,7 @@ class _ProfileUpdateScreenState extends ConsumerState<ProfileUpdateScreen> {
         ),
         child: SafeArea(
           child: PrimaryButton(
-            text: 'Save Changes',
+            text: 'Save',
             onPressed: _submit,
           ),
         ),

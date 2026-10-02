@@ -22,7 +22,7 @@ class StatsDashboard extends ConsumerWidget {
 
     final currentUser = user ?? ref.watch(userProvider).value;
 
-    final totalTasks = currentUser?.providerProfile?.totalTasksCompleted ?? 0;
+    final totalTasks = currentUser?.stats?.totalTasksCompleted ?? 0;
     final avgRating = currentUser?.averageRatings != null
         ? currentUser!.averageRatings!.toDouble().toStringAsFixed(1)
         : '0.0';

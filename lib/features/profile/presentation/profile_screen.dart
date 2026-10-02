@@ -25,6 +25,7 @@ import 'widgets/stats_dashboard.dart';
 import 'widgets/earnings_card.dart';
 import 'widgets/option_tile.dart';
 import 'widgets/kyc_badge.dart';
+import 'widgets/guarantor_badge.dart';
 import '../../../core/ui/widgets/current_location.dart';
 
 class ProfileScreen extends ConsumerWidget {
@@ -541,68 +542,18 @@ class _PreferencesSection extends ConsumerWidget {
                 } else if (status == VerificationStatus.passed) {
                   subtitle = 'Guarantor verified';
                   iconColor = AppColors.success;
-                  trailing = Container(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: 8.w,
-                      vertical: 3.h,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppColors.success.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(6.r),
-                    ),
-                    child: Text(
-                      'Verified',
-                      style: AppTextStyles.label.copyWith(
-                        color: AppColors.success,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 11.sp,
-                      ),
-                    ),
-                  );
+                  trailing = GuarantorBadge(status: status!);
                 } else if (status == VerificationStatus.failed) {
                   subtitle = guarantor.failureReason ??
                       'Verification failed - Resubmit';
                   iconColor = AppColors.error;
-                  trailing = Container(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: 8.w,
-                      vertical: 3.h,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppColors.error.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(6.r),
-                    ),
-                    child: Text(
-                      'Action Needed',
-                      style: AppTextStyles.label.copyWith(
-                        color: AppColors.error,
-                        overflow: TextOverflow.ellipsis,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 11.sp,
-                      ),
-                    ),
-                  );
+                  trailing = GuarantorBadge(status: status!);
                 } else {
                   subtitle = 'Reference under review';
                   iconColor = AppColors.warning;
-                  trailing = Container(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: 8.w,
-                      vertical: 3.h,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppColors.warning.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(6.r),
-                    ),
-                    child: Text(
-                      'Pending',
-                      style: AppTextStyles.label.copyWith(
-                        color: AppColors.warning,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 11.sp,
-                      ),
-                    ),
-                  );
+                  trailing = status != null
+                      ? GuarantorBadge(status: status)
+                      : null;
                 }
 
                 return OptionTile(
@@ -799,6 +750,7 @@ class _PreferencesSection extends ConsumerWidget {
           .read(authProvider.notifier)
           .logout(
             onSuccess: () {
+              ref.invalidate(isAuthenticatedProvider);
               context.go('/login');
             },
           );

@@ -1,0 +1,8 @@
+  {
+I/flutter (13152): ║         "message": "An unexpected error occurred.",
+I/flutter (13152): ║         "details": "QueuePool limit of size 3 overflow 2 reached, connection timed out, timeout 30.00
+I/flutter (13152): ║           (Background on this error at: https://sqlalche.me/e/20/3o7r)"
+I/flutter (13152): ║    }
+I/flutter (13152): ║
+
+curl -N "http://stellar-prosperity-production.up.railway.app/api/v1/notifications/stream?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImI4ZjBkYzQxLTg3YzAtNGMwZC04MTIwLTE2Y2FjOWQwMTM2ZiIsImVtYWlsIjoiY2FyYUB5b3BtYWlsLmNvbSIsImlzX2FjdGl2ZSI6dHJ1ZSwiZXhwIjoxODIwODU0NzYxfQ.zyValYxhnPsdIs2HYtdLMeWxAshDfluLO6OZIHgu99U" | jq --unbuffered

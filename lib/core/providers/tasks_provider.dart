@@ -6,6 +6,7 @@ import 'package:tasker_app/core/utils/debug_logger.dart';
 import 'package:tasker_app/core/utils/retry_util.dart';
 import 'package:tasker_app/features/tasks/presentation/widgets/offer_ping_bottom_sheet.dart';
 
+import '../../features/auth/providers/auth_provider.dart';
 import '../utils/app_exception_handler.dart';
 import '../utils/extensions/error_ext.dart';
 import '../models/models.dart';
@@ -17,6 +18,7 @@ final taskDetailProvider = FutureProvider.family<Task, String>((
   ref,
   taskId,
 ) async {
+  ref.watch(isAuthenticatedProvider);
   final client = ref.watch(tasksClientProvider);
   final response = await client.getTask(taskId);
   if (response.data == null) {
@@ -161,8 +163,6 @@ class TaskManagementNotifier extends Notifier<AsyncValue<void>> {
         );
       }
 
-      ref.invalidate(taskDetailProvider(taskId));
-      ref.invalidate(taskAssignmentProvider(taskId));
 
       state = const AsyncData(null);
       onSuccess?.call();
@@ -306,6 +306,7 @@ class AssignmentsNotifier extends AsyncNotifier<List<Assignment>> {
 
   @override
   Future<List<Assignment>> build() async {
+    ref.watch(isAuthenticatedProvider);
     _page = 1;
     _hasMore = true;
     return _fetchPage(1);

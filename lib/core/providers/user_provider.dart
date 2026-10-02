@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tasker_app/core/utils/retry_util.dart';
 import 'package:uuid/uuid.dart';
+import '../../features/auth/providers/auth_provider.dart';
 import '../api/api.dart';
 import '../models/models.dart';
 import 'region_provider.dart';
@@ -14,6 +15,7 @@ import '../utils/extensions/error_ext.dart';
 class UserNotifier extends AsyncNotifier<User> {
   @override
   Future<User> build() async {
+    ref.watch(isAuthenticatedProvider);
     return _fetchUser();
   }
 
@@ -27,7 +29,7 @@ class UserNotifier extends AsyncNotifier<User> {
         '[UserNotifier] User data returned null',
         level: DebugLevel.error,
       );
-      throw Exception('User data is null');
+      throw response.detailMessage ?? 'user not found';
     }
 
     debugLog('[UserNotifier] User profile loaded successfully');

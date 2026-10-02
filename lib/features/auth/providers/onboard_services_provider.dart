@@ -11,6 +11,7 @@ import 'auth_provider.dart';
 class OnboardedServicesNotifier extends AsyncNotifier<bool> {
   @override
   FutureOr<bool> build() async {
+    await ref.watch(userProvider.future);
     final userId = _getUserId();
     if (userId == null || userId.isEmpty) {
       return false;
@@ -26,8 +27,8 @@ class OnboardedServicesNotifier extends AsyncNotifier<bool> {
   }
 
   String? _getUserId() {
-    return ref.watch(userProvider).value?.id ??
-        ref.watch(authProvider).value?.id;
+    return ref.read(userProvider).value?.id;
+        
   }
 
   /// Sets the onboarding status for services and persists to appStorage.

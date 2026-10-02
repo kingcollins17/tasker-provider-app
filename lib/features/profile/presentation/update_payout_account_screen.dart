@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:shimmer/shimmer.dart';
 import '../../../core/models/models.dart';
 import '../../../core/providers/bank_providers.dart';
 import '../../../core/providers/user_provider.dart';
@@ -149,68 +148,130 @@ class _UpdatePayoutAccountScreenState
                   return verifyAsync.when(
                     data: (verifiedData) {
                       if (verifiedData == null) return const SizedBox.shrink();
-                      return Container(
-                        width: double.infinity,
-                        padding: EdgeInsets.all(16.r),
-                        decoration: BoxDecoration(
-                          color: (isDark ? AppColors.accent : AppColors.primary)
-                              .withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(16.r),
-                          border: Border.all(
-                            color:
-                                (isDark ? AppColors.accent : AppColors.primary)
-                                    .withValues(alpha: 0.3),
-                          ),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                      return Padding(
+                        padding: EdgeInsets.symmetric(vertical: 4.h),
+                        child: Row(
                           children: [
-                            Row(
-                              children: [
-                                Icon(
-                                  Icons.check_circle,
-                                  color: isDark
-                                      ? AppColors.accent
-                                      : AppColors.primary,
+                            Container(
+                              padding: EdgeInsets.all(8.r),
+                              decoration: BoxDecoration(
+                                color: AppColors.success.withValues(
+                                  alpha: isDark ? 0.15 : 0.1,
                                 ),
-                                SizedBox(width: 8.w),
-                                Text(
-                                  'Account Verified',
-                                  style: AppTextStyles.bodyLarge.copyWith(
-                                    fontWeight: FontWeight.w600,
-                                    color: isDark
-                                        ? AppColors.accent
-                                        : AppColors.primary,
-                                  ),
-                                ),
-                              ],
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(
+                                Icons.check_circle_rounded,
+                                color: AppColors.success,
+                                size: 20.r,
+                              ),
                             ),
-                            SizedBox(height: 12.h),
-                            Text(
-                              verifiedData.accountName ?? '',
-                              style: AppTextStyles.bodyLarge.copyWith(
-                                fontWeight: FontWeight.w500,
+                            SizedBox(width: 12.w),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    verifiedData.accountName?.toUpperCase() ??
+                                        '',
+                                    style: AppTextStyles.bodyMedium.copyWith(
+                                      fontWeight: FontWeight.bold,
+                                      color: isDark
+                                          ? AppColors.textPrimary
+                                          : const Color(0xFF0F172A),
+                                      letterSpacing: 0.5,
+                                    ),
+                                  ),
+                                  SizedBox(height: 2.h),
+                                  Text(
+                                    'Verified Account Name',
+                                    style: AppTextStyles.bodySmall.copyWith(
+                                      color: AppColors.success,
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 12.sp,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                           ],
                         ),
                       );
                     },
-                    loading: () => Shimmer.fromColors(
-                      baseColor: Theme.of(context).colorScheme.surface,
-                      highlightColor: isDark
-                          ? AppColors.border
-                          : Colors.grey.shade100,
-                      child: Container(
-                        width: double.infinity,
-                        height: 80.h,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(16.r),
-                        ),
+                    loading: () => Padding(
+                      padding: EdgeInsets.symmetric(vertical: 4.h),
+                      child: Row(
+                        children: [
+                          SizedBox(
+                            width: 18.r,
+                            height: 18.r,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2.r,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                isDark ? AppColors.accent : AppColors.primary,
+                              ),
+                            ),
+                          ),
+                          SizedBox(width: 12.w),
+                          Text(
+                            'Verifying account details...',
+                            style: AppTextStyles.bodyMedium.copyWith(
+                              color: isDark
+                                  ? AppColors.textMuted
+                                  : AppColors.textSecondary,
+                              fontSize: 13.sp,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    error: (error, stackTrace) => const SizedBox.shrink(),
+                    error: (error, stackTrace) => Padding(
+                      padding: EdgeInsets.symmetric(vertical: 4.h),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            padding: EdgeInsets.all(8.r),
+                            decoration: BoxDecoration(
+                              color: AppColors.error.withValues(
+                                alpha: isDark ? 0.15 : 0.1,
+                              ),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              Icons.error_outline_rounded,
+                              color: AppColors.error,
+                              size: 20.r,
+                            ),
+                          ),
+                          SizedBox(width: 12.w),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Verification Failed',
+                                  style: AppTextStyles.bodyMedium.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.error,
+                                  ),
+                                ),
+                                SizedBox(height: 2.h),
+                                Text(
+                                  'Could not verify account details. Check the account number & bank.',
+                                  style: AppTextStyles.bodySmall.copyWith(
+                                    color: isDark
+                                        ? AppColors.textMuted
+                                        : AppColors.textSecondary,
+                                    fontSize: 12.sp,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   );
                 },
               ),
@@ -250,7 +311,7 @@ class _UpdatePayoutAccountScreenState
                       null;
 
               return PrimaryButton(
-                text: 'Update Account',
+                text: 'Save',
                 onPressed: canSubmit ? _submit : null,
               );
             },

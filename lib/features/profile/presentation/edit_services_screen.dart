@@ -185,27 +185,25 @@ class _EditServicesScreenState extends ConsumerState<EditServicesScreen> {
             // ── Selected Counter Bar ─────────────────────────────────────
             Container(
               margin: EdgeInsets.symmetric(horizontal: 20.w, vertical: 4.h),
-              padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 10.h),
+              padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 8.h),
               decoration: BoxDecoration(
                 color: AppColors.primary.withValues(alpha: 0.08),
                 borderRadius: AppDecorations.radiusMd,
-                border: Border.all(
-                  color: AppColors.primary.withValues(alpha: 0.2),
-                ),
               ),
               child: Row(
                 children: [
                   Icon(
                     Icons.check_circle_outline_rounded,
                     color: AppColors.primary,
-                    size: 20.r,
+                    size: 18.r,
                   ),
-                  SizedBox(width: 10.w),
+                  SizedBox(width: 8.w),
                   Text(
                     '${editorState.selected.length} service${editorState.selected.length == 1 ? '' : 's'} selected',
                     style: AppTextStyles.bodyMedium.copyWith(
                       fontWeight: FontWeight.w600,
                       color: AppColors.primary,
+                      fontSize: 12.5.sp,
                     ),
                   ),
                   const Spacer(),
@@ -219,6 +217,7 @@ class _EditServicesScreenState extends ConsumerState<EditServicesScreen> {
                         style: AppTextStyles.label.copyWith(
                           color: AppColors.error,
                           fontWeight: FontWeight.bold,
+                          fontSize: 11.sp,
                         ),
                       ),
                     ),
@@ -318,16 +317,23 @@ class _EditServicesScreenState extends ConsumerState<EditServicesScreen> {
                         return ListView.separated(
                           padding: EdgeInsets.symmetric(
                             horizontal: 20.w,
-                            vertical: 12.h,
+                            vertical: 8.h,
                           ),
                           physics: const BouncingScrollPhysics(),
                           itemCount: services.length,
-                          separatorBuilder: (_, _) => SizedBox(height: 6.h),
+                          separatorBuilder: (_, _) => Divider(
+                            height: 1.h,
+                            thickness: 1.h,
+                            color: isDark
+                                ? AppColors.border.withValues(alpha: 0.4)
+                                : const Color(0xFFF1F5F9),
+                          ),
                           itemBuilder: (context, index) {
                             final service = services[index];
                             final serviceId = service.id;
-                            if (serviceId == null)
+                            if (serviceId == null) {
                               return const SizedBox.shrink();
+                            }
 
                             final isSelected = editorState.isSelected(
                               serviceId,
@@ -351,20 +357,26 @@ class _EditServicesScreenState extends ConsumerState<EditServicesScreen> {
 
             // ── Save Button ─────────────────────────────────────────────
             Container(
-              padding: EdgeInsets.all(20.r),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surface,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.05),
-                    blurRadius: 10.r,
-                    offset: const Offset(0, -4),
-                  ),
-                ],
+              padding: EdgeInsets.only(
+                left: 20.w,
+                right: 20.w,
+                top: 10.h,
+                bottom: MediaQuery.of(context).viewInsets.bottom + 12.h,
               ),
-              child: PrimaryButton(
-                text: 'Save Changes',
-                onPressed: () => _onSaveChanges(context),
+              decoration: BoxDecoration(
+                color: theme.scaffoldBackgroundColor,
+                border: Border(
+                  top: BorderSide(
+                    color: isDark ? AppColors.border : const Color(0xFFE2E8F0),
+                    width: 1.r,
+                  ),
+                ),
+              ),
+              child: SafeArea(
+                child: PrimaryButton(
+                  text: 'Save',
+                  onPressed: () => _onSaveChanges(context),
+                ),
               ),
             ),
           ],
@@ -440,80 +452,70 @@ class _ServiceSelectionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onToggle,
-        borderRadius: AppDecorations.radiusMd,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
-          decoration: BoxDecoration(
-            color: isSelected
-                ? AppColors.primary.withValues(alpha: 0.08)
-                : theme.colorScheme.surface,
-            borderRadius: AppDecorations.radiusMd,
-            border: isSelected
-                ? Border.all(color: AppColors.primary, width: 1.5.r)
-                : null,
-          ),
-          child: Row(
-            children: [
-              Container(
-                padding: EdgeInsets.all(7.r),
-                decoration: BoxDecoration(
-                  color: isSelected
-                      ? AppColors.primary.withValues(alpha: 0.15)
-                      : (isDark
-                            ? AppColors.border.withValues(alpha: 0.3)
-                            : AppColors.border.withValues(alpha: 0.1)),
-                  borderRadius: AppDecorations.radiusSm,
-                ),
-                child: Icon(
-                  Icons.build_circle_outlined,
-                  color: isSelected ? AppColors.primary : AppColors.textMuted,
-                  size: 18.r,
-                ),
+    return InkWell(
+      onTap: onToggle,
+      borderRadius: BorderRadius.circular(10.r),
+      child: Padding(
+        padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 10.h),
+        child: Row(
+          children: [
+            Container(
+              padding: EdgeInsets.all(7.r),
+              decoration: BoxDecoration(
+                color: isSelected
+                    ? AppColors.primary.withValues(alpha: 0.12)
+                    : (isDark
+                        ? AppColors.surface
+                        : const Color(0xFFF8FAFC)),
+                shape: BoxShape.circle,
               ),
-              SizedBox(width: 12.w),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
+              child: Icon(
+                Icons.build_circle_outlined,
+                color: isSelected ? AppColors.primary : AppColors.textMuted,
+                size: 18.r,
+              ),
+            ),
+            SizedBox(width: 12.w),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    service.name ?? 'Unnamed Service',
+                    style: AppTextStyles.bodyMedium.copyWith(
+                      fontWeight:
+                          isSelected ? FontWeight.w600 : FontWeight.w400,
+                      fontSize: 13.sp,
+                      color: isSelected
+                          ? AppColors.primary
+                          : (isDark
+                              ? AppColors.textPrimary
+                              : const Color(0xFF0F172A)),
+                    ),
+                  ),
+                  if (service.category?.name != null) ...[
+                    SizedBox(height: 1.h),
                     Text(
-                      service.name ?? 'Unnamed Service',
-                      style: AppTextStyles.bodyMedium.copyWith(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 13.sp,
-                        color: isSelected ? AppColors.primary : null,
+                      service.category!.name!,
+                      style: AppTextStyles.bodySmall.copyWith(
+                        color: AppColors.textMuted,
+                        fontSize: 10.5.sp,
                       ),
                     ),
-                    if (service.category?.name != null) ...[
-                      SizedBox(height: 1.h),
-                      Text(
-                        service.category!.name!,
-                        style: AppTextStyles.bodySmall.copyWith(
-                          color: AppColors.textMuted,
-                          fontSize: 10.5.sp,
-                        ),
-                      ),
-                    ],
                   ],
-                ),
+                ],
               ),
-              Checkbox(
-                value: isSelected,
-                activeColor: AppColors.primary,
-                visualDensity: VisualDensity.compact,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(4.r),
-                ),
-                onChanged: (_) => onToggle(),
+            ),
+            Checkbox(
+              value: isSelected,
+              activeColor: AppColors.primary,
+              visualDensity: VisualDensity.compact,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(4.r),
               ),
-            ],
-          ),
+              onChanged: (_) => onToggle(),
+            ),
+          ],
         ),
       ),
     );

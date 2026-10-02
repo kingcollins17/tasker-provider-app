@@ -23,6 +23,7 @@ class AppRoutes {
   static const String registerRoute = 'register';
   static const String onboardCategoriesRoute = 'onboard-categories';
   static const String onboardServicesRoute = 'onboard-services';
+  // static const String customerSupport='customer-support';
 
   static final router = GoRouter(
     navigatorKey: NavigatorKeys.rootNavigatorKey,

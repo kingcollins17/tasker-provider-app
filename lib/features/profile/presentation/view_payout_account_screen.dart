@@ -21,20 +21,10 @@ class ViewPayoutAccountScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         leading: const BackButton(),
-        title: Text('Payout Information', style: AppTextStyles.h3),
+        title: Text('Payout Information', style: AppTextStyles.h3.copyWith(fontSize: 18.sp)),
         centerTitle: true,
         actions: [
-          IconButton(
-            onPressed: () {
-              context.pushNamed(ProfileRoutes.updatePayoutAccountRoute);
-            },
-            icon: HugeIcon(
-              icon: HugeIcons.strokeRoundedPencilEdit01,
-              color: isDark ? AppColors.textPrimary : const Color(0xFF0F172A),
-              size: 22.r,
-            ),
-            tooltip: 'Edit Payout Account',
-          ),
+         
           SizedBox(width: 8.w),
         ],
       ),
@@ -107,12 +97,12 @@ class ViewPayoutAccountScreen extends ConsumerWidget {
                         isDark ? AppColors.textMuted : AppColors.textSecondary,
                   ),
                 ),
-                SizedBox(height: 20.h),
+                SizedBox(height: 16.h),
 
-                // Premium Gradient Bank Card UI (Inspired by Monzo/Apple Card UI)
+                // Compact Gradient Bank Card UI
                 Container(
                   width: double.infinity,
-                  padding: EdgeInsets.all(20.r),
+                  padding: EdgeInsets.all(18.r),
                   decoration: BoxDecoration(
                     borderRadius: AppDecorations.radiusLg,
                     gradient: const LinearGradient(
@@ -126,9 +116,9 @@ class ViewPayoutAccountScreen extends ConsumerWidget {
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0xFF007D5A).withValues(alpha: 0.35),
-                        blurRadius: 20.r,
-                        offset: const Offset(0, 10),
+                        color: const Color(0xFF007D5A).withValues(alpha: 0.25),
+                        blurRadius: 16.r,
+                        offset: const Offset(0, 8),
                       ),
                     ],
                   ),
@@ -149,10 +139,10 @@ class ViewPayoutAccountScreen extends ConsumerWidget {
                                 child: Icon(
                                   Icons.account_balance_rounded,
                                   color: Colors.white,
-                                  size: 22.r,
+                                  size: 20.r,
                                 ),
                               ),
-                              SizedBox(width: 12.w),
+                              SizedBox(width: 10.w),
                               Text(
                                 bankName,
                                 style: AppTextStyles.subtitle.copyWith(
@@ -169,38 +159,51 @@ class ViewPayoutAccountScreen extends ConsumerWidget {
                               vertical: 4.h,
                             ),
                             decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.15),
+                              color: Colors.white.withValues(alpha: 0.2),
                               borderRadius: BorderRadius.circular(8.r),
                             ),
-                            child: Text(
-                              'DEFAULT',
-                              style: AppTextStyles.labelUppercase.copyWith(
-                                color: Colors.white,
-                                fontSize: 10.sp,
-                                letterSpacing: 0.8,
-                              ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.check_circle_rounded,
+                                  color: Colors.white,
+                                  size: 12.r,
+                                ),
+                                SizedBox(width: 4.w),
+                                Text(
+                                  'VERIFIED',
+                                  style: AppTextStyles.labelUppercase.copyWith(
+                                    color: Colors.white,
+                                    fontSize: 10.sp,
+                                    fontWeight: FontWeight.bold,
+                                    letterSpacing: 0.6,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ],
                       ),
-                      SizedBox(height: 36.h),
+                      SizedBox(height: 24.h),
 
                       // Account Number Text
                       Text(
                         _formatAccountNumber(accountNumber),
                         style: TextStyle(
                           color: Colors.white,
-                          fontSize: 24.sp,
-                          letterSpacing: 3,
+                          fontSize: 22.sp,
+                          letterSpacing: 2.5,
                           fontWeight: FontWeight.w600,
                           fontFamily: 'monospace',
                         ),
                       ),
-                      SizedBox(height: 20.h),
+                      SizedBox(height: 16.h),
 
                       // Account Holder Name
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -210,6 +213,7 @@ class ViewPayoutAccountScreen extends ConsumerWidget {
                                 style: AppTextStyles.labelUppercase.copyWith(
                                   color: Colors.white70,
                                   fontSize: 9.sp,
+                                  letterSpacing: 0.5,
                                 ),
                               ),
                               SizedBox(height: 2.h),
@@ -223,80 +227,48 @@ class ViewPayoutAccountScreen extends ConsumerWidget {
                               ),
                             ],
                           ),
-                          Icon(
-                            Icons.verified_user_rounded,
-                            color: Colors.white.withValues(alpha: 0.8),
-                            size: 22.r,
+                          InkWell(
+                            onTap: () {
+                              context.pushNamed(
+                                ProfileRoutes.updatePayoutAccountRoute,
+                              );
+                            },
+                            borderRadius: BorderRadius.circular(8.r),
+                            child: Container(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: 10.w,
+                                vertical: 5.h,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.15),
+                                borderRadius: BorderRadius.circular(8.r),
+                                border: Border.all(
+                                  color: Colors.white.withValues(alpha: 0.3),
+                                  width: 1.r,
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.edit_outlined,
+                                    color: Colors.white,
+                                    size: 13.r,
+                                  ),
+                                  SizedBox(width: 4.w),
+                                  Text(
+                                    'Edit',
+                                    style: AppTextStyles.bodySmall.copyWith(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 11.sp,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
                           ),
                         ],
-                      ),
-                    ],
-                  ),
-                ),
-
-                SizedBox(height: 24.h),
-
-                // Spacious & Structured Card Details Box (Inspiration Detail Container)
-                Container(
-                  width: double.infinity,
-                  padding: EdgeInsets.symmetric(
-                    horizontal: 20.w,
-                    vertical: 16.h,
-                  ),
-                  decoration: BoxDecoration(
-                    color: isDark ? AppColors.surface : Colors.white,
-                    borderRadius: AppDecorations.radiusLg,
-                    border: Border.all(
-                      color: isDark
-                          ? AppColors.border
-                          : const Color(0xFFE2E8F0),
-                    ),
-                    boxShadow: [
-                      if (!isDark)
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.03),
-                          blurRadius: 10.r,
-                          offset: const Offset(0, 4),
-                        ),
-                    ],
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Account Details',
-                        style: AppTextStyles.subtitle.copyWith(
-                          fontWeight: FontWeight.w700,
-                          fontSize: 15.sp,
-                          color: isDark
-                              ? AppColors.textPrimary
-                              : const Color(0xFF0F172A),
-                        ),
-                      ),
-                      SizedBox(height: 16.h),
-                      _DetailRow(
-                        label: 'Bank Name',
-                        value: bankName,
-                        isDark: isDark,
-                      ),
-                      _buildDivider(isDark),
-                      _DetailRow(
-                        label: 'Account Name',
-                        value: accountName,
-                        isDark: isDark,
-                      ),
-                      _buildDivider(isDark),
-                      _DetailRow(
-                        label: 'Account Number',
-                        value: accountNumber,
-                        isDark: isDark,
-                      ),
-                      _buildDivider(isDark),
-                      _DetailRow(
-                        label: 'Payout Status',
-                        value: 'Verified',
-                        isBadge: true,
-                        isDark: isDark,
                       ),
                     ],
                   ),
@@ -319,41 +291,18 @@ class ViewPayoutAccountScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildDivider(bool isDark) {
-    return Padding(
-      padding: EdgeInsets.symmetric(vertical: 12.h),
-      child: Divider(
-        height: 1.h,
-        thickness: 1.h,
-        color: isDark ? AppColors.border : const Color(0xFFF1F5F9),
-      ),
-    );
-  }
-
   Widget _buildLoadingState(bool isDark) {
     return SingleChildScrollView(
       padding: EdgeInsets.all(20.r),
       child: Shimmer.fromColors(
         baseColor: isDark ? AppColors.surface : Colors.grey.shade300,
         highlightColor: isDark ? AppColors.border : Colors.grey.shade100,
-        child: Column(
-          children: [
-            Container(
-              height: 180.h,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: AppDecorations.radiusLg,
-              ),
-            ),
-            SizedBox(height: 24.h),
-            Container(
-              height: 200.h,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: AppDecorations.radiusLg,
-              ),
-            ),
-          ],
+        child: Container(
+          height: 160.h,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: AppDecorations.radiusLg,
+          ),
         ),
       ),
     );
@@ -367,68 +316,3 @@ class ViewPayoutAccountScreen extends ConsumerWidget {
   }
 }
 
-class _DetailRow extends StatelessWidget {
-  final String label;
-  final String value;
-  final bool isBadge;
-  final bool isDark;
-
-  const _DetailRow({
-    required this.label,
-    required this.value,
-    this.isBadge = false,
-    required this.isDark,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          label,
-          style: AppTextStyles.bodyMedium.copyWith(
-            color: isDark ? AppColors.textMuted : AppColors.textSecondary,
-            fontSize: 13.sp,
-          ),
-        ),
-        if (isBadge)
-          Container(
-            padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
-            decoration: BoxDecoration(
-              color: AppColors.success.withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(12.r),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.check_circle_rounded,
-                  color: AppColors.success,
-                  size: 14.r,
-                ),
-                SizedBox(width: 4.w),
-                Text(
-                  value,
-                  style: AppTextStyles.bodySmall.copyWith(
-                    color: AppColors.success,
-                    fontWeight: FontWeight.w700,
-                    fontSize: 12.sp,
-                  ),
-                ),
-              ],
-            ),
-          )
-        else
-          Text(
-            value,
-            style: AppTextStyles.bodyMedium.copyWith(
-              color: isDark ? AppColors.textPrimary : const Color(0xFF0F172A),
-              fontWeight: FontWeight.w600,
-              fontSize: 14.sp,
-            ),
-          ),
-      ],
-    );
-  }
-}

@@ -3,11 +3,13 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
+import 'package:tasker_app/core/providers/payments_provider.dart';
 import 'package:tasker_app/core/providers/tasks_provider.dart';
 import 'package:tasker_app/core/ui/designs/colors.dart';
 import 'package:tasker_app/core/ui/designs/text_styles.dart';
 import 'package:tasker_app/core/utils/extensions/flushbar_context_ext.dart';
 import 'package:tasker_app/core/utils/extensions/loading_context_ext.dart';
+import 'package:tasker_app/core/utils/extensions/num_ext.dart';
 
 class PinEntryScreen extends ConsumerStatefulWidget {
   final String? taskId;
@@ -78,7 +80,13 @@ class _PinEntryScreenState extends ConsumerState<PinEntryScreen> {
             },
           );
     } else if (mode == 'completePin') {
-      final paymentMode = (_isCash ? 'cash' : 'online').toUpperCase();
+      final maxThreshold = ref.read(maxDebtThresholdProvider);
+      final debtAsync = ref.read(debtSummaryProvider);
+      final userDebt = debtAsync.value?.totalDebtOwed ?? 0.0;
+      final isCashDisabled = userDebt >= (maxThreshold - 500.0);
+
+      final paymentMode =
+          (!isCashDisabled && _isCash ? 'cash' : 'online').toUpperCase();
       await ref
           .read(taskManagementProvider.notifier)
           .completeTask(
@@ -106,6 +114,14 @@ class _PinEntryScreenState extends ConsumerState<PinEntryScreen> {
 
     final mode = widget.mode ?? 'startPin';
     final isCompleteMode = mode == 'completePin';
+
+    final maxThreshold = ref.watch(maxDebtThresholdProvider);
+    final debtAsync = ref.watch(debtSummaryProvider);
+    final userDebt = debtAsync.value?.totalDebtOwed ?? 0.0;
+
+    // Cash option disabled if debt >= maxThreshold or difference is within 500 of maxThreshold
+    final isCashDisabled = userDebt >= (maxThreshold - 500.0);
+    final isCashSelected = !isCashDisabled && _isCash;
 
     final displayTitle = isCompleteMode
         ? 'Enter Completion PIN'
@@ -291,7 +307,8 @@ class _PinEntryScreenState extends ConsumerState<PinEntryScreen> {
                                 title: 'Cash',
                                 subtitle: 'Direct cash',
                                 icon: Icons.payments_outlined,
-                                isSelected: _isCash,
+                                isSelected: isCashSelected,
+                                isDisabled: isCashDisabled,
                                 onTap: () => setState(() => _isCash = true),
                                 isDark: isDark,
                               ),
@@ -302,13 +319,53 @@ class _PinEntryScreenState extends ConsumerState<PinEntryScreen> {
                                 title: 'Online',
                                 subtitle: 'Electronic',
                                 icon: Icons.credit_card_rounded,
-                                isSelected: !_isCash,
+                                isSelected: !isCashSelected,
+                                isDisabled: false,
                                 onTap: () => setState(() => _isCash = false),
                                 isDark: isDark,
                               ),
                             ),
                           ],
                         ),
+                        if (isCashDisabled) ...[
+                          SizedBox(height: 12.h),
+                          Container(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 12.w,
+                              vertical: 10.h,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppColors.error.withValues(alpha: 0.08),
+                              borderRadius: BorderRadius.circular(12.r),
+                              border: Border.all(
+                                color: AppColors.error.withValues(alpha: 0.25),
+                              ),
+                            ),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Icon(
+                                  Icons.info_outline_rounded,
+                                  size: 16.r,
+                                  color: AppColors.error,
+                                ),
+                                SizedBox(width: 8.w),
+                                Expanded(
+                                  child: Text(
+                                    'Cash settlement is disabled because your debt (${userDebt.toNaira(2)}) is close to or above the ${maxThreshold.toNaira(0)} threshold limit. Online settlement is required to deduct debt from payout.',
+                                    style: AppTextStyles.bodySmall.copyWith(
+                                      color: isDark
+                                          ? AppColors.textSecondary
+                                          : const Color(0xFF0F172A),
+                                      fontSize: 11.5.sp,
+                                      height: 1.35,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ],
 
                       const Spacer(),
@@ -358,6 +415,7 @@ class _PaymentModeCard extends StatelessWidget {
   final String subtitle;
   final IconData icon;
   final bool isSelected;
+  final bool isDisabled;
   final VoidCallback onTap;
   final bool isDark;
 
@@ -366,74 +424,115 @@ class _PaymentModeCard extends StatelessWidget {
     required this.subtitle,
     required this.icon,
     required this.isSelected,
+    this.isDisabled = false,
     required this.onTap,
     required this.isDark,
   });
 
   @override
   Widget build(BuildContext context) {
-    final borderColor = isSelected
-        ? AppColors.primary
-        : (isDark ? AppColors.border : const Color(0xFFE2E8F0));
-    final bgColor = isSelected
-        ? AppColors.primary.withValues(alpha: isDark ? 0.15 : 0.08)
-        : (isDark
-              ? Colors.white.withValues(alpha: 0.03)
-              : const Color(0xFFF8FAFC));
+    final borderColor = isDisabled
+        ? (isDark
+            ? AppColors.border.withValues(alpha: 0.3)
+            : Colors.grey.shade300)
+        : (isSelected
+            ? AppColors.primary
+            : (isDark ? AppColors.border : const Color(0xFFE2E8F0)));
+
+    final bgColor = isDisabled
+        ? (isDark
+            ? Colors.white.withValues(alpha: 0.02)
+            : Colors.grey.shade100)
+        : (isSelected
+            ? AppColors.primary.withValues(alpha: isDark ? 0.15 : 0.08)
+            : (isDark
+                ? Colors.white.withValues(alpha: 0.03)
+                : const Color(0xFFF8FAFC)));
+
+    final iconColor = isDisabled
+        ? (isDark
+            ? AppColors.textMuted.withValues(alpha: 0.4)
+            : Colors.grey.shade400)
+        : (isSelected
+            ? AppColors.primary
+            : (isDark ? AppColors.textMuted : const Color(0xFF64748B)));
+
+    final titleColor = isDisabled
+        ? (isDark ? AppColors.textMuted : Colors.grey.shade400)
+        : (isSelected
+            ? AppColors.primary
+            : (isDark ? AppColors.textPrimary : const Color(0xFF0F172A)));
 
     return GestureDetector(
-      onTap: onTap,
+      onTap: isDisabled ? null : onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
-        padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 16.h),
+        padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 14.h),
         decoration: BoxDecoration(
           color: bgColor,
           borderRadius: BorderRadius.circular(16.r),
-          border: Border.all(color: borderColor, width: isSelected ? 2.r : 1.r),
+          border: Border.all(
+            color: borderColor,
+            width: isSelected && !isDisabled ? 2.r : 1.r,
+          ),
         ),
         child: Row(
           children: [
             Container(
-              padding: EdgeInsets.all(10.r),
+              padding: EdgeInsets.all(8.r),
               decoration: BoxDecoration(
-                color: isSelected
+                color: isSelected && !isDisabled
                     ? AppColors.primary.withValues(alpha: 0.2)
                     : (isDark
-                          ? Colors.white10
-                          : const Color(0xFFE2E8F0).withValues(alpha: 0.5)),
+                        ? Colors.white10
+                        : const Color(0xFFE2E8F0).withValues(alpha: 0.5)),
                 shape: BoxShape.circle,
               ),
               child: Icon(
                 icon,
-                color: isSelected
-                    ? AppColors.primary
-                    : (isDark ? AppColors.textMuted : const Color(0xFF64748B)),
-                size: 20.r,
+                color: iconColor,
+                size: 18.r,
               ),
             ),
-            SizedBox(width: 12.w),
+            SizedBox(width: 10.w),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    title,
-                    style: AppTextStyles.bodyMedium.copyWith(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14.sp,
-                      color: isSelected
-                          ? AppColors.primary
-                          : (isDark
-                                ? AppColors.textPrimary
-                                : const Color(0xFF0F172A)),
-                    ),
+                  Row(
+                    children: [
+                      Flexible(
+                        child: Text(
+                          title,
+                          style: AppTextStyles.bodyMedium.copyWith(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13.5.sp,
+                            color: titleColor,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      if (isDisabled) ...[
+                        SizedBox(width: 4.w),
+                        Icon(
+                          Icons.lock_rounded,
+                          size: 12.r,
+                          color: AppColors.error,
+                        ),
+                      ],
+                    ],
                   ),
-                  SizedBox(height: 4.h),
+                  SizedBox(height: 2.h),
                   Text(
-                    subtitle,
+                    isDisabled ? 'Disabled' : subtitle,
                     style: AppTextStyles.bodySmall.copyWith(
-                      color: AppColors.textMuted,
+                      color: isDisabled
+                          ? AppColors.error.withValues(alpha: 0.8)
+                          : AppColors.textMuted,
                       fontSize: 11.sp,
+                      fontWeight:
+                          isDisabled ? FontWeight.w500 : FontWeight.normal,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,

@@ -110,7 +110,7 @@ class _OnboardingStepsScreenState
       } catch (e) {
         if (mounted) {
           context.hideLoading();
-          context.showError(
+          context.showToast(
             'An unexpected error occurred during face capture.',
           );
         }
@@ -119,6 +119,15 @@ class _OnboardingStepsScreenState
   }
 
   Future<void> _handleDocumentTap() async {
+    final hasSelfieAsync = ref.read(hasSelfieProvider);
+    final hasSelfie = (hasSelfieAsync.value ?? false) || _selfieCompletedLocally;
+    if (!hasSelfie) {
+      if (mounted) {
+        context.showToast('Please complete Step 1 (Face Capture) first.');
+      }
+      return;
+    }
+
     final result = await Navigator.push<DocumentSubmissionResult?>(
       context,
       MaterialPageRoute(
@@ -170,6 +179,40 @@ class _OnboardingStepsScreenState
   }
 
   Future<void> _handleReferenceTap(VerificationStatus? status) async {
+    final hasSelfieAsync = ref.read(hasSelfieProvider);
+    final hasSelfie = (hasSelfieAsync.value ?? false) || _selfieCompletedLocally;
+    if (!hasSelfie) {
+      if (mounted) {
+        context.showError('Please complete Step 1 (Face Capture) first.');
+      }
+      return;
+    }
+
+    final kycDocAsync = ref.read(getKycStatusProvider);
+    final kycStatusAsync = ref.read(kycStatusProvider);
+    final kycDoc = kycDocAsync.value;
+    final kycEnum = kycDoc?.verificationStatus ??
+        (kycStatusAsync.value == KycStatus.approved
+            ? VerificationStatus.passed
+            : kycStatusAsync.value == KycStatus.underReview ||
+                    kycStatusAsync.value == KycStatus.submitted
+                ? VerificationStatus.underReview
+                : kycStatusAsync.value == KycStatus.rejected
+                    ? VerificationStatus.failed
+                    : VerificationStatus.pending);
+
+    final isDocSubmitted = _docCompletedLocally ||
+        kycEnum == VerificationStatus.passed ||
+        kycEnum == VerificationStatus.underReview ||
+        kycEnum == VerificationStatus.failed;
+
+    if (!isDocSubmitted) {
+      if (mounted) {
+        context.showError('Please complete Step 2 (Submit KYC Document) first.');
+      }
+      return;
+    }
+
     await context.pushNamed(
       ProfileRoutes.guarantorRoute,
       queryParameters: status == VerificationStatus.failed
@@ -195,6 +238,56 @@ class _OnboardingStepsScreenState
   }
 
   void _handleInterviewTap(Interview? interview) {
+    final hasSelfieAsync = ref.read(hasSelfieProvider);
+    final hasSelfie = (hasSelfieAsync.value ?? false) || _selfieCompletedLocally;
+    if (!hasSelfie) {
+      if (mounted) {
+        context.showError('Please complete Step 1 (Face Capture) first.');
+      }
+      return;
+    }
+
+    final kycDocAsync = ref.read(getKycStatusProvider);
+    final kycStatusAsync = ref.read(kycStatusProvider);
+    final kycDoc = kycDocAsync.value;
+    final kycEnum = kycDoc?.verificationStatus ??
+        (kycStatusAsync.value == KycStatus.approved
+            ? VerificationStatus.passed
+            : kycStatusAsync.value == KycStatus.underReview ||
+                    kycStatusAsync.value == KycStatus.submitted
+                ? VerificationStatus.underReview
+                : kycStatusAsync.value == KycStatus.rejected
+                    ? VerificationStatus.failed
+                    : VerificationStatus.pending);
+
+    final isDocSubmitted = _docCompletedLocally ||
+        kycEnum == VerificationStatus.passed ||
+        kycEnum == VerificationStatus.underReview ||
+        kycEnum == VerificationStatus.failed;
+
+    if (!isDocSubmitted) {
+      if (mounted) {
+        context.showError('Please complete Step 2 (Submit KYC Document) first.');
+      }
+      return;
+    }
+
+    final guarantorAsync = ref.read(guarantorProvider);
+    final guarantor = guarantorAsync.value;
+    final guarantorStatus = guarantor?.verificationStatus;
+    final hasGuarantorSubmitted = guarantorStatus == VerificationStatus.passed ||
+        guarantorStatus == VerificationStatus.underReview ||
+        guarantorStatus == VerificationStatus.failed;
+
+    if (!hasGuarantorSubmitted) {
+      if (mounted) {
+        context.showError(
+          'Please complete Step 3 (Provide Professional Reference) first.',
+        );
+      }
+      return;
+    }
+
     InterviewScheduleSheet.show(context, interview: interview);
   }
 
@@ -349,18 +442,23 @@ class _OnboardingStepsScreenState
                                     : isDocFailed
                                         ? (docRejectionReason ??
                                             'Document verification failed. Tap to re-upload.')
-                                        : 'Upload clear photo of your Passport, Driver\'s License, or National ID.',
+                                        : !hasSelfie
+                                            ? 'Complete Step 1 (Face Capture) first to unlock document submission.'
+                                            : 'Upload clear photo of your Passport, Driver\'s License, or National ID.',
                             isCompleted: isDocApproved,
                             isSubmitted: isDocSubmitted,
                             isRejected: isDocFailed,
+                            isLocked: !hasSelfie,
                             statusBadgeText: isDocApproved
                                 ? 'COMPLETED'
                                 : isDocFailed
                                     ? 'REJECTED'
-                                    : (isDocSubmitted ? 'UNDER REVIEW' : null),
+                                    : isDocSubmitted
+                                        ? 'UNDER REVIEW'
+                                        : (!hasSelfie ? 'LOCKED' : null),
                             onTap: (isDocApproved || isDocSubmitted)
                                 ? null
-                                : _handleDocumentTap,
+                                : () => _handleDocumentTap(),
                           ),
                           SizedBox(height: 12.h),
 
@@ -377,17 +475,22 @@ class _OnboardingStepsScreenState
                                     : isGuarantorFailed
                                         ? (guarantor?.failureReason ??
                                             'Reference verification failed. Tap to resubmit.')
-                                        : 'Provide a trusted professional reference for background vetting.',
+                                        : (!isDocApproved && !isDocSubmitted && !isDocFailed)
+                                            ? 'Complete Step 2 (Submit KYC Document) first to unlock reference submission.'
+                                            : 'Provide a trusted professional reference for background vetting.',
                             isCompleted: isGuarantorPassed,
                             isSubmitted: isGuarantorUnderReview,
                             isRejected: isGuarantorFailed,
+                            isLocked: !isDocApproved && !isDocSubmitted && !isDocFailed,
                             statusBadgeText: isGuarantorPassed
                                 ? 'COMPLETED'
                                 : isGuarantorFailed
                                     ? 'ACTION NEEDED'
-                                    : (isGuarantorUnderReview
+                                    : isGuarantorUnderReview
                                         ? 'UNDER REVIEW'
-                                        : null),
+                                        : (!isDocApproved && !isDocSubmitted && !isDocFailed
+                                            ? 'LOCKED'
+                                            : null),
                             onTap: (isGuarantorPassed || isGuarantorUnderReview)
                                 ? null
                                 : () => _handleReferenceTap(guarantorStatus),
@@ -404,14 +507,19 @@ class _OnboardingStepsScreenState
                                 ? 'Online interview completed successfully.'
                                 : isInterviewScheduled
                                     ? 'Scheduled for ${DateFormat.yMMMd().add_jm().format(interview!.scheduledAt!)}'
-                                    : 'A brief video call interview with our team to finalize eligibility.',
+                                    : (!isGuarantorPassed && !isGuarantorUnderReview && !isGuarantorFailed)
+                                        ? 'Complete Step 3 (Provide Professional Reference) first to unlock online interview.'
+                                        : 'A brief video call interview with our team to finalize eligibility.',
                             isCompleted: isInterviewPassed,
                             isSubmitted: isInterviewScheduled,
+                            isLocked: !isGuarantorPassed && !isGuarantorUnderReview && !isGuarantorFailed,
                             statusBadgeText: isInterviewPassed
                                 ? 'COMPLETED'
                                 : isInterviewScheduled
                                     ? 'SCHEDULED'
-                                    : null,
+                                    : (!isGuarantorPassed && !isGuarantorUnderReview && !isGuarantorFailed
+                                        ? 'LOCKED'
+                                        : null),
                             customBottomWidget: (isInterviewScheduled &&
                                     interview?.meetingLink != null &&
                                     interview!.meetingLink!.trim().isNotEmpty)
@@ -582,12 +690,13 @@ class _OnboardingStepsScreenState
     bool isCompleted = false,
     bool isSubmitted = false,
     bool isRejected = false,
+    bool isLocked = false,
     String? statusBadgeText,
     Widget? customBottomWidget,
     VoidCallback? onTap,
   }) {
     final theme = Theme.of(context);
-    final isActive = !isCompleted && !isSubmitted && !isRejected;
+    final isActive = !isCompleted && !isSubmitted && !isRejected && !isLocked;
 
     final Color stateColor = isCompleted
         ? AppColors.success
@@ -595,7 +704,9 @@ class _OnboardingStepsScreenState
             ? AppColors.error
             : isSubmitted
                 ? AppColors.warning
-                : AppColors.primary;
+                : isLocked
+                    ? (isDark ? AppColors.textMuted : Colors.grey.shade400)
+                    : AppColors.primary;
 
     return GestureDetector(
       onTap: onTap,
@@ -637,12 +748,18 @@ class _OnboardingStepsScreenState
                     color: stateColor.withValues(
                       alpha: (isCompleted || isRejected || isSubmitted)
                           ? 0.14
-                          : 0.08,
+                          : isLocked
+                              ? 0.06
+                              : 0.08,
                     ),
                     borderRadius: AppDecorations.radiusMd,
                   ),
                   child: Icon(
-                    isCompleted ? Icons.check_circle_rounded : icon,
+                    isCompleted
+                        ? Icons.check_circle_rounded
+                        : isLocked
+                            ? Icons.lock_outline_rounded
+                            : icon,
                     color: stateColor,
                     size: 22.r,
                   ),
@@ -701,7 +818,9 @@ class _OnboardingStepsScreenState
                         style: AppTextStyles.bodySmall.copyWith(
                           color: isRejected
                               ? AppColors.error
-                              : AppColors.textMuted,
+                              : isLocked
+                                  ? (isDark ? AppColors.textMuted : Colors.grey.shade600)
+                                  : AppColors.textMuted,
                           fontSize: 11.5.sp,
                           height: 1.3,
                         ),
@@ -710,13 +829,17 @@ class _OnboardingStepsScreenState
                   ),
                 ),
 
-                // Action chevron
+                // Action chevron or lock
                 if (onTap != null) ...[
                   SizedBox(width: 6.w),
                   Icon(
-                    Icons.chevron_right_rounded,
-                    color: AppColors.primary,
-                    size: 22.r,
+                    isLocked
+                        ? Icons.lock_outline_rounded
+                        : Icons.chevron_right_rounded,
+                    color: isLocked
+                        ? (isDark ? AppColors.textMuted : Colors.grey.shade400)
+                        : AppColors.primary,
+                    size: isLocked ? 18.r : 22.r,
                   ),
                 ],
               ],

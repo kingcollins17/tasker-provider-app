@@ -52,19 +52,7 @@ class _SupportCasesScreenState extends ConsumerState<SupportCasesScreen>
             fontWeight: FontWeight.bold,
           ),
         ),
-        actions: [
-          IconButton(
-            onPressed: () =>
-                context.pushNamed(SupportRoutes.createCaseRoute),
-            icon: Icon(
-              Icons.add_circle_outline_rounded,
-              color: AppColors.primary,
-              size: 22.r,
-            ),
-            tooltip: 'Create Support Ticket',
-          ),
-          SizedBox(width: 4.w),
-        ],
+      
         bottom: PreferredSize(
           preferredSize: Size.fromHeight(42.h),
           child: Padding(

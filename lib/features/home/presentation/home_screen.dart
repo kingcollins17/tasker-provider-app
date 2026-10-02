@@ -27,6 +27,7 @@ import 'package:tasker_app/features/tasks/tasks_routes.dart';
 import '../../../app_routes.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../auth/providers/onboard_services_provider.dart';
+import '../../support/support_routes.dart' show SupportRoutes;
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -300,7 +301,7 @@ class _HomeAppBar extends ConsumerWidget {
                 ),
                 child: Center(
                   child: Text(
-                    fullname.isNotEmpty ? fullname[0].toUpperCase() : '?',
+                    fullname.trim().isNotEmpty ? fullname[0].toUpperCase() : '?',
                     style: AppTextStyles.h3.copyWith(
                       color: Colors.white,
                       fontSize: 15.sp,
@@ -343,7 +344,7 @@ class _HomeAppBar extends ConsumerWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  fullname.isNotEmpty ? fullname : 'User',
+                  fullname.trim().isNotEmpty ? fullname : 'Guest',
                   style: AppTextStyles.h3.copyWith(
                     fontSize: 15.5.sp,
                     fontWeight: FontWeight.bold,
@@ -368,7 +369,9 @@ class _HomeAppBar extends ConsumerWidget {
           _TopIconAction(
             icon: Icons.headset_mic_rounded,
             color: const Color(0xFFEC4899),
-            onTap: () {},
+            onTap: () {
+              context.pushNamed(SupportRoutes.supportCasesRoute);
+            },
           ),
           const NotificationIcon(),
         ],
@@ -1444,9 +1447,11 @@ class _OnboardServicesSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final hasOnboardedAsync = ref.watch(onboardedServicesProvider);
+    debugLog(hasOnboardedAsync);
+    debugLog(hasOnboardedAsync is AsyncError);
     final hasOnboarded = hasOnboardedAsync.value ?? true;
 
-    if (hasOnboarded) {
+    if (hasOnboarded || hasOnboardedAsync.hasError) {
       return const SizedBox.shrink();
     }
 
@@ -1581,14 +1586,14 @@ class _AccountSetupSection extends ConsumerWidget {
     final rawInterviewStatus = interview?.status?.toUpperCase().trim();
     final isInterviewPassed =
         rawInterviewStatus == 'PASSED' || rawInterviewStatus == 'COMPLETED';
-
+    final anyHasError = interviewAsync.hasError || guarantorAsync.hasError || kycStatusAsync.hasError;
     int completedCount = 0;
     if (hasSelfie) completedCount++;
     if (isDocApproved) completedCount++;
     if (isGuarantorPassed) completedCount++;
     if (isInterviewPassed) completedCount++;
 
-    if (completedCount >= 4) {
+    if (completedCount >= 4 || anyHasError) {
       return const SizedBox.shrink();
     }
 
@@ -1818,6 +1823,20 @@ class _AccountIssuesSection extends ConsumerWidget {
             icon: Icons.email_outlined,
             onTap: () {
               context.go('/profile');
+            },
+          ),
+        );
+      }
+
+      if ((user.stats?.currentTier ?? 0) >= 4 && user.paymentAccount == null) {
+        issues.add(
+          _AccountIssueCard(
+            title: 'Update Bank Information',
+            description:
+                'Update your bank details to receive payouts from your completed tasks.',
+            icon: Icons.account_balance_outlined,
+            onTap: () {
+              context.pushNamed(ProfileRoutes.updatePayoutAccountRoute);
             },
           ),
         );

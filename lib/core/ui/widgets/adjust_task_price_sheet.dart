@@ -20,11 +20,7 @@ class AdjustTaskPriceSheet extends ConsumerStatefulWidget {
   final String taskId;
   final VoidCallback? onSuccess;
 
-  const AdjustTaskPriceSheet({
-    super.key,
-    required this.taskId,
-    this.onSuccess,
-  });
+  const AdjustTaskPriceSheet({super.key, required this.taskId, this.onSuccess});
 
   /// Displays the non-dismissible [AdjustTaskPriceSheet] modal bottom sheet.
   /// Always uses [NavigatorKeys.rootNavigatorKey.currentContext] internally.
@@ -41,10 +37,8 @@ class AdjustTaskPriceSheet extends ConsumerStatefulWidget {
       isDismissible: false,
       enableDrag: false,
       backgroundColor: Colors.transparent,
-      builder: (_) => AdjustTaskPriceSheet(
-        taskId: taskId,
-        onSuccess: onSuccess,
-      ),
+      builder: (_) =>
+          AdjustTaskPriceSheet(taskId: taskId, onSuccess: onSuccess),
     );
   }
 
@@ -161,9 +155,8 @@ class _AdjustTaskPriceSheetState extends ConsumerState<AdjustTaskPriceSheet> {
                       isDark,
                       taskManagementState,
                       taskTitle: task.title ?? _fallbackTaskRef(widget.taskId),
-                      currentPrice: task.providerPayout ??
-                          task.customerTotalPrice ??
-                          0.0,
+                      currentPrice:
+                          task.providerPayout ?? task.customerTotalPrice ?? 0.0,
                     ),
                   ),
                 ],
@@ -176,10 +169,12 @@ class _AdjustTaskPriceSheetState extends ConsumerState<AdjustTaskPriceSheet> {
   }
 
   Widget _buildShimmerLoadingLayout(BuildContext context, bool isDark) {
-    final baseColor =
-        isDark ? const Color(0xFF262626) : const Color(0xFFE2E8F0);
-    final highlightColor =
-        isDark ? const Color(0xFF3B3B3B) : const Color(0xFFF1F5F9);
+    final baseColor = isDark
+        ? const Color(0xFF262626)
+        : const Color(0xFFE2E8F0);
+    final highlightColor = isDark
+        ? const Color(0xFF3B3B3B)
+        : const Color(0xFFF1F5F9);
 
     return Shimmer.fromColors(
       baseColor: baseColor,
@@ -341,10 +336,13 @@ class _AdjustTaskPriceSheetState extends ConsumerState<AdjustTaskPriceSheet> {
               color: isDark ? AppColors.textMuted : const Color(0xFF94A3B8),
             ),
             filled: true,
-            fillColor:
-                isDark ? const Color(0xFF262626) : const Color(0xFFF8FAFC),
-            contentPadding:
-                EdgeInsets.symmetric(horizontal: 14.w, vertical: 12.h),
+            fillColor: isDark
+                ? const Color(0xFF262626)
+                : const Color(0xFFF8FAFC),
+            contentPadding: EdgeInsets.symmetric(
+              horizontal: 14.w,
+              vertical: 12.h,
+            ),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12.r),
               borderSide: BorderSide(
@@ -375,16 +373,16 @@ class _AdjustTaskPriceSheetState extends ConsumerState<AdjustTaskPriceSheet> {
           !hasInput
               ? 'Must be greater than current payout of ${currentPrice.toNaira(2)}'
               : !isValidAmount
-                  ? 'Price must be higher than current payout of ${currentPrice.toNaira(2)}'
-                  : 'Requested total price: ${enteredAmount.toNaira(2)}',
+              ? 'Price must be higher than current payout of ${currentPrice.toNaira(2)}'
+              : 'Requested total price: ${enteredAmount.toNaira(2)}',
           style: AppTextStyles.bodySmall.copyWith(
             fontSize: 11.5.sp,
             fontWeight: isValidAmount ? FontWeight.bold : FontWeight.w500,
             color: !hasInput
                 ? AppColors.textMuted
                 : !isValidAmount
-                    ? AppColors.error
-                    : AppColors.primary,
+                ? AppColors.error
+                : AppColors.primary,
           ),
         ),
 
@@ -416,8 +414,9 @@ class _AdjustTaskPriceSheetState extends ConsumerState<AdjustTaskPriceSheet> {
               color: isDark ? AppColors.textMuted : const Color(0xFF94A3B8),
             ),
             filled: true,
-            fillColor:
-                isDark ? const Color(0xFF262626) : const Color(0xFFF8FAFC),
+            fillColor: isDark
+                ? const Color(0xFF262626)
+                : const Color(0xFFF8FAFC),
             contentPadding: EdgeInsets.all(12.r),
             counterStyle: AppTextStyles.bodySmall.copyWith(
               fontSize: 10.sp,
@@ -456,10 +455,9 @@ class _AdjustTaskPriceSheetState extends ConsumerState<AdjustTaskPriceSheet> {
               : () {
                   final finalAmountToPass = enteredAmount;
 
-                  final description =
-                      _descriptionController.text.trim().isEmpty
-                          ? null
-                          : _descriptionController.text.trim();
+                  final description = _descriptionController.text.trim().isEmpty
+                      ? null
+                      : _descriptionController.text.trim();
 
                   context.showLoading(null, 'Requesting price adjustment...');
                   ref
@@ -469,6 +467,15 @@ class _AdjustTaskPriceSheetState extends ConsumerState<AdjustTaskPriceSheet> {
                         amount: finalAmountToPass,
                         description: description,
                         onSuccess: () {
+                          ref.invalidate(taskDetailProvider(widget.taskId));
+
+                          ref.invalidate(taskAssignmentProvider(widget.taskId));
+                          ref.invalidate(
+                            taskPriceAdjustmentsProvider((
+                              taskId: widget.taskId,
+                              status: null,
+                            )),
+                          );
                           if (mounted) {
                             context.hideLoading();
                             widget.onSuccess?.call();

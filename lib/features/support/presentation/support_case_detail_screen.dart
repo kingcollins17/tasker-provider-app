@@ -100,13 +100,57 @@ class SupportCaseDetailScreen extends ConsumerWidget {
           ),
         ),
         actions: [
-          IconButton(
-            icon: Icon(Icons.refresh_rounded, color: AppColors.primary, size: 20.r),
-            tooltip: 'Refresh details',
-            onPressed: () {
-              ref.invalidate(userCaseDetailsProvider(caseId));
-              ref.invalidate(caseAttachmentsProvider(caseId));
+          caseAsync.maybeWhen(
+            data: (caseItem) {
+              if (caseItem == null) return const SizedBox.shrink();
+              final statusStr =
+                  (caseItem.status ?? 'OPEN').toUpperCase().trim();
+              final isClosed =
+                  statusStr == 'CLOSED' || statusStr == 'RESOLVED';
+
+              return PopupMenuButton<String>(
+                icon: Icon(
+                  Icons.more_vert_rounded,
+                  color:
+                      isDark ? AppColors.textPrimary : const Color(0xFF0F172A),
+                  size: 20.r,
+                ),
+                onSelected: (value) {
+                  if (value == 'close') {
+                    _closeTicket(context, ref);
+                  } else if (value == 'reopen') {
+                    _reopenTicket(context, ref);
+                  }
+                },
+                itemBuilder: (context) => [
+                  if (isClosed)
+                    PopupMenuItem(
+                      value: 'reopen',
+                      child: Text(
+                        'Reopen Ticket',
+                        style: AppTextStyles.bodyMedium.copyWith(
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13.sp,
+                        ),
+                      ),
+                    )
+                  else
+                    PopupMenuItem(
+                      value: 'close',
+                      child: Text(
+                        'Close Ticket',
+                        style: AppTextStyles.bodyMedium.copyWith(
+                          color: AppColors.error,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13.sp,
+                        ),
+                      ),
+                    ),
+                ],
+              );
             },
+            orElse: () => const SizedBox.shrink(),
           ),
           SizedBox(width: 4.w),
         ],
@@ -118,105 +162,79 @@ class SupportCaseDetailScreen extends ConsumerWidget {
               return _buildNotFoundState(context);
             }
 
-            final statusStr = (caseItem.status ?? 'OPEN').toUpperCase().trim();
-            final isClosed = statusStr == 'CLOSED' || statusStr == 'RESOLVED';
+            return RefreshIndicator(
+              color: AppColors.primary,
+              onRefresh: () async {
+                ref.invalidate(userCaseDetailsProvider(caseId));
+                ref.invalidate(caseAttachmentsProvider(caseId));
+                await ref.read(userCaseDetailsProvider(caseId).future);
+              },
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(
+                  parent: BouncingScrollPhysics(),
+                ),
+                padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Ticket Header Card
+                    _buildHeaderCard(context, caseItem, isDark),
+                    SizedBox(height: 12.h),
 
-            return SingleChildScrollView(
-              physics: const BouncingScrollPhysics(),
-              padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 10.h),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Ticket Header Card
-                  _buildHeaderCard(context, caseItem, isDark),
-                  SizedBox(height: 14.h),
+                    // Description Card
+                    _buildSectionTitle('Ticket Description'),
+                    SizedBox(height: 6.h),
+                    _buildDescriptionCard(context, caseItem, isDark),
+                    SizedBox(height: 12.h),
 
-                  // Description Card
-                  _buildSectionTitle('Ticket Description'),
-                  SizedBox(height: 6.h),
-                  _buildDescriptionCard(context, caseItem, isDark),
-                  SizedBox(height: 14.h),
-
-                  // Attachments Section
-                  _buildSectionTitle('Attachments'),
-                  SizedBox(height: 6.h),
-                  _buildAttachmentsSection(context, ref, isDark),
-                  SizedBox(height: 18.h),
-
-                  // Primary Action: Open Chat & Messages
-                  PrimaryButton(
-                    text: 'Open Chat & Messages',
-                    icon: Icons.chat_bubble_outline_rounded,
-                    onPressed: () {
-                      context.pushNamed(
-                        SupportRoutes.caseChatRoute,
-                        pathParameters: {'caseId': caseId},
-                      );
-                    },
-                  ),
-                  SizedBox(height: 10.h),
-
-                  // Secondary Action: Close or Reopen Ticket
-                  if (isClosed)
-                    SizedBox(
-                      width: double.infinity,
-                      child: OutlinedButton.icon(
-                        onPressed: () => _reopenTicket(context, ref),
-                        icon: Icon(
-                          Icons.lock_open_rounded,
-                          color: AppColors.primary,
-                          size: 16.r,
-                        ),
-                        label: Text(
-                          'Reopen Ticket',
-                          style: AppTextStyles.buttonMedium.copyWith(
-                            color: AppColors.primary,
-                            fontSize: 12.5.sp,
-                          ),
-                        ),
-                        style: OutlinedButton.styleFrom(
-                          side: const BorderSide(color: AppColors.primary),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10.r),
-                          ),
-                          padding: EdgeInsets.symmetric(vertical: 11.h),
-                        ),
-                      ),
-                    )
-                  else
-                    SizedBox(
-                      width: double.infinity,
-                      child: OutlinedButton.icon(
-                        onPressed: () => _closeTicket(context, ref),
-                        icon: Icon(
-                          Icons.check_circle_outline_rounded,
-                          color: AppColors.error,
-                          size: 16.r,
-                        ),
-                        label: Text(
-                          'Close Ticket',
-                          style: AppTextStyles.buttonMedium.copyWith(
-                            color: AppColors.error,
-                            fontSize: 12.5.sp,
-                          ),
-                        ),
-                        style: OutlinedButton.styleFrom(
-                          side: const BorderSide(color: AppColors.error),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10.r),
-                          ),
-                          padding: EdgeInsets.symmetric(vertical: 11.h),
-                        ),
-                      ),
-                    ),
-                  SizedBox(height: 16.h),
-                ],
+                    // Attachments Section
+                    _buildSectionTitle('Attachments'),
+                    SizedBox(height: 6.h),
+                    _buildAttachmentsSection(context, ref, isDark),
+                    SizedBox(height: 12.h),
+                  ],
+                ),
               ),
             );
           },
           loading: () => _buildShimmerDetails(context, isDark),
           error: (err, st) => _buildErrorState(context, ref),
         ),
+      ),
+      bottomNavigationBar: caseAsync.maybeWhen(
+        data: (caseItem) {
+          if (caseItem == null) return null;
+
+          return Container(
+            padding: EdgeInsets.only(
+              left: 16.w,
+              right: 16.w,
+              top: 10.h,
+              bottom: MediaQuery.of(context).viewInsets.bottom + 12.h,
+            ),
+            decoration: BoxDecoration(
+              color: theme.scaffoldBackgroundColor,
+              border: Border(
+                top: BorderSide(
+                  color: isDark ? AppColors.border : const Color(0xFFE2E8F0),
+                  width: 1.r,
+                ),
+              ),
+            ),
+            child: SafeArea(
+              child: PrimaryButton(
+                text: 'Open Chat & Messages',
+                onPressed: () {
+                  context.pushNamed(
+                    SupportRoutes.caseChatRoute,
+                    pathParameters: {'caseId': caseId},
+                  );
+                },
+              ),
+            ),
+          );
+        },
+        orElse: () => null,
       ),
     );
   }
@@ -225,7 +243,7 @@ class SupportCaseDetailScreen extends ConsumerWidget {
     return Text(
       title,
       style: AppTextStyles.h3.copyWith(
-        fontSize: 13.5.sp,
+        fontSize: 12.5.sp,
         fontWeight: FontWeight.bold,
       ),
     );
@@ -250,21 +268,14 @@ class SupportCaseDetailScreen extends ConsumerWidget {
         : 'Unknown';
 
     return Container(
-      padding: EdgeInsets.all(12.r),
+      padding: EdgeInsets.all(10.r),
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
-        borderRadius: AppDecorations.radiusLg,
+        borderRadius: AppDecorations.radiusMd,
         border: Border.all(
           color: statusColor.withValues(alpha: 0.3),
           width: 1.r,
         ),
-        boxShadow: [
-          BoxShadow(
-            color: statusColor.withValues(alpha: 0.05),
-            blurRadius: 8.r,
-            offset: const Offset(0, 2),
-          ),
-        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -272,70 +283,70 @@ class SupportCaseDetailScreen extends ConsumerWidget {
           Row(
             children: [
               Container(
-                padding: EdgeInsets.symmetric(horizontal: 7.w, vertical: 2.h),
+                padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 2.h),
                 decoration: BoxDecoration(
                   color: AppColors.primary.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(5.r),
+                  borderRadius: BorderRadius.circular(4.r),
                 ),
                 child: Text(
                   (item.type ?? 'GENERAL').replaceAll('_', ' '),
                   style: AppTextStyles.label.copyWith(
                     color: AppColors.primary,
                     fontWeight: FontWeight.bold,
-                    fontSize: 9.5.sp,
+                    fontSize: 9.sp,
                   ),
                 ),
               ),
               if (item.priority != null) ...[
-                SizedBox(width: 5.w),
+                SizedBox(width: 4.w),
                 Container(
                   padding: EdgeInsets.symmetric(horizontal: 5.w, vertical: 2.h),
                   decoration: BoxDecoration(
                     color: Colors.blue.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(5.r),
+                    borderRadius: BorderRadius.circular(4.r),
                   ),
                   child: Text(
                     item.priority!.toUpperCase(),
                     style: AppTextStyles.label.copyWith(
                       color: Colors.blue,
                       fontWeight: FontWeight.bold,
-                      fontSize: 9.sp,
+                      fontSize: 8.5.sp,
                     ),
                   ),
                 ),
               ],
               const Spacer(),
               Container(
-                padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 3.h),
+                padding: EdgeInsets.symmetric(horizontal: 7.w, vertical: 2.h),
                 decoration: BoxDecoration(
                   color: statusColor.withValues(alpha: 0.14),
-                  borderRadius: BorderRadius.circular(5.r),
+                  borderRadius: BorderRadius.circular(4.r),
                 ),
                 child: Text(
                   statusStr,
                   style: AppTextStyles.label.copyWith(
                     color: statusColor,
                     fontWeight: FontWeight.bold,
-                    fontSize: 9.5.sp,
+                    fontSize: 9.sp,
                   ),
                 ),
               ),
             ],
           ),
-          SizedBox(height: 8.h),
+          SizedBox(height: 6.h),
           Text(
             item.subject ?? 'No Subject',
             style: AppTextStyles.h3.copyWith(
-              fontSize: 14.5.sp,
+              fontSize: 13.5.sp,
               fontWeight: FontWeight.bold,
             ),
           ),
-          SizedBox(height: 6.h),
+          SizedBox(height: 4.h),
           Row(
             children: [
               Icon(
                 Icons.calendar_today_rounded,
-                size: 12.r,
+                size: 11.r,
                 color: AppColors.textMuted,
               ),
               SizedBox(width: 4.w),
@@ -343,7 +354,7 @@ class SupportCaseDetailScreen extends ConsumerWidget {
                 'Created: $createdStr',
                 style: AppTextStyles.bodySmall.copyWith(
                   color: AppColors.textMuted,
-                  fontSize: 10.5.sp,
+                  fontSize: 10.sp,
                 ),
               ),
             ],
@@ -363,10 +374,10 @@ class SupportCaseDetailScreen extends ConsumerWidget {
 
     return Container(
       width: double.infinity,
-      padding: EdgeInsets.all(12.r),
+      padding: EdgeInsets.all(10.r),
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
-        borderRadius: AppDecorations.radiusLg,
+        borderRadius: AppDecorations.radiusMd,
         border: Border.all(
           color: AppColors.border.withValues(alpha: 0.6),
           width: 1.r,
@@ -375,8 +386,8 @@ class SupportCaseDetailScreen extends ConsumerWidget {
       child: Text(
         text,
         style: AppTextStyles.bodyMedium.copyWith(
-          fontSize: 12.5.sp,
-          height: 1.38,
+          fontSize: 11.5.sp,
+          height: 1.35,
           color: isDark ? AppColors.textPrimary : const Color(0xFF1E293B),
         ),
       ),
