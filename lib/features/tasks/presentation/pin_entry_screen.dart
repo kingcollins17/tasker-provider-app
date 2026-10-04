@@ -5,6 +5,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 import 'package:tasker_app/core/providers/payments_provider.dart';
 import 'package:tasker_app/core/providers/tasks_provider.dart';
+import 'package:tasker_app/core/providers/user_provider.dart';
 import 'package:tasker_app/core/ui/designs/colors.dart';
 import 'package:tasker_app/core/ui/designs/text_styles.dart';
 import 'package:tasker_app/core/utils/extensions/flushbar_context_ext.dart';
@@ -85,8 +86,25 @@ class _PinEntryScreenState extends ConsumerState<PinEntryScreen> {
       final userDebt = debtAsync.value?.totalDebtOwed ?? 0.0;
       final isCashDisabled = userDebt >= (maxThreshold - 500.0);
 
-      final paymentMode =
-          (!isCashDisabled && _isCash ? 'cash' : 'online').toUpperCase();
+      final user = ref.read(userProvider).value;
+      final isOnlineDisabled = user?.paymentAccount == null;
+
+      if (isCashDisabled && isOnlineDisabled) {
+        context.hideLoading();
+        context.showError(
+          'Cannot complete task: Cash payment is unavailable due to debt limit and Online payment requires a payment account.',
+        );
+        return;
+      }
+
+      String paymentMode;
+      if (isCashDisabled) {
+        paymentMode = 'ONLINE';
+      } else if (isOnlineDisabled) {
+        paymentMode = 'CASH';
+      } else {
+        paymentMode = _isCash ? 'CASH' : 'ONLINE';
+      }
       await ref
           .read(taskManagementProvider.notifier)
           .completeTask(
@@ -119,9 +137,28 @@ class _PinEntryScreenState extends ConsumerState<PinEntryScreen> {
     final debtAsync = ref.watch(debtSummaryProvider);
     final userDebt = debtAsync.value?.totalDebtOwed ?? 0.0;
 
+    final userAsync = ref.watch(userProvider);
+    final user = userAsync.value;
+    final isOnlineDisabled = user?.paymentAccount == null;
+
     // Cash option disabled if debt >= maxThreshold or difference is within 500 of maxThreshold
     final isCashDisabled = userDebt >= (maxThreshold - 500.0);
-    final isCashSelected = !isCashDisabled && _isCash;
+
+    final bool isCashSelected;
+    final bool isOnlineSelected;
+    if (isCashDisabled && isOnlineDisabled) {
+      isCashSelected = false;
+      isOnlineSelected = false;
+    } else if (isCashDisabled) {
+      isCashSelected = false;
+      isOnlineSelected = true;
+    } else if (isOnlineDisabled) {
+      isCashSelected = true;
+      isOnlineSelected = false;
+    } else {
+      isCashSelected = _isCash;
+      isOnlineSelected = !_isCash;
+    }
 
     final displayTitle = isCompleteMode
         ? 'Enter Completion PIN'
@@ -309,6 +346,7 @@ class _PinEntryScreenState extends ConsumerState<PinEntryScreen> {
                                 icon: Icons.payments_outlined,
                                 isSelected: isCashSelected,
                                 isDisabled: isCashDisabled,
+                                disabledSubtitle: 'Limit reached',
                                 onTap: () => setState(() => _isCash = true),
                                 isDark: isDark,
                               ),
@@ -319,15 +357,16 @@ class _PinEntryScreenState extends ConsumerState<PinEntryScreen> {
                                 title: 'Online',
                                 subtitle: 'Electronic',
                                 icon: Icons.credit_card_rounded,
-                                isSelected: !isCashSelected,
-                                isDisabled: false,
+                                isSelected: isOnlineSelected,
+                                isDisabled: isOnlineDisabled,
+                                disabledSubtitle: 'No account',
                                 onTap: () => setState(() => _isCash = false),
                                 isDark: isDark,
                               ),
                             ),
                           ],
                         ),
-                        if (isCashDisabled) ...[
+                        if (isCashDisabled || isOnlineDisabled) ...[
                           SizedBox(height: 12.h),
                           Container(
                             padding: EdgeInsets.symmetric(
@@ -352,7 +391,11 @@ class _PinEntryScreenState extends ConsumerState<PinEntryScreen> {
                                 SizedBox(width: 8.w),
                                 Expanded(
                                   child: Text(
-                                    'Cash settlement is disabled because your debt (${userDebt.toNaira(2)}) is close to or above the ${maxThreshold.toNaira(0)} threshold limit. Online settlement is required to deduct debt from payout.',
+                                    isCashDisabled && isOnlineDisabled
+                                        ? 'Both payment options are disabled. Cash settlement is unavailable due to your debt limit (${userDebt.toNaira(2)}), and Online settlement is unavailable because no payment account has been added.'
+                                        : isCashDisabled
+                                            ? 'Cash settlement is disabled because your debt (${userDebt.toNaira(2)}) is close to or above the ${maxThreshold.toNaira(0)} threshold limit. Online settlement is required to deduct debt from payout.'
+                                            : 'Online settlement is disabled because you have no payment account added. Payments cannot be disbursed to you electronically without a payment account.',
                                     style: AppTextStyles.bodySmall.copyWith(
                                       color: isDark
                                           ? AppColors.textSecondary
@@ -416,6 +459,7 @@ class _PaymentModeCard extends StatelessWidget {
   final IconData icon;
   final bool isSelected;
   final bool isDisabled;
+  final String? disabledSubtitle;
   final VoidCallback onTap;
   final bool isDark;
 
@@ -425,6 +469,7 @@ class _PaymentModeCard extends StatelessWidget {
     required this.icon,
     required this.isSelected,
     this.isDisabled = false,
+    this.disabledSubtitle,
     required this.onTap,
     required this.isDark,
   });
@@ -525,7 +570,7 @@ class _PaymentModeCard extends StatelessWidget {
                   ),
                   SizedBox(height: 2.h),
                   Text(
-                    isDisabled ? 'Disabled' : subtitle,
+                    isDisabled ? (disabledSubtitle ?? 'Disabled') : subtitle,
                     style: AppTextStyles.bodySmall.copyWith(
                       color: isDisabled
                           ? AppColors.error.withValues(alpha: 0.8)
